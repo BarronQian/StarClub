@@ -1,0 +1,2489 @@
+'use client'
+
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
+import Link from 'next/link'
+import {
+  ImageIcon,
+  MessageCircle,
+  Send,
+  Heart,
+} from 'lucide-react'
+
+import {
+  getSupabaseBrowser,
+} from '@/lib/supabase-browser'
+
+import {
+  CommunityCommentDialog,
+} from '@/components/community-comment-dialog'
+
+import {
+  CommunityPostMenu,
+} from '@/components/community-post-menu'
+
+type FeedMode =
+  | 'community'
+  | 'following'
+  | 'mine'
+  | 'comments'
+
+type PostAuthor = {
+  username: string | null
+  display_name: string | null
+  avatar_url: string | null
+  star_citizen_handle: string | null
+  rsi_verified: boolean
+  member_number: number | null
+  profile_slug: string | null
+}
+
+type CommunityPost = {
+  id: string
+  content: string
+  created_at: string
+  updated_at: string
+  author_id: string
+  profiles:
+    | PostAuthor
+    | PostAuthor[]
+    | null
+  like_count: number
+  comment_count: number
+  liked_by_me: boolean
+}
+
+type MyCommentPost = {
+  id: string
+  author_id: string
+  content: string
+  created_at: string
+  profiles:
+    | PostAuthor
+    | PostAuthor[]
+    | null
+}
+
+type MyComment = {
+  id: string
+  post_id: string
+  author_id: string
+  content: string
+  parent_comment_id: string | null
+  parent_comment?: {
+  id: string
+  author_id: string
+  profiles?: {
+    username: string | null
+    display_name: string | null
+    avatar_url: string | null
+    star_citizen_handle: string | null
+    profile_slug: string | null
+  } | null
+} | null
+  created_at: string
+  updated_at: string
+  post: MyCommentPost | null
+}
+
+type CommunityNews = {
+  id: string
+  source: string
+  title: string
+  summary: string | null
+  titleOriginal: string
+  sourceUrl: string
+  imageUrl: string | null
+  publishedAt: string
+}
+
+function getPostAuthor(
+  post: CommunityPost,
+): PostAuthor | null {
+  if (!post.profiles) {
+    return null
+  }
+
+  return Array.isArray(
+    post.profiles,
+  )
+    ? post.profiles[0] ??
+        null
+    : post.profiles
+}
+
+function formatPostTime(
+  value: string,
+) {
+  const date =
+    new Date(value)
+
+  return date.toLocaleString(
+    'zh-CN',
+    {
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    },
+  )
+}
+
+export default function CommunityPage() {
+  const [
+    feedMode,
+    setFeedMode,
+  ] = useState<FeedMode>(
+    'community',
+  )
+
+  const [
+    posts,
+    setPosts,
+  ] = useState<
+    CommunityPost[]
+  >([])
+
+  const [
+    myComments,
+    setMyComments,
+  ] = useState<
+    MyComment[]
+  >([])
+
+  const [
+    commentPost,
+    setCommentPost,
+  ] = useState<
+    CommunityPost | null
+  >(null)
+
+  const [
+    deleteConfirmPost,
+    setDeleteConfirmPost,
+  ] = useState<
+    CommunityPost | null
+  >(null)
+
+  const [
+    deletingPostId,
+    setDeletingPostId,
+  ] = useState<
+    string | null
+  >(null)
+
+  const [
+  deleteConfirmComment,
+  setDeleteConfirmComment,
+  ] = useState<
+    MyComment | null
+  >(null)
+
+  const [
+    deletingCommentId,
+    setDeletingCommentId,
+  ] = useState<
+    string | null
+  >(null)
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true)
+
+  const [
+    loadingMore,
+    setLoadingMore,
+  ] = useState(false)
+
+  const [
+    hasMore,
+    setHasMore,
+  ] = useState(false)
+
+  const [
+    nextCursor,
+    setNextCursor,
+  ] = useState<
+    string | null
+  >(null)
+
+  const [
+    content,
+    setContent,
+  ] = useState('')
+
+  const [
+    publishing,
+    setPublishing,
+  ] = useState(false)
+
+  const [
+    error,
+    setError,
+  ] = useState<
+    string | null
+  >(null)
+
+  const [
+    loggedIn,
+    setLoggedIn,
+  ] = useState(false)
+
+  const [
+    currentUserId,
+    setCurrentUserId,
+  ] = useState<
+    string | null
+  >(null)
+
+  const [
+    currentAvatar,
+    setCurrentAvatar,
+  ] = useState<
+    string | null
+  >(null)
+
+  const [
+    news,
+    setNews,
+  ] = useState<
+    CommunityNews[]
+  >([])
+
+  const [
+    newsLoading,
+    setNewsLoading,
+  ] = useState(true)
+
+  const loadPosts =
+    useCallback(
+      async (
+        cursor?:
+          | string
+          | null,
+        append = false,
+        mode: FeedMode =
+          feedMode,
+        userId:
+          | string
+          | null =
+          currentUserId,
+      ) => {
+        try {
+          if (append) {
+            setLoadingMore(
+              true,
+            )
+          } else {
+            setLoading(
+              true,
+            )
+          }
+
+          setError(null)
+
+          if (
+            mode === 'mine' &&
+            !userId
+          ) {
+            setPosts([])
+            setHasMore(false)
+            setNextCursor(null)
+            return
+          }
+
+          if (
+            mode === 'following' &&
+            !userId
+          ) {
+            setPosts([])
+            setHasMore(false)
+            setNextCursor(null)
+            setError(
+              '请先登录后查看关注动态',
+            )
+            return
+          }
+
+          const params =
+            new URLSearchParams()
+
+          if (cursor) {
+            params.set(
+              'cursor',
+              cursor,
+            )
+          }
+
+          if (
+            mode === 'mine' &&
+            userId
+          ) {
+            params.set(
+              'authorId',
+              userId,
+            )
+          }
+
+          if (
+              mode === 'following'
+            ) {
+              params.set(
+                'following',
+                'true',
+              )
+            }
+
+          const query =
+            params.toString()
+
+          const controller =
+            new AbortController()
+
+          const timeout =
+            window.setTimeout(
+              () => {
+                controller.abort()
+              },
+              10000,
+            )
+
+              let accessToken:
+                string | null = null
+
+              if (
+                mode === 'following'
+              ) {
+                const supabase =
+                  getSupabaseBrowser()
+
+                const {
+                  data: {
+                    session,
+                  },
+                } =
+                  await supabase.auth.getSession()
+
+                accessToken =
+                  session?.access_token ??
+                  null
+
+                if (!accessToken) {
+                  window.clearTimeout(
+                    timeout,
+                  )
+
+                  setPosts([])
+                  setHasMore(false)
+                  setNextCursor(null)
+                  setError(
+                    '请先登录后查看关注动态',
+                  )
+
+                  return
+                }
+              }
+
+              const response =
+                await fetch(
+                  `/api/community/posts${
+                    query
+                      ? `?${query}`
+                      : ''
+                  }`,
+                  {
+                    cache:
+                      'no-store',
+
+                    signal:
+                      controller.signal,
+
+                    ...(accessToken
+                      ? {
+                          headers: {
+                            Authorization:
+                              `Bearer ${accessToken}`,
+                          },
+                        }
+                      : {}),
+                  },
+                )
+
+          window.clearTimeout(
+            timeout,
+          )
+
+          const data =
+            await response.json()
+
+          if (
+            !response.ok
+          ) {
+            throw new Error(
+              data.error ||
+                '读取动态失败',
+            )
+          }
+
+          const newPosts:
+            CommunityPost[] =
+            Array.isArray(
+              data.posts,
+            )
+              ? data.posts
+              : []
+
+          if (append) {
+            setPosts(
+              (
+                currentPosts,
+              ) => {
+                const existingIds =
+                  new Set(
+                    currentPosts.map(
+                      (
+                        post,
+                      ) =>
+                        post.id,
+                    ),
+                  )
+
+                const uniquePosts =
+                  newPosts.filter(
+                    (
+                      post,
+                    ) =>
+                      !existingIds.has(
+                        post.id,
+                      ),
+                  )
+
+                return [
+                  ...currentPosts,
+                  ...uniquePosts,
+                ]
+              },
+            )
+          } else {
+            setPosts(
+              newPosts,
+            )
+          }
+
+          setHasMore(
+            data.hasMore ===
+              true,
+          )
+
+          setNextCursor(
+            typeof data.nextCursor ===
+              'string'
+              ? data.nextCursor
+              : null,
+          )
+        } catch (
+          error
+        ) {
+          console.error(
+            'Failed to load posts:',
+            error,
+          )
+
+          setError(
+            error instanceof
+              Error
+              ? error.message
+              : '读取动态失败',
+          )
+        } finally {
+          if (append) {
+            setLoadingMore(
+              false,
+            )
+          } else {
+            setLoading(
+              false,
+            )
+          }
+        }
+      },
+      [
+        feedMode,
+        currentUserId,
+      ],
+    )
+
+  const loadMyComments =
+    useCallback(
+      async (
+        cursor?: string | null,
+        append = false,
+      ) => {
+        try {
+          if (append) {
+            setLoadingMore(true)
+          } else {
+            setLoading(true)
+          }
+
+          setError(null)
+
+          const supabase =
+            getSupabaseBrowser()
+
+          const {
+            data: { session },
+          } =
+            await supabase.auth.getSession()
+
+          if (
+            !session?.access_token
+          ) {
+            setMyComments([])
+            setHasMore(false)
+            setNextCursor(null)
+            setError(
+              '请先登录后查看我的评论',
+            )
+            return
+          }
+
+          const params =
+            new URLSearchParams()
+
+          if (cursor) {
+            params.set(
+              'cursor',
+              cursor,
+            )
+          }
+
+          const query =
+            params.toString()
+
+          const controller =
+            new AbortController()
+
+          const timeout =
+            window.setTimeout(
+              () => {
+                controller.abort()
+              },
+              10000,
+            )
+
+          const response =
+            await fetch(
+              `/api/community/comments/mine${
+                query
+                  ? `?${query}`
+                  : ''
+              }`,
+              {
+                cache:
+                  'no-store',
+                signal:
+                  controller.signal,
+                headers: {
+                  Authorization:
+                    `Bearer ${session.access_token}`,
+                },
+              },
+            )
+
+          window.clearTimeout(
+            timeout,
+          )
+
+          const data =
+            await response.json()
+
+          if (!response.ok) {
+            throw new Error(
+              data.error ||
+                '读取我的评论失败',
+            )
+          }
+
+          const newComments:
+            MyComment[] =
+            Array.isArray(
+              data.comments,
+            )
+              ? data.comments
+              : []
+
+          if (append) {
+            setMyComments(
+              (
+                currentComments,
+              ) => {
+                const existingIds =
+                  new Set(
+                    currentComments.map(
+                      (
+                        comment,
+                      ) =>
+                        comment.id,
+                    ),
+                  )
+
+                const uniqueComments =
+                  newComments.filter(
+                    (
+                      comment,
+                    ) =>
+                      !existingIds.has(
+                        comment.id,
+                      ),
+                  )
+
+                return [
+                  ...currentComments,
+                  ...uniqueComments,
+                ]
+              },
+            )
+          } else {
+            setMyComments(
+              newComments,
+            )
+          }
+
+          setHasMore(
+            data.hasMore === true,
+          )
+
+          setNextCursor(
+            typeof data.nextCursor ===
+              'string'
+              ? data.nextCursor
+              : null,
+          )
+        } catch (error) {
+          console.error(
+            'Failed to load my comments:',
+            error,
+          )
+
+          setError(
+            error instanceof Error
+              ? error.message
+              : '读取我的评论失败',
+          )
+        } finally {
+          if (append) {
+            setLoadingMore(
+              false,
+            )
+          } else {
+            setLoading(
+              false,
+            )
+          }
+        }
+      },
+      [],
+    )
+
+  const loadMorePosts =
+    async () => {
+      if (
+        !hasMore ||
+        !nextCursor ||
+        loadingMore
+      ) {
+        return
+      }
+
+      if (
+        feedMode ===
+        'comments'
+      ) {
+        await loadMyComments(
+          nextCursor,
+          true,
+        )
+
+        return
+      }
+
+      await loadPosts(
+        nextCursor,
+        true,
+      )
+    }
+
+  const loadNews =
+    useCallback(
+      async () => {
+        try {
+          const response =
+            await fetch(
+              '/api/community/news',
+            )
+
+          if (
+            !response.ok
+          ) {
+            throw new Error(
+              '读取资讯失败',
+            )
+          }
+
+          const data =
+            await response.json()
+
+          setNews(
+            Array.isArray(
+              data.news,
+            )
+              ? data.news
+              : [],
+          )
+        } catch (
+          error
+        ) {
+          console.error(
+            'Failed to load news:',
+            error,
+          )
+
+          setNews([])
+        } finally {
+          setNewsLoading(
+            false,
+          )
+        }
+      },
+      [],
+    )
+
+  useEffect(() => {
+    const supabase =
+      getSupabaseBrowser()
+
+    const applySession =
+      async (
+        session: any,
+      ) => {
+        const userId =
+          session?.user?.id ??
+          null
+
+        if (!userId) {
+          setLoggedIn(
+            false,
+          )
+
+          setCurrentUserId(
+            null,
+          )
+
+          setCurrentAvatar(
+            null,
+          )
+
+          return
+        }
+
+        setLoggedIn(true)
+
+        setCurrentUserId(
+          userId,
+        )
+
+        const {
+          data: profile,
+        } = await supabase
+          .from(
+            'profiles',
+          )
+          .select(
+            'avatar_url',
+          )
+          .eq(
+            'id',
+            userId,
+          )
+          .maybeSingle()
+
+        setCurrentAvatar(
+          profile
+            ?.avatar_url ??
+            null,
+        )
+      }
+
+    const initialize =
+      async () => {
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase.auth.getSession()
+
+        await applySession(
+          session,
+        )
+      }
+
+    void initialize()
+
+    const {
+      data: {
+        subscription,
+      },
+    } =
+      supabase.auth.onAuthStateChange(
+        (
+          _event,
+          session,
+        ) => {
+          void applySession(
+            session,
+          )
+        },
+      )
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (
+      feedMode ===
+      'comments'
+    ) {
+      void loadMyComments(
+        null,
+        false,
+      )
+
+      return
+    }
+
+    void loadPosts(
+      null,
+      false,
+      feedMode,
+      currentUserId,
+    )
+  }, [
+    feedMode,
+    currentUserId,
+    loadPosts,
+    loadMyComments,
+  ])
+
+  useEffect(() => {
+    void loadNews()
+  }, [loadNews])
+
+  const switchFeed =
+    (
+      mode: FeedMode,
+    ) => {
+        if (
+          (mode === 'mine' ||
+            mode === 'comments' ||
+            mode === 'following') &&
+          !loggedIn
+        ) {
+          setError(
+            mode === 'comments'
+              ? '请先登录后查看我的评论'
+              : mode === 'following'
+                ? '请先登录后查看关注动态'
+                : '请先登录后查看我的帖子',
+          )
+
+          return
+        }
+
+      if (
+        mode === feedMode
+      ) {
+        return
+      }
+
+      setError(null)
+      setCommentPost(null)
+      setDeleteConfirmPost(
+        null,
+      )
+      setPosts([])
+      setMyComments([])
+      setHasMore(false)
+      setNextCursor(null)
+      setFeedMode(mode)
+    }
+
+  const publishPost =
+    async () => {
+      if (publishing) {
+        return
+      }
+
+      const trimmed =
+        content.trim()
+
+      if (!trimmed) {
+        return
+      }
+
+      setPublishing(true)
+      setError(null)
+
+      try {
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          !session
+            ?.access_token
+        ) {
+          setError(
+            '请先登录后再发布动态',
+          )
+
+          return
+        }
+
+        const response =
+          await fetch(
+            '/api/community/posts',
+            {
+              method:
+                'POST',
+
+              headers: {
+                'Content-Type':
+                  'application/json',
+
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+
+              body:
+                JSON.stringify(
+                  {
+                    content:
+                      trimmed,
+                  },
+                ),
+            },
+          )
+
+        const data =
+          await response.json()
+
+        if (
+          !response.ok
+        ) {
+          setError(
+            data.error ||
+              '发布动态失败',
+          )
+
+          return
+        }
+
+        setContent('')
+
+        await loadPosts(
+          null,
+          false,
+          feedMode,
+          currentUserId,
+        )
+      } catch (
+        error
+      ) {
+        console.error(
+          'Failed to publish post:',
+          error,
+        )
+
+        setError(
+          '发布动态失败',
+        )
+      } finally {
+        setPublishing(false)
+      }
+    }
+
+  const toggleLike =
+    async (
+      postId: string,
+    ) => {
+      try {
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          !session
+            ?.access_token
+        ) {
+          setError(
+            '请先登录后再点赞',
+          )
+
+          return
+        }
+
+        const response =
+          await fetch(
+            `/api/community/posts/${postId}/like`,
+            {
+              method:
+                'POST',
+
+              headers: {
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+            },
+          )
+
+        const data =
+          await response.json()
+
+        if (
+          !response.ok
+        ) {
+          setError(
+            data.error ||
+              '点赞失败',
+          )
+
+          return
+        }
+
+        setPosts(
+          (
+            currentPosts,
+          ) =>
+            currentPosts.map(
+              (post) =>
+                post.id ===
+                postId
+                  ? {
+                      ...post,
+
+                      like_count:
+                        data.likeCount,
+
+                      liked_by_me:
+                        data.liked,
+                    }
+                  : post,
+            ),
+        )
+      } catch (
+        error
+      ) {
+        console.error(
+          'Failed to toggle like:',
+          error,
+        )
+
+        setError(
+          '点赞失败',
+        )
+      }
+    }
+
+  const deletePost =
+    async () => {
+      if (
+        !deleteConfirmPost ||
+        deletingPostId
+      ) {
+        return
+      }
+
+      const postId =
+        deleteConfirmPost.id
+
+      try {
+        setError(null)
+
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          !session
+            ?.access_token
+        ) {
+          setError(
+            '请先登录后再删除动态',
+          )
+
+          return
+        }
+
+        setDeletingPostId(
+          postId,
+        )
+
+        const response =
+          await fetch(
+            `/api/community/posts?postId=${encodeURIComponent(
+              postId,
+            )}`,
+            {
+              method:
+                'DELETE',
+
+              headers: {
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+            },
+          )
+
+        const data =
+          await response.json()
+
+        if (
+          !response.ok
+        ) {
+          setError(
+            data.error ||
+              '删除动态失败',
+          )
+
+          return
+        }
+
+        setPosts(
+          (
+            currentPosts,
+          ) =>
+            currentPosts.filter(
+              (post) =>
+                post.id !==
+                postId,
+            ),
+        )
+
+        setCommentPost(
+          (
+            currentPost,
+          ) =>
+            currentPost?.id ===
+            postId
+              ? null
+              : currentPost,
+        )
+
+        setDeleteConfirmPost(
+          null,
+        )
+      } catch (
+        error
+      ) {
+        console.error(
+          'Failed to delete post:',
+          error,
+        )
+
+        setError(
+          '删除动态失败',
+        )
+
+      } finally {
+        setDeletingPostId(
+          null,
+        )
+      }
+    }
+
+    const deleteComment =
+  async () => {
+    if (
+      !deleteConfirmComment ||
+      deletingCommentId
+    ) {
+      return
+    }
+
+    const commentId =
+      deleteConfirmComment.id
+
+    try {
+      setError(null)
+
+      const supabase =
+        getSupabaseBrowser()
+
+      const {
+        data: {
+          session,
+        },
+      } =
+        await supabase.auth.getSession()
+
+      if (
+        !session
+          ?.access_token
+      ) {
+        setError(
+          '请先登录后再删除评论',
+        )
+
+        return
+      }
+
+      setDeletingCommentId(
+        commentId,
+      )
+
+      const response =
+        await fetch(
+          `/api/community/comments?commentId=${encodeURIComponent(
+            commentId,
+          )}`,
+          {
+            method:
+              'DELETE',
+
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+          },
+        )
+
+      const data =
+        await response.json()
+
+      if (
+        !response.ok
+      ) {
+        setError(
+          data.error ||
+            '删除评论失败',
+        )
+
+        return
+      }
+
+      setMyComments(
+        (
+          currentComments,
+        ) =>
+          currentComments.filter(
+            (
+              comment,
+            ) =>
+              comment.id !==
+              commentId,
+          ),
+      )
+
+      setDeleteConfirmComment(
+        null,
+      )
+    } catch (error) {
+      console.error(
+        'Failed to delete comment:',
+        error,
+      )
+
+      setError(
+        '删除评论失败',
+      )
+    } finally {
+      setDeletingCommentId(
+        null,
+      )
+    }
+  }
+
+  const pageTitle =
+    feedMode === 'mine'
+      ? '我的帖子'
+      : feedMode ===
+          'comments'
+        ? '我的评论'
+        : feedMode ===
+            'following'
+          ? '我的关注'
+          : '社区动态'
+
+  const pageDescription =
+    feedMode === 'mine'
+      ? '查看和管理你在 StarClub 社区发布的动态。'
+      : feedMode ===
+          'comments'
+        ? '查看你在 StarClub 社区参与过的讨论。'
+        : feedMode ===
+            'following'
+          ? '查看你关注的酒友最新发布的动态。'
+          : '分享你在星际公民宇宙中的故事、截图和见闻。'
+
+  return (
+    <>
+      <main className="mt-16 h-[calc(100vh-64px)] overflow-hidden bg-white">
+        <div className="site-container h-full">
+
+          <div className="grid h-full grid-cols-1 xl:grid-cols-[240px_minmax(0,780px)_360px] xl:justify-center">
+
+            <aside className="hidden h-full px-5 pb-6 pt-14 xl:block">
+              <nav className="sticky top-14 space-y-2">
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    switchFeed(
+                      'community',
+                    )
+                  }}
+                  className={
+                    feedMode ===
+                    'community'
+                      ? 'flex h-11 w-full items-center rounded-xl bg-neutral-100 px-4 text-left text-sm font-medium text-foreground'
+                      : 'flex h-11 w-full items-center rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                  }
+                >
+                  社区主页
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    switchFeed(
+                      'following',
+                    )
+                  }}
+                  className={
+                    feedMode ===
+                    'following'
+                      ? 'flex h-11 w-full items-center rounded-xl bg-neutral-100 px-4 text-left text-sm font-medium text-foreground'
+                      : 'flex h-11 w-full items-center rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                  }
+                >
+                  关注
+                </button>
+
+                <button
+                  type="button"
+                  disabled
+                  className="flex h-11 w-full cursor-not-allowed items-center rounded-xl px-4 text-left text-sm text-muted-foreground opacity-60"
+                >
+                  收藏
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    switchFeed(
+                      'mine',
+                    )
+                  }}
+                  className={
+                    feedMode ===
+                    'mine'
+                      ? 'flex h-11 w-full items-center rounded-xl bg-neutral-100 px-4 text-left text-sm font-medium text-foreground'
+                      : 'flex h-11 w-full items-center rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                  }
+                >
+                  我的帖子
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    switchFeed(
+                      'comments',
+                    )
+                  }}
+                  className={
+                    feedMode ===
+                    'comments'
+                      ? 'flex h-11 w-full items-center rounded-xl bg-neutral-100 px-4 text-left text-sm font-medium text-foreground'
+                      : 'flex h-11 w-full items-center rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                  }
+                >
+                  我的评论
+                </button>
+
+              </nav>
+            </aside>
+
+            <div className="h-full overflow-y-auto border-x border-border bg-[#f7f7f5] px-5 pb-6 pt-14 lg:px-6">
+
+              <div className="mb-10 lg:mb-12">
+
+                <h1 className="text-4xl font-semibold tracking-tight lg:text-5xl">
+                  {pageTitle}
+                </h1>
+
+                <p className="mt-3 text-sm text-muted-foreground lg:text-base">
+                  {pageDescription}
+                </p>
+
+              </div>
+
+              {feedMode !== 'comments' &&
+                feedMode !== 'following' && (
+                <section className="rounded-2xl border border-border bg-white p-5 shadow-[0_8px_28px_rgba(0,0,0,0.04)]">
+
+                {loggedIn ? (
+                  <div className="flex gap-4">
+
+                    {currentAvatar ? (
+                      <img
+                        src={
+                          currentAvatar
+                        }
+                        alt="我的头像"
+                        className="size-11 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="size-11 shrink-0 rounded-full bg-neutral-100" />
+                    )}
+
+                    <div className="min-w-0 flex-1">
+
+                      <textarea
+                        value={
+                          content
+                        }
+                        onChange={(
+                          event,
+                        ) => {
+                          if (
+                            event
+                              .target
+                              .value
+                              .length <=
+                            1000
+                          ) {
+                            setContent(
+                              event
+                                .target
+                                .value,
+                            )
+                          }
+                        }}
+                        placeholder="分享一下你在 Stanton / Pyro 的故事..."
+                        rows={4}
+                        className="w-full resize-none border-none bg-transparent p-0 text-sm leading-7 outline-none placeholder:text-muted-foreground"
+                      />
+
+                      {error && (
+                        <p className="mt-3 text-xs text-red-600">
+                          {error}
+                        </p>
+                      )}
+
+                      <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+
+                        <div className="flex items-center gap-3">
+
+                          <button
+                            type="button"
+                            disabled
+                            title="图片功能稍后加入"
+                            className="inline-flex size-9 cursor-not-allowed items-center justify-center rounded-full text-muted-foreground opacity-40"
+                          >
+                            <ImageIcon
+                              className="size-4"
+                              strokeWidth={
+                                1.7
+                              }
+                            />
+                          </button>
+
+                          <span className="text-xs text-muted-foreground">
+                            {
+                              content.length
+                            }
+                            /1000
+                          </span>
+
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={
+                            publishPost
+                          }
+                          disabled={
+                            publishing ||
+                            !content.trim()
+                          }
+                          className="inline-flex h-9 items-center gap-2 rounded-full bg-neutral-950 px-4 text-xs font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Send
+                            className="size-3.5"
+                            strokeWidth={
+                              1.8
+                            }
+                          />
+
+                          {publishing
+                            ? '发布中...'
+                            : '发布动态'}
+                        </button>
+
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex min-h-28 flex-col items-center justify-center text-center">
+
+                    <p className="text-sm font-medium">
+                      登录后参与社区
+                    </p>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      登录 StarClub 账号后可以发布动态。
+                    </p>
+
+                  </div>
+                )}
+
+              </section>
+              )}
+
+              <section className="mt-6 space-y-4">
+
+                {loading ? (
+                  <div className="rounded-2xl border border-border bg-white p-8 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {feedMode ===
+                      'mine'
+                        ? '正在加载我的帖子...'
+                        : feedMode ===
+                            'comments'
+                          ? '正在加载我的评论...'
+                          : feedMode ===
+                              'following'
+                            ? '正在加载关注动态...'
+                            : '正在加载社区动态...'}
+                    </p>
+                  </div>
+                ) : feedMode ===
+                  'comments' ? (
+                  myComments.length >
+                  0 ? (
+                    myComments.map(
+                      (comment) => {
+                        const post =
+                          comment.post
+
+                        if (!post) {
+                          return null
+                        }
+
+                        const rawAuthor =
+                          post.profiles
+
+                        const author =
+                          Array.isArray(
+                            rawAuthor,
+                          )
+                            ? rawAuthor[0] ??
+                              null
+                            : rawAuthor
+
+                        const displayName =
+                          author
+                            ?.star_citizen_handle ||
+                          author
+                            ?.display_name ||
+                          author
+                            ?.username ||
+                          author
+                            ?.profile_slug ||
+                          'StarClub 用户'
+
+                        const commentDialogPost: CommunityPost = {
+                          id:
+                            post.id,
+                          content:
+                            post.content,
+                          created_at:
+                            post.created_at,
+                          updated_at:
+                            post.created_at,
+                          author_id:
+                            post.author_id,
+                          profiles:
+                            post.profiles,
+                          like_count: 0,
+                          comment_count: 0,
+                          liked_by_me:
+                            false,
+                        }
+
+                        return (
+                          <article
+                            key={
+                              comment.id
+                            }
+                            className="rounded-2xl border border-border bg-white p-5 shadow-[0_6px_20px_rgba(0,0,0,0.025)]"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-xs font-medium text-[#a66700]">
+                                      我的评论
+                                    </p>
+                                      {comment.parent_comment_id ? (
+                                        comment.parent_comment?.profiles ? (
+                                          <Link
+                                            href={`/profile/${
+                                              comment.parent_comment.profiles.profile_slug ||
+                                              comment.parent_comment.profiles.username
+                                            }`}
+                                            className="text-[11px] text-muted-foreground transition-colors hover:text-[#a66700]"
+                                          >
+                                            回复 @
+                                            {comment.parent_comment.profiles.star_citizen_handle ||
+                                              comment.parent_comment.profiles.display_name ||
+                                              comment.parent_comment.profiles.username ||
+                                              '用户'}
+                                          </Link>
+                                        ) : (
+                                          <span className="text-[11px] text-muted-foreground">
+                                            回复 @用户
+                                          </span>
+                                        )
+                                      ) : (
+                                        <span className="text-[11px] text-muted-foreground">
+                                          评论了动态
+                                        </span>
+                                      )}
+                                  </div>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {formatPostTime(
+                                    comment.created_at,
+                                  )}
+                                </p>
+                              </div>
+
+                              <MessageCircle
+                                className="size-4 shrink-0 text-muted-foreground"
+                                strokeWidth={
+                                  1.6
+                                }
+                              />
+                            </div>
+
+                            <p className="mt-4 whitespace-pre-wrap wrap-break-word text-[15px] leading-7 text-neutral-900">
+                              {
+                                comment.content
+                              }
+                            </p>
+
+                            <div className="mt-5 rounded-xl border border-border bg-[#f8f8f6] p-4">
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <span className="text-[11px] text-muted-foreground">
+                                  回复于
+                                </span>
+
+                                {author
+                                  ?.profile_slug ? (
+                                  <Link
+                                    href={`/profile/${encodeURIComponent(
+                                      author.profile_slug,
+                                    )}`}
+                                    className="truncate text-xs font-semibold hover:underline"
+                                  >
+                                    {
+                                      displayName
+                                    }
+                                  </Link>
+                                ) : (
+                                  <span className="truncate text-xs font-semibold">
+                                    {
+                                      displayName
+                                    }
+                                  </span>
+                                )}
+
+                                <span className="text-[11px] text-muted-foreground">
+                                  ·{' '}
+                                  {formatPostTime(
+                                    post.created_at,
+                                  )}
+                                </span>
+                              </div>
+
+                              <p className="mt-2 line-clamp-3 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-neutral-700">
+                                {
+                                  post.content
+                                }
+                              </p>
+                            </div>
+
+                              <div className="mt-4 flex items-center justify-between">
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDeleteConfirmComment(
+                                      comment,
+                                    )
+                                  }}
+                                  className="text-xs font-medium text-red-500 transition-colors hover:text-red-600"
+                                >
+                                  删除评论
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCommentPost(
+                                      commentDialogPost,
+                                    )
+                                  }}
+                                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[#a66700] transition-colors hover:text-[#7a4b00]"
+                                >
+                                  查看讨论
+                                  <span
+                                    aria-hidden="true"
+                                  >
+                                    →
+                                  </span>
+                                </button>
+
+                              </div>
+                          </article>
+                        )
+                      },
+                    )
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center">
+                      <p className="text-base font-medium">
+                        你还没有发表评论
+                      </p>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        参与社区讨论后，你的评论会显示在这里。
+                      </p>
+                    </div>
+                  )
+                ) : posts.length >
+                  0 ? (
+                  posts.map(
+                    (post) => {
+                      const author =
+                        getPostAuthor(
+                          post,
+                        )
+
+                      const displayName =
+                        author
+                          ?.star_citizen_handle ||
+                        author
+                          ?.display_name ||
+                        author
+                          ?.username ||
+                        author
+                          ?.profile_slug ||
+                        'StarClub 用户'
+
+                      const starClubId =
+                        author
+                          ?.profile_slug &&
+                        author
+                          ?.member_number !==
+                          null &&
+                        author
+                          ?.member_number !==
+                          undefined
+                          ? `${author.profile_slug}#${String(
+                              author.member_number,
+                            ).padStart(
+                              4,
+                              '0',
+                            )}`
+                          : null
+
+                      const isOwner =
+                        currentUserId ===
+                        post.author_id
+
+                      return (
+                        <article
+                          key={
+                            post.id
+                          }
+                          className="rounded-2xl border border-border bg-white p-5 shadow-[0_6px_20px_rgba(0,0,0,0.025)]"
+                        >
+                          <div className="flex gap-3">
+
+                            {author
+                              ?.profile_slug ? (
+                              <Link
+                                href={`/profile/${encodeURIComponent(
+                                  author.profile_slug,
+                                )}`}
+                                className="shrink-0"
+                              >
+                                {author.avatar_url ? (
+                                  <img
+                                    src={
+                                      author.avatar_url
+                                    }
+                                    alt={
+                                      displayName
+                                    }
+                                    className="size-11 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="size-11 rounded-full bg-neutral-100" />
+                                )}
+                              </Link>
+                            ) : (
+                              <div className="size-11 shrink-0 rounded-full bg-neutral-100" />
+                            )}
+
+                            <div className="min-w-0 flex-1">
+
+                              <div className="flex items-start justify-between gap-3">
+
+                                <div className="min-w-0">
+
+                                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+
+                                    {author
+                                      ?.profile_slug ? (
+                                      <Link
+                                        href={`/profile/${encodeURIComponent(
+                                          author.profile_slug,
+                                        )}`}
+                                        className="truncate text-sm font-semibold hover:underline"
+                                      >
+                                        {
+                                          displayName
+                                        }
+                                      </Link>
+                                    ) : (
+                                      <span className="truncate text-sm font-semibold">
+                                        {
+                                          displayName
+                                        }
+                                      </span>
+                                    )}
+
+                                    {author
+                                      ?.rsi_verified &&
+                                      author
+                                        ?.star_citizen_handle && (
+                                        <span
+                                          title="RSI Handle 已认证"
+                                          className="inline-flex size-4 items-center justify-center rounded-full bg-[#b87300] text-[9px] font-bold text-white"
+                                        >
+                                          ✓
+                                        </span>
+                                      )}
+
+                                    <span className="text-xs text-muted-foreground">
+                                      {formatPostTime(
+                                        post.created_at,
+                                      )}
+                                    </span>
+
+                                  </div>
+
+                                  {starClubId && (
+                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                      @
+                                      {
+                                        starClubId
+                                      }
+                                    </p>
+                                  )}
+
+                                </div>
+
+                                <CommunityPostMenu
+                                  createdAt={
+                                    post.created_at
+                                  }
+                                  isOwner={
+                                    isOwner
+                                  }
+                                  onEdit={() => {
+                                    console.log(
+                                      'edit post',
+                                      post.id,
+                                    )
+                                  }}
+                                  onDelete={() => {
+                                    setDeleteConfirmPost(
+                                      post,
+                                    )
+                                  }}
+                                />
+
+                              </div>
+
+                              <p className="mt-4 whitespace-pre-wrap wrap-break-word text-[15px] leading-7 text-neutral-800">
+                                {
+                                  post.content
+                                }
+                              </p>
+
+                              <div className="mt-5 flex items-center gap-6 border-t border-border pt-4">
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    toggleLike(
+                                      post.id,
+                                    )
+                                  }
+                                  className={
+                                    post.liked_by_me
+                                      ? 'inline-flex items-center gap-1.5 text-xs text-red-500 transition-colors'
+                                      : 'inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-red-500'
+                                  }
+                                >
+                                  <Heart
+                                    className={
+                                      post.liked_by_me
+                                        ? 'size-4 fill-red-500 text-red-500'
+                                        : 'size-4'
+                                    }
+                                    strokeWidth={
+                                      1.6
+                                    }
+                                  />
+
+                                  {post.like_count ??
+                                    0}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCommentPost(
+                                      post,
+                                    )
+                                  }}
+                                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-[#a66700]"
+                                >
+                                  <MessageCircle
+                                    className="size-4"
+                                    strokeWidth={
+                                      1.6
+                                    }
+                                  />
+
+                                  {post.comment_count ??
+                                    0}
+                                </button>
+
+                              </div>
+
+                            </div>
+                          </div>
+                        </article>
+                      )
+                    },
+                  )
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center">
+
+                      <p className="text-base font-medium">
+                        {feedMode ===
+                        'mine'
+                          ? '你还没有发布帖子'
+                          : feedMode ===
+                              'following'
+                            ? '暂无关注动态'
+                            : '还没有人发布动态'}
+                      </p>
+
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {feedMode ===
+                        'mine'
+                          ? '发布第一条属于你的 StarClub 社区动态。'
+                          : feedMode ===
+                              'following'
+                            ? '关注其他酒友后，他们发布的动态会显示在这里。'
+                            : '成为第一个在 StarClub 分享故事的人。'}
+                      </p>
+
+                  </div>
+                )}
+
+                {hasMore && (
+                  <div className="flex justify-center py-8">
+
+                    <button
+                      type="button"
+                      disabled={
+                        loadingMore
+                      }
+                      onClick={() => {
+                        void loadMorePosts()
+                      }}
+                      className="inline-flex h-10 items-center justify-center rounded-full border border-border bg-background px-6 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                    {loadingMore
+                      ? '加载中...'
+                      : feedMode ===
+                          'mine'
+                        ? '加载更多帖子'
+                        : feedMode ===
+                            'comments'
+                          ? '加载更多评论'
+                          : feedMode ===
+                              'following'
+                            ? '加载更多关注动态'
+                            : '加载更多动态'}
+                    </button>
+
+                  </div>
+                )}
+
+              </section>
+
+            </div>
+
+            <aside className="hidden h-full px-5 pb-6 pt-14 xl:block">
+
+              <div className="space-y-5">
+
+                <section className="overflow-hidden rounded-2xl border border-border bg-white">
+
+                  <div className="flex items-center justify-between px-5 pb-3 pt-5">
+
+                    <div>
+
+                      <h2 className="text-base font-semibold">
+                        最新资讯
+                      </h2>
+
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        STAR CITIZEN · RSI
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  <div className="divide-y divide-border">
+
+                    {newsLoading ? (
+                      <div className="px-5 py-6">
+
+                        <p className="text-xs text-muted-foreground">
+                          正在加载最新资讯...
+                        </p>
+
+                      </div>
+                    ) : news.length >
+                      0 ? (
+                      news
+                        .slice(
+                          0,
+                          5,
+                        )
+                        .map(
+                          (
+                            item,
+                          ) => (
+                            <a
+                              key={
+                                item.id
+                              }
+                              href={
+                                item.sourceUrl
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group block px-5 py-4 transition-colors hover:bg-neutral-50"
+                            >
+                              <div className="flex gap-3">
+
+                                {item.imageUrl && (
+                                  <img
+                                    src={
+                                      item.imageUrl
+                                    }
+                                    alt=""
+                                    loading="lazy"
+                                    className="h-14.5 w-20.5 shrink-0 rounded-lg object-cover"
+                                  />
+                                )}
+
+                                <div className="min-w-0 flex-1">
+
+                                  <p className="line-clamp-2 text-[13px] font-medium leading-5 text-neutral-900 transition-colors group-hover:text-neutral-600">
+                                    {
+                                      item.title
+                                    }
+                                  </p>
+
+                                  <p className="mt-1.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
+                                    RSI ·{' '}
+                                    {new Date(
+                                      item.publishedAt,
+                                    ).toLocaleDateString(
+                                      'zh-CN',
+                                      {
+                                        month:
+                                          'numeric',
+                                        day:
+                                          'numeric',
+                                      },
+                                    )}
+                                  </p>
+
+                                </div>
+                              </div>
+                            </a>
+                          ),
+                        )
+                    ) : (
+                      <div className="px-5 py-6">
+
+                        <p className="text-xs text-muted-foreground">
+                          暂无最新资讯
+                        </p>
+
+                      </div>
+                    )}
+
+                  </div>
+                </section>
+
+                <section className="rounded-2xl border border-border bg-white p-5">
+
+                  <h2 className="text-base font-semibold">
+                    推荐酒友
+                  </h2>
+
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                    发现活跃在 StarClub 社区中的酒友。
+                  </p>
+
+                  <button
+                    type="button"
+                    disabled
+                    className="mt-4 text-xs font-medium text-muted-foreground opacity-60"
+                  >
+                    即将开放
+                  </button>
+
+                </section>
+
+                <section className="px-1">
+
+                  <p className="text-xs leading-6 text-muted-foreground">
+                    分享游戏内容、交流心得，与全球 Star Citizen 华人玩家一起探索宇宙。
+                  </p>
+
+                </section>
+
+              </div>
+
+            </aside>
+
+          </div>
+        </div>
+      </main>
+
+      {deleteConfirmPost && (
+        <div
+          className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 px-4 backdrop-blur-[1px]"
+          onMouseDown={() => {
+            if (
+              !deletingPostId
+            ) {
+              setDeleteConfirmPost(
+                null,
+              )
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-post-title"
+            onMouseDown={(
+              event,
+            ) => {
+              event.stopPropagation()
+            }}
+            className="w-full max-w-sm rounded-2xl border border-border bg-white p-6 shadow-2xl"
+          >
+            <h2
+              id="delete-post-title"
+              className="text-lg font-semibold"
+            >
+              删除动态？
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              删除后这条动态将不会再显示。
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+
+              <button
+                type="button"
+                disabled={
+                  Boolean(
+                    deletingPostId,
+                  )
+                }
+                onClick={() => {
+                  setDeleteConfirmPost(
+                    null,
+                  )
+                }}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-border px-5 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                取消
+              </button>
+
+              <button
+                type="button"
+                disabled={
+                  Boolean(
+                    deletingPostId,
+                  )
+                }
+                onClick={() => {
+                  void deletePost()
+                }}
+                className="inline-flex h-10 items-center justify-center rounded-full bg-red-600 px-5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deletingPostId
+                  ? '删除中...'
+                  : '删除动态'}
+              </button>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+{deleteConfirmComment && (
+  <div
+    className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 px-4 backdrop-blur-[1px]"
+    onMouseDown={() => {
+      if (
+        !deletingCommentId
+      ) {
+        setDeleteConfirmComment(
+          null,
+        )
+      }
+    }}
+  >
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-comment-title"
+      onMouseDown={(
+        event,
+      ) => {
+        event.stopPropagation()
+      }}
+      className="w-full max-w-sm rounded-2xl border border-border bg-white p-6 shadow-2xl"
+    >
+      <h2
+        id="delete-comment-title"
+        className="text-lg font-semibold"
+      >
+        删除评论？
+      </h2>
+
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+        删除后这条评论将不会再显示。
+      </p>
+
+      <div className="mt-6 flex justify-end gap-3">
+
+        <button
+          type="button"
+          disabled={
+            Boolean(
+              deletingCommentId,
+            )
+          }
+          onClick={() => {
+            setDeleteConfirmComment(
+              null,
+            )
+          }}
+          className="inline-flex h-10 items-center justify-center rounded-full border border-border px-5 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          取消
+        </button>
+
+        <button
+          type="button"
+          disabled={
+            Boolean(
+              deletingCommentId,
+            )
+          }
+          onClick={() => {
+            void deleteComment()
+          }}
+          className="inline-flex h-10 items-center justify-center rounded-full bg-red-600 px-5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {deletingCommentId
+            ? '删除中...'
+            : '删除评论'}
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
+
+      <CommunityCommentDialog
+        open={
+          Boolean(
+            commentPost,
+          )
+        }
+        post={
+          commentPost
+            ? {
+                ...commentPost,
+
+                profiles:
+                  getPostAuthor(
+                    commentPost,
+                  ),
+              }
+            : null
+        }
+        onClose={() => {
+          setCommentPost(
+            null,
+          )
+        }}
+        onCommentCreated={(
+          postId,
+        ) => {
+          setPosts(
+            (
+              currentPosts,
+            ) =>
+              currentPosts.map(
+                (post) =>
+                  post.id ===
+                  postId
+                    ? {
+                        ...post,
+
+                        comment_count:
+                          (post.comment_count ??
+                            0) +
+                          1,
+                      }
+                    : post,
+              ),
+          )
+
+          setCommentPost(
+            (
+              currentPost,
+            ) =>
+              currentPost
+                ?.id ===
+              postId
+                ? {
+                    ...currentPost,
+
+                    comment_count:
+                      (currentPost.comment_count ??
+                        0) +
+                      1,
+                  }
+                : currentPost,
+          )
+        }}
+        onCommentDeleted={(
+          postId,
+        ) => {
+          setPosts(
+            (
+              currentPosts,
+            ) =>
+              currentPosts.map(
+                (post) =>
+                  post.id ===
+                  postId
+                    ? {
+                        ...post,
+
+                        comment_count:
+                          Math.max(
+                            0,
+                            (post.comment_count ??
+                              0) -
+                              1,
+                          ),
+                      }
+                    : post,
+              ),
+          )
+
+          setCommentPost(
+            (
+              currentPost,
+            ) =>
+              currentPost
+                ?.id ===
+              postId
+                ? {
+                    ...currentPost,
+
+                    comment_count:
+                      Math.max(
+                        0,
+                        (currentPost.comment_count ??
+                          0) -
+                          1,
+                      ),
+                  }
+                : currentPost,
+          )
+        }}
+      />
+    </>
+  )
+}

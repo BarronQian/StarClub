@@ -1,0 +1,393 @@
+import {
+  NextRequest,
+  NextResponse,
+} from 'next/server'
+
+import {
+  createClient,
+} from '@supabase/supabase-js'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+function getAdminSupabase() {
+  const supabaseUrl =
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL
+
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      'Missing Supabase server environment variables',
+    )
+  }
+
+  return createClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    },
+  )
+}
+
+async function getCurrentUser(
+  request: NextRequest,
+) {
+  const authorization =
+    request.headers.get('authorization')
+
+  if (
+    !authorization?.startsWith('Bearer ')
+  ) {
+    return null
+  }
+
+  const accessToken =
+    authorization.slice(7)
+
+  const supabase =
+    getAdminSupabase()
+
+  const {
+    data: { user },
+    error,
+  } =
+    await supabase.auth.getUser(
+      accessToken,
+    )
+
+  if (error || !user) {
+    return null
+  }
+
+  return user
+}
+
+// GET /api/community/follows?profileId=xxx
+// 查询当前用户是否关注了这个人
+export async function GET(
+  request: NextRequest,
+) {
+  try {
+    const user =
+      await getCurrentUser(request)
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          error: '请先登录',
+        },
+        {
+          status: 401,
+        },
+      )
+    }
+
+    const profileId =
+      request.nextUrl.searchParams.get(
+        'profileId',
+      )
+
+    if (!profileId) {
+      return NextResponse.json(
+        {
+          error: '缺少 profileId',
+        },
+        {
+          status: 400,
+        },
+      )
+    }
+
+    const supabase =
+      getAdminSupabase()
+
+    const {
+      data,
+      error,
+    } =
+      await supabase
+        .from('profile_follows')
+        .select('id')
+        .eq(
+          'follower_id',
+          user.id,
+        )
+        .eq(
+          'following_id',
+          profileId,
+        )
+        .maybeSingle()
+
+    if (error) {
+      console.error(
+        'Failed to check follow:',
+        error,
+      )
+
+      return NextResponse.json(
+        {
+          error: '读取关注状态失败',
+        },
+        {
+          status: 500,
+        },
+      )
+    }
+
+    return NextResponse.json(
+      {
+        following: Boolean(data),
+      },
+      {
+        headers: {
+          'Cache-Control':
+            'no-store, max-age=0',
+        },
+      },
+    )
+  } catch (error) {
+    console.error(
+      'GET community follow error:',
+      error,
+    )
+
+    return NextResponse.json(
+      {
+        error: '服务器错误',
+      },
+      {
+        status: 500,
+      },
+    )
+  }
+}
+
+// POST /api/community/follows
+// 关注用户
+export async function POST(
+  request: NextRequest,
+) {
+  try {
+    const user =
+      await getCurrentUser(request)
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          error: '请先登录',
+        },
+        {
+          status: 401,
+        },
+      )
+    }
+
+    const body =
+      await request.json()
+
+    const profileId =
+      typeof body.profileId === 'string'
+        ? body.profileId.trim()
+        : ''
+
+    if (!profileId) {
+      return NextResponse.json(
+        {
+          error: '缺少 profileId',
+        },
+        {
+          status: 400,
+        },
+      )
+    }
+
+    if (profileId === user.id) {
+      return NextResponse.json(
+        {
+          error: '不能关注自己',
+        },
+        {
+          status: 400,
+        },
+      )
+    }
+
+    const supabase =
+      getAdminSupabase()
+
+    // 确认目标用户存在
+    const {
+      data: targetProfile,
+      error: profileError,
+    } =
+      await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', profileId)
+        .maybeSingle()
+
+    if (
+      profileError ||
+      !targetProfile
+    ) {
+      return NextResponse.json(
+        {
+          error: '用户不存在',
+        },
+        {
+          status: 404,
+        },
+      )
+    }
+
+    const {
+      error: insertError,
+    } =
+      await supabase
+        .from('profile_follows')
+        .upsert(
+          {
+            follower_id: user.id,
+            following_id: profileId,
+          },
+          {
+            onConflict:
+              'follower_id,following_id',
+            ignoreDuplicates: true,
+          },
+        )
+
+    if (insertError) {
+      console.error(
+        'Failed to follow profile:',
+        insertError,
+      )
+
+      return NextResponse.json(
+        {
+          error: '关注失败',
+        },
+        {
+          status: 500,
+        },
+      )
+    }
+
+    return NextResponse.json({
+      ok: true,
+      following: true,
+    })
+  } catch (error) {
+    console.error(
+      'POST community follow error:',
+      error,
+    )
+
+    return NextResponse.json(
+      {
+        error: '服务器错误',
+      },
+      {
+        status: 500,
+      },
+    )
+  }
+}
+
+// DELETE /api/community/follows?profileId=xxx
+// 取消关注
+export async function DELETE(
+  request: NextRequest,
+) {
+  try {
+    const user =
+      await getCurrentUser(request)
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          error: '请先登录',
+        },
+        {
+          status: 401,
+        },
+      )
+    }
+
+    const profileId =
+      request.nextUrl.searchParams.get(
+        'profileId',
+      )
+
+    if (!profileId) {
+      return NextResponse.json(
+        {
+          error: '缺少 profileId',
+        },
+        {
+          status: 400,
+        },
+      )
+    }
+
+    const supabase =
+      getAdminSupabase()
+
+    const {
+      error,
+    } =
+      await supabase
+        .from('profile_follows')
+        .delete()
+        .eq(
+          'follower_id',
+          user.id,
+        )
+        .eq(
+          'following_id',
+          profileId,
+        )
+
+    if (error) {
+      console.error(
+        'Failed to unfollow profile:',
+        error,
+      )
+
+      return NextResponse.json(
+        {
+          error: '取消关注失败',
+        },
+        {
+          status: 500,
+        },
+      )
+    }
+
+    return NextResponse.json({
+      ok: true,
+      following: false,
+    })
+  } catch (error) {
+    console.error(
+      'DELETE community follow error:',
+      error,
+    )
+
+    return NextResponse.json(
+      {
+        error: '服务器错误',
+      },
+      {
+        status: 500,
+      },
+    )
+  }
+}

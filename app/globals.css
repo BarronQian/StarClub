@@ -1,0 +1,351 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: var(--font-noto-sans-sc), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-orbitron), var(--font-noto-sans-sc), sans-serif;
+  --font-mono: ui-monospace, monospace;
+
+  --color-ember: var(--ember);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+  --radius-3xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  color-scheme: light;
+
+  /* clean white canvas */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.21 0.008 60);
+
+  /* soft off-white panel, Apple-style #f5f5f7 */
+  --card: oklch(0.968 0.004 80);
+  --card-foreground: oklch(0.21 0.008 60);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.008 60);
+
+  /* logo gold, deepened so it stays legible on white */
+  --primary: oklch(0.57 0.125 64);
+  --primary-foreground: oklch(0.99 0.003 80);
+
+  /* logo ember orange */
+  --ember: oklch(0.6 0.185 40);
+
+  --secondary: oklch(0.968 0.004 80);
+  --secondary-foreground: oklch(0.21 0.008 60);
+
+  --muted: oklch(0.968 0.004 80);
+  --muted-foreground: oklch(0.51 0.011 62);
+
+  --accent: oklch(0.95 0.012 82);
+  --accent-foreground: oklch(0.28 0.03 58);
+
+  --destructive: oklch(0.58 0.2 25);
+
+  --border: oklch(0.21 0.008 60 / 11%);
+  --input: oklch(0.21 0.008 60 / 15%);
+  --ring: oklch(0.57 0.125 64 / 45%);
+
+  --radius: 0.875rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer utilities {
+  /* Shared desktop content container. Every major section (header, hero
+     carousel, about, events, guides, gallery, stats, footer) uses this so
+     their left/right edges line up as the viewport grows, instead of each
+     section picking its own max-width.
+     - Mobile/tablet: full width minus padding, well under the cap, so
+       behavior there is unchanged.
+     - Laptop / 1080p / 1440p desktop: caps at 1440px, giving image-heavy
+       sections real breathing room without excess whitespace.
+     - 1920px+ desktop and 4K/ultrawide: fluidly grows past 1440px up to a
+       1536px ceiling (reached once the viewport is ~2560px wide) via
+       `clamp()`, so there's no fixed width and no sudden jump — it's a
+       continuous function of viewport width, capped at both ends. */
+  .site-container {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 90rem; /* 1440px */
+    padding-inline: 1.25rem;
+  }
+
+  @media (min-width: 1024px) {
+    .site-container {
+      padding-inline: 2.5rem;
+    }
+  }
+
+  @media (min-width: 1920px) {
+    .site-container {
+      /* Linear ramp from 1440px at a 1920px viewport to 1536px at a
+         2560px viewport, then held at 1536px beyond that. */
+      max-width: clamp(90rem, 15vw + 72rem, 96rem);
+      padding-inline: 3rem;
+    }
+  }
+
+  /* barely-there grid, keeps a hint of technical texture on white */
+  .hud-grid {
+    background-image: linear-gradient(
+        to right,
+        oklch(0.21 0.008 60 / 0.022) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        oklch(0.21 0.008 60 / 0.022) 1px,
+        transparent 1px
+      );
+    background-size: 140px 140px;
+  }
+
+  /* Warm ember wash suggesting Pyro system volatility — layered behind
+     hud-grid on Pyro-specific tool pages (e.g. Executive Hangar). Kept very
+     low-alpha so it reads as atmosphere, not decoration, on the site's
+     clean light canvas. */
+  .pyro-atmosphere {
+    background-image: radial-gradient(
+        ellipse 50% 55% at 92% -5%,
+        oklch(0.6 0.185 40 / 0.07),
+        transparent 72%
+      ),
+      radial-gradient(
+        ellipse 40% 45% at 2% 105%,
+        oklch(0.57 0.125 64 / 0.05),
+        transparent 70%
+      );
+  }
+
+  .hud-scanline {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      oklch(0.21 0.008 60 / 0.022) 0px,
+      oklch(0.21 0.008 60 / 0.022) 1px,
+      transparent 1px,
+      transparent 5px
+    );
+  }
+
+  /* frosted white, like Apple's translucent chrome */
+  .glass {
+    background: oklch(1 0 0 / 0.72);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* soft rounded panels replace the old sci-fi clipped corners */
+  .corner-cut {
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .pill {
+    border-radius: 999px;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 900ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
+  /* Infinite horizontal sponsor credits ticker. The track renders its
+     children twice back-to-back and animates exactly halfway across itself,
+     so the loop is seamless. */
+  .ticker-viewport {
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 6%,
+      black 94%,
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 6%,
+      black 94%,
+      transparent
+    );
+  }
+
+  .ticker-track {
+    animation: ticker-scroll linear infinite;
+  }
+
+  .ticker-viewport:hover .ticker-track,
+  .ticker-viewport:focus-within .ticker-track {
+    animation-play-state: paused;
+  }
+
+  @keyframes ticker-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-viewport {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .ticker-track {
+      animation: none;
+    }
+  }
+
+  html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+body {
+  overflow-x: clip;
+}
+
+}
+/* Large desktop readability adjustment */
+@media (min-width: 2048px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+@keyframes gallery-film-left {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes gallery-film-right {
+  from {
+    transform: translateX(-50%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.gallery-film-track {
+  display: flex;
+  width: max-content;
+  gap: 8px;
+
+  animation-name: gallery-film-left;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+
+  will-change: transform;
+}
+
+.gallery-film-track-reverse {
+  animation-name: gallery-film-right;
+}
+
+.gallery-film-frame {
+  flex: none;
+  width: 300px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 0;
+  background:
+    rgba(0, 0, 0, 0.04);
+}
+
+.gallery-film-frame img {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-width: 1024px) {
+  .gallery-film-frame {
+    width: 260px;
+  }
+}
+
+@media (max-width: 640px) {
+  .gallery-film-track {
+    gap: 6px;
+  }
+
+  .gallery-film-frame {
+    width: 210px;
+    border-radius: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-film-track {
+    animation: none;
+  }
+}

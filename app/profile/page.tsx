@@ -1,0 +1,2042 @@
+'use client'
+
+import { DISCORD_ROLE_IDENTITIES } from '@/lib/discord-identities'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
+import type { User } from '@supabase/supabase-js'
+import { formatTimezone } from '@/lib/timezones'
+import {
+  Bookmark,
+  Check,
+  CircleCheck,
+  FileText,
+  Heart,
+  ImageIcon,
+  MessageCircle,
+  Pencil,
+  ShieldCheck,
+  Ship,
+  Users,
+  Clock3,
+} from 'lucide-react'
+
+import { ProfileGuestbook } from '@/components/profile-guestbook'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
+
+type Profile = {
+  id: string
+  discord_id: string | null
+  username: string | null
+  display_name: string | null
+  avatar_url: string | null
+  star_citizen_handle: string | null
+
+  rsi_verified: boolean
+  rsi_verified_at: string | null
+  rsi_verification_code: string | null
+  rsi_verification_expires_at: string | null
+  rsi_verification_handle: string | null
+
+  timezone: string | null
+  bio: string | null
+  cover_url: string | null
+
+  member_number: number | null
+  profile_slug: string | null
+}
+
+type ProfileVisitor = {
+  id: string
+  username: string | null
+  profileSlug: string | null
+  memberNumber: number | null
+  displayName: string | null
+  starCitizenHandle: string | null
+  avatarUrl: string | null
+  visitedAt: string
+}
+
+type ProfilePost = {
+  id: string
+  content: string
+  created_at: string
+  updated_at: string
+  author_id: string
+  like_count: number
+  liked_by_me: boolean
+}
+
+export default function ProfilePage() {
+  const router = useRouter()
+
+  const [user, setUser] =
+    useState<User | null>(null)
+
+  const [
+      accessToken,
+      setAccessToken,
+    ] = useState<string | null>(null)
+
+  const [profile, setProfile] =
+    useState<Profile | null>(null)
+
+  const [loading, setLoading] =
+    useState(true)
+
+  const [rsiBinding, setRsiBinding] =
+    useState(false)
+
+  const [rsiHandleInput, setRsiHandleInput] =
+    useState('')
+
+  const [
+    rsiVerificationCode,
+    setRsiVerificationCode,
+  ] = useState('')
+
+  const [
+    rsiVerificationExpiresAt,
+    setRsiVerificationExpiresAt,
+  ] = useState('')
+
+  const [rsiVerifying, setRsiVerifying] =
+    useState(false)
+
+  const [rsiStarting, setRsiStarting] =
+    useState(false)
+
+  const [
+    rsiVerificationError,
+    setRsiVerificationError,
+  ] = useState('')
+
+  const [rsiTimeLeft, setRsiTimeLeft] =
+    useState(0)
+
+  const [
+    discordMembership,
+    setDiscordMembership,
+  ] = useState<boolean | null>(null)
+
+  const [
+    orgMembership,
+    setOrgMembership,
+  ] = useState<boolean | null>(null)
+
+  const [discordRoles, setDiscordRoles] =
+    useState<string[]>([])
+
+  const [visitors, setVisitors] =
+    useState<ProfileVisitor[]>([])
+
+  const [
+    coverUploading,
+    setCoverUploading,
+  ] = useState(false)
+
+  const unlockedIdentities =
+    DISCORD_ROLE_IDENTITIES.filter(
+      (identity) =>
+        discordRoles.includes(identity.id)
+    )
+
+  const starClubId =
+    profile?.profile_slug &&
+    profile?.member_number !== null &&
+    profile?.member_number !== undefined
+      ? `${profile.profile_slug}#${String(
+          profile.member_number
+        ).padStart(4, '0')}`
+      : null
+  
+    const [
+    profilePosts,
+    setProfilePosts,
+  ] = useState<ProfilePost[]>([])
+
+  const [
+    profilePostsLoading,
+    setProfilePostsLoading,
+  ] = useState(true)
+
+  useEffect(() => {
+  if (!user?.id) {
+    setProfilePosts([])
+    setProfilePostsLoading(false)
+    return
+  }
+
+  const loadProfilePosts =
+    async () => {
+      try {
+        setProfilePostsLoading(true)
+
+        const response =
+          await fetch(
+            `/api/community/posts?authorId=${encodeURIComponent(
+              user.id,
+            )}`,
+            {
+              method: 'GET',
+              cache: 'no-store',
+            },
+          )
+
+        const data =
+          await response.json()
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+              '读取个人动态失败',
+          )
+        }
+
+        setProfilePosts(
+          Array.isArray(data.posts)
+            ? data.posts
+            : [],
+        )
+      } catch (error) {
+        console.error(
+          'Failed to load profile posts:',
+          error,
+        )
+
+        setProfilePosts([])
+      } finally {
+        setProfilePostsLoading(false)
+      }
+    }
+
+  void loadProfilePosts()
+}, [user?.id])
+
+  useEffect(() => {
+    const supabase =
+      getSupabaseBrowser()
+
+    const loadSession = async () => {
+      const {
+        data: { session },
+      } =
+        await supabase.auth.getSession()
+
+      const currentUser =
+          session?.user ?? null
+
+        setUser(currentUser)
+
+        setAccessToken(
+          session?.access_token ?? null
+        )
+
+      if (currentUser) {
+        const {
+          data: profileData,
+          error,
+        } = await supabase
+          .from('profiles')
+          .select(`
+            id,
+            discord_id,
+            username,
+            display_name,
+            avatar_url,
+            star_citizen_handle,
+            rsi_verified,
+            rsi_verified_at,
+            rsi_verification_handle,
+            rsi_verification_code,
+            rsi_verification_expires_at,
+            timezone,
+            bio,
+            cover_url,
+            member_number,
+            profile_slug
+          `)
+          .eq(
+            'id',
+            currentUser.id
+          )
+          .maybeSingle()
+
+        if (error) {
+          console.error(
+            'Failed to load profile:',
+            error
+          )
+        } else {
+          setProfile(profileData)
+        }
+      }
+
+      setLoading(false)
+    }
+
+    loadSession()
+  }, [])
+
+  useEffect(() => {
+    const supabase =
+      getSupabaseBrowser()
+
+    const {
+      data: { subscription },
+    } =
+      supabase.auth.onAuthStateChange(
+        (event, session) => {
+          if (
+            event === 'SIGNED_OUT' ||
+            !session
+          ) {
+            setUser(null)
+            setAccessToken(null)
+            setProfile(null)
+
+            router.replace('/')
+            router.refresh()
+            return
+          }
+
+          setUser(
+            session.user
+          )
+
+          setAccessToken(
+            session.access_token
+          )
+        }
+      )
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [router])
+
+  useEffect(() => {
+    if (
+      !rsiVerificationExpiresAt
+    ) {
+      setRsiTimeLeft(0)
+      return
+    }
+
+    const updateTimeLeft = () => {
+      const expiresAt =
+        new Date(
+          rsiVerificationExpiresAt
+        ).getTime()
+
+      const remaining =
+        Math.max(
+          0,
+          Math.floor(
+            (
+              expiresAt -
+              Date.now()
+            ) / 1000
+          )
+        )
+
+      setRsiTimeLeft(remaining)
+    }
+
+    updateTimeLeft()
+
+    const timer =
+      window.setInterval(
+        updateTimeLeft,
+        1000
+      )
+
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [rsiVerificationExpiresAt])
+
+useEffect(() => {
+  if (
+    !profile?.rsi_verification_handle ||
+    !profile?.rsi_verification_code ||
+    !profile?.rsi_verification_expires_at ||
+    !accessToken
+  ) {
+    return
+  }
+
+  const expiresAt =
+    new Date(
+      profile.rsi_verification_expires_at
+    ).getTime()
+
+  if (expiresAt <= Date.now()) {
+    const cleanupExpiredVerification =
+      async () => {
+        try {
+          const response =
+            await fetch(
+              '/api/rsi/verification/cancel',
+              {
+                method: 'POST',
+                headers: {
+                  Authorization:
+                    `Bearer ${accessToken}`,
+                },
+              }
+            )
+
+          if (!response.ok) {
+            console.error(
+              'Failed to cleanup expired RSI verification'
+            )
+            return
+          }
+
+          setProfile(
+            (current) =>
+              current
+                ? {
+                    ...current,
+                    rsi_verification_handle:
+                      null,
+                    rsi_verification_code:
+                      null,
+                    rsi_verification_expires_at:
+                      null,
+                  }
+                : current
+          )
+
+          setRsiVerificationCode('')
+          setRsiVerificationExpiresAt('')
+          setRsiTimeLeft(0)
+        } catch (error) {
+          console.error(
+            'Expired RSI verification cleanup error:',
+            error
+          )
+        }
+      }
+
+    cleanupExpiredVerification()
+    return
+  }
+
+  setRsiHandleInput(
+    profile.rsi_verification_handle
+  )
+
+  setRsiVerificationCode(
+    profile.rsi_verification_code
+  )
+
+  setRsiVerificationExpiresAt(
+    profile.rsi_verification_expires_at
+  )
+}, [profile, accessToken])
+
+  useEffect(() => {
+      if (
+          !user ||
+          !accessToken
+        ) {
+          return
+        }
+
+    const checkDiscordMembership =
+      async () => {
+        try {
+
+          const response =
+            await fetch(
+              '/api/discord/membership',
+              {
+                method: 'GET',
+                headers: {
+                  Authorization:
+                    `Bearer ${accessToken}`,
+                },
+              }
+            )
+
+          const data =
+            await response.json()
+
+          if (!response.ok) {
+            console.error(
+              'Discord membership API error:',
+              data
+            )
+
+            setDiscordMembership(
+              false
+            )
+
+            setDiscordRoles([])
+            return
+          }
+
+          setDiscordMembership(
+            data.isMember === true
+          )
+
+          setDiscordRoles(
+            Array.isArray(data.roles)
+              ? data.roles
+              : []
+          )
+        } catch (error) {
+          console.error(
+            'Discord membership check failed:',
+            error
+          )
+
+          setDiscordMembership(false)
+          setDiscordRoles([])
+        }
+      }
+
+    checkDiscordMembership()
+  }, [user, accessToken])
+
+useEffect(() => {
+  if (
+    !user ||
+    !accessToken
+  ) {
+    return
+  }
+
+  const checkOrgMembership =
+    async () => {
+      try {
+        const response =
+          await fetch(
+            '/api/rsi/org-membership',
+            {
+              method: 'GET',
+              headers: {
+                Authorization:
+                  `Bearer ${accessToken}`,
+              },
+            }
+          )
+
+        const data =
+          await response.json()
+
+        if (!response.ok) {
+          console.error(
+            'RSI org membership API error:',
+            data
+          )
+
+          setOrgMembership(false)
+          return
+        }
+
+        setOrgMembership(
+          data.isMember === true
+        )
+      } catch (error) {
+        console.error(
+          'RSI org membership check failed:',
+          error
+        )
+
+        setOrgMembership(false)
+      }
+    }
+
+  checkOrgMembership()
+}, [user, accessToken])
+
+  useEffect(() => {
+    const profileSlug =
+      profile?.profile_slug
+
+    if (!profileSlug) return
+
+    const loadVisitors =
+      async () => {
+        try {
+          const response =
+            await fetch(
+              `/api/profile/${encodeURIComponent(
+                profileSlug
+              )}/visitors`
+            )
+
+          if (!response.ok) {
+            console.error(
+              'Failed to load profile visitors'
+            )
+            return
+          }
+
+          const data =
+            await response.json()
+
+          setVisitors(
+            Array.isArray(
+              data.visitors
+            )
+              ? data.visitors
+              : []
+          )
+        } catch (error) {
+          console.error(
+            'Failed to load profile visitors:',
+            error
+          )
+        }
+      }
+
+    loadVisitors()
+  }, [profile?.profile_slug])
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background">
+        <div className="site-container py-24">
+          <div className="h-128 animate-pulse rounded-3xl bg-muted" />
+        </div>
+      </main>
+    )
+  }
+
+  if (!user) {
+    return (
+      <main className="min-h-screen bg-background">
+        <div className="site-container flex min-h-[70vh] items-center justify-center py-24">
+          <div className="text-center">
+            <p className="font-display text-sm tracking-[0.2em] text-primary">
+              STARCLUB ACCOUNT
+            </p>
+
+            <h1 className="mt-4 text-3xl font-medium">
+              请先登录
+            </h1>
+
+            <p className="mt-3 text-sm text-muted-foreground">
+              登录 StarClub
+              后才能查看个人主页。
+            </p>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  const avatar =
+    profile?.avatar_url ||
+    user.user_metadata?.avatar_url ||
+    user.user_metadata?.picture ||
+    '/placeholder-user.jpg'
+
+  const username =
+    profile?.star_citizen_handle ||
+    profile?.display_name ||
+    profile?.username ||
+    user.user_metadata
+      ?.preferred_username ||
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.email?.split('@')[0] ||
+    'StarClub User'
+
+  const stats = [
+    {
+      label: '作品',
+      value: 0,
+      icon: ImageIcon,
+    },
+    {
+      label: '获赞',
+      value: 0,
+      icon: Heart,
+    },
+    {
+      label: '评论',
+      value: 0,
+      icon: MessageCircle,
+    },
+    {
+      label: '帖子',
+      value: 0,
+      icon: FileText,
+    },
+    {
+      label: '收藏',
+      value: 0,
+      icon: Bookmark,
+    },
+    {
+      label: '舰船',
+      value: 0,
+      icon: Ship,
+    },
+  ]
+
+  const handleStartRsiVerification =
+    async () => {
+      if (rsiStarting) return
+
+      const handle =
+        rsiHandleInput.trim()
+
+      if (!handle) {
+        alert(
+          '请输入你的 Star Citizen Handle'
+        )
+        return
+      }
+
+      setRsiStarting(true)
+
+      try {
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          !session?.access_token
+        ) {
+          alert(
+            '登录状态已失效，请重新登录。'
+          )
+          return
+        }
+
+        const response =
+          await fetch(
+            '/api/rsi/verification/start',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type':
+                  'application/json',
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({
+                handle,
+              }),
+            }
+          )
+
+        const data =
+          await response.json()
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+              '无法创建 RSI 验证请求'
+          )
+        }
+
+        setRsiVerificationCode(
+          data.verificationCode
+        )
+
+        setRsiVerificationExpiresAt(
+          data.expiresAt
+        )
+
+        setRsiVerificationError('')
+      } catch (error) {
+        console.error(
+          'RSI verification start error:',
+          error
+        )
+
+        alert(
+          error instanceof Error
+            ? error.message
+            : '无法创建 RSI 验证请求'
+        )
+      } finally {
+        setRsiStarting(false)
+      }
+    }
+
+  const handleCoverUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file =
+      event.target.files?.[0]
+
+    if (!file || !user) return
+
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+    ]
+
+    if (
+      !allowedTypes.includes(
+        file.type
+      )
+    ) {
+      alert(
+        '封面仅支持 JPG、JPEG 和 PNG 格式。'
+      )
+
+      event.target.value = ''
+      return
+    }
+
+    if (
+      file.size >
+      5 * 1024 * 1024
+    ) {
+      alert(
+        '封面图片不能超过 5MB。'
+      )
+
+      event.target.value = ''
+      return
+    }
+
+    try {
+      const imageDimensions =
+        await new Promise<{
+          width: number
+          height: number
+        }>(
+          (
+            resolve,
+            reject
+          ) => {
+            const image =
+              new window.Image()
+
+            const objectUrl =
+              URL.createObjectURL(
+                file
+              )
+
+            image.onload =
+              () => {
+                const dimensions =
+                  {
+                    width:
+                      image.naturalWidth,
+                    height:
+                      image.naturalHeight,
+                  }
+
+                URL.revokeObjectURL(
+                  objectUrl
+                )
+
+                resolve(
+                  dimensions
+                )
+              }
+
+            image.onerror =
+              () => {
+                URL.revokeObjectURL(
+                  objectUrl
+                )
+
+                reject(
+                  new Error(
+                    '无法读取图片尺寸'
+                  )
+                )
+              }
+
+            image.src =
+              objectUrl
+          }
+        )
+
+      const aspectRatio =
+        imageDimensions.width /
+        imageDimensions.height
+
+      if (
+        aspectRatio < 3 ||
+        aspectRatio > 8
+      ) {
+        alert(
+          `封面图片比例不合适。\n\n推荐比例：6:1\n允许范围：3:1 ～ 8:1\n当前图片：${aspectRatio.toFixed(
+            2
+          )}:1`
+        )
+
+        event.target.value = ''
+        return
+      }
+
+      if (
+        imageDimensions.width <
+        1600
+      ) {
+        alert(
+          '封面图片分辨率过低。\n\n宽度至少需要 1600px，推荐尺寸为 2400 × 400px。'
+        )
+
+        event.target.value = ''
+        return
+      }
+
+      setCoverUploading(true)
+
+      const supabase =
+        getSupabaseBrowser()
+
+      const extension =
+        file.name
+          .split('.')
+          .pop()
+          ?.toLowerCase() ||
+        'jpg'
+
+      const filePath =
+        `${user.id}/cover-${Date.now()}.${extension}`
+
+      const {
+        error: uploadError,
+      } =
+        await supabase.storage
+          .from(
+            'profile-covers'
+          )
+          .upload(
+            filePath,
+            file,
+            {
+              cacheControl:
+                '3600',
+              upsert: false,
+            }
+          )
+
+      if (uploadError) {
+        throw uploadError
+      }
+
+      const {
+        data: { publicUrl },
+      } =
+        supabase.storage
+          .from(
+            'profile-covers'
+          )
+          .getPublicUrl(
+            filePath
+          )
+
+      const {
+        error: updateError,
+      } =
+        await supabase
+          .from('profiles')
+          .update({
+            cover_url:
+              publicUrl,
+            updated_at:
+              new Date().toISOString(),
+          })
+          .eq(
+            'id',
+            user.id
+          )
+
+      if (updateError) {
+        throw updateError
+      }
+
+      setProfile(
+        (current) =>
+          current
+            ? {
+                ...current,
+                cover_url:
+                  publicUrl,
+              }
+            : current
+      )
+    } catch (error) {
+      console.error(
+        'Profile cover upload failed:',
+        error
+      )
+
+      alert(
+        '封面上传失败，请稍后再试。'
+      )
+    } finally {
+      setCoverUploading(false)
+      event.target.value = ''
+    }
+  }
+
+  const handleVerifyRsi =
+    async () => {
+      const handle =
+        rsiHandleInput.trim()
+
+      if (rsiTimeLeft <= 0) {
+        setRsiVerificationError(
+          '验证码已过期，请重新开始验证。'
+        )
+        return
+      }
+
+      if (
+        !handle ||
+        !rsiVerificationCode
+      ) {
+        alert(
+          '当前没有有效的 RSI 验证请求。'
+        )
+        return
+      }
+
+      try {
+        setRsiVerifying(true)
+        setRsiVerificationError(
+          ''
+        )
+
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          !session?.access_token
+        ) {
+          alert(
+            '登录状态已失效，请重新登录。'
+          )
+          return
+        }
+
+        const response =
+          await fetch(
+            '/api/rsi/verification/verify',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type':
+                  'application/json',
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({
+                handle,
+              }),
+            }
+          )
+
+        const data =
+          await response.json()
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+              'RSI 验证失败'
+          )
+        }
+
+        setProfile(
+          (current) =>
+            current
+              ? {
+                  ...current,
+                  star_citizen_handle:
+                    data.handle,
+                  rsi_verified:
+                    true,
+                  rsi_verified_at:
+                    data.verifiedAt,
+                  rsi_verification_handle:
+                    null,
+                  rsi_verification_code:
+                    null,
+                  rsi_verification_expires_at:
+                    null,
+                }
+              : current
+        )
+
+        setRsiVerificationCode(
+          ''
+        )
+
+        setRsiVerificationExpiresAt(
+          ''
+        )
+
+        setRsiBinding(false)
+
+        alert(
+          `RSI Handle ${data.handle} 验证成功！`
+        )
+      } catch (error) {
+        console.error(
+          'RSI verification error:',
+          error
+        )
+
+        setRsiVerificationError(
+          error instanceof Error
+            ? error.message
+            : 'RSI 验证失败，请稍后再试。'
+        )
+      } finally {
+        setRsiVerifying(false)
+      }
+    }
+
+  const handleCancelRsiVerification =
+    async () => {
+      try {
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          session?.access_token &&
+          rsiVerificationCode
+        ) {
+          const response =
+            await fetch(
+              '/api/rsi/verification/cancel',
+              {
+                method: 'POST',
+                headers: {
+                  Authorization:
+                    `Bearer ${session.access_token}`,
+                },
+              }
+            )
+
+          const data =
+            await response.json()
+
+          if (!response.ok) {
+            throw new Error(
+              data.error ||
+                '取消 RSI 验证失败'
+            )
+          }
+        }
+
+        setRsiVerificationCode(
+          ''
+        )
+
+        setRsiVerificationExpiresAt(
+          ''
+        )
+
+        setRsiHandleInput('')
+        setRsiVerificationError(
+          ''
+        )
+
+        setRsiBinding(false)
+      } catch (error) {
+        console.error(
+          'RSI verification cancel error:',
+          error
+        )
+
+        alert(
+          error instanceof Error
+            ? error.message
+            : '取消 RSI 验证失败，请稍后再试。'
+        )
+      }
+    }
+
+  const handleResetRsiVerification =
+    async () => {
+      try {
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          session?.access_token &&
+          rsiVerificationCode
+        ) {
+          const response =
+            await fetch(
+              '/api/rsi/verification/cancel',
+              {
+                method: 'POST',
+                headers: {
+                  Authorization:
+                    `Bearer ${session.access_token}`,
+                },
+              }
+            )
+
+          const data =
+            await response.json()
+
+          if (!response.ok) {
+            throw new Error(
+              data.error ||
+                '重置 RSI 验证失败'
+            )
+          }
+        }
+
+        setRsiVerificationCode(
+          ''
+        )
+
+        setRsiVerificationExpiresAt(
+          ''
+        )
+
+        setRsiHandleInput('')
+        setRsiVerificationError(
+          ''
+        )
+      } catch (error) {
+        console.error(
+          'RSI verification reset error:',
+          error
+        )
+
+        alert(
+          error instanceof Error
+            ? error.message
+            : '重置 RSI 验证失败，请稍后再试。'
+        )
+      }
+    }
+
+  return (
+    <main className="min-h-screen bg-[#f7f7f5] pb-24">
+      <div className="site-container pt-20 lg:pt-24">
+
+        {/* Profile hero */}
+        <section className="overflow-hidden rounded-3xl border border-border bg-white shadow-[0_10px_35px_rgba(0,0,0,0.05)]">
+
+          {/* Banner */}
+          <div className="relative h-44 overflow-hidden bg-[#ece8e1] lg:h-56">
+            {profile?.cover_url ? (
+              <Image
+                src={
+                  profile.cover_url
+                }
+                alt={`${username} 封面`}
+                fill
+                sizes="100vw"
+                className="object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-linear-to-r from-[#f4eee5] via-[#ebe5db] to-[#ded7ca]" />
+            )}
+
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-black/10 to-transparent" />
+
+            <div className="absolute right-5 top-5 flex items-center gap-2">
+              {profile?.profile_slug && (
+                <Link
+                  href={`/profile/${encodeURIComponent(
+                    profile.profile_slug
+                  )}`}
+                  className="rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-medium text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-white"
+                >
+                  访客视角
+                </Link>
+              )}
+
+              <label
+                className={`rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-medium text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-white ${
+                  coverUploading
+                    ? 'cursor-wait opacity-60'
+                    : 'cursor-pointer'
+                }`}
+              >
+                {coverUploading
+                  ? '上传中...'
+                  : '更换封面'}
+
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  onChange={
+                    handleCoverUpload
+                  }
+                  disabled={
+                    coverUploading
+                  }
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Main profile */}
+          <div className="relative px-6 pb-7 lg:px-9 lg:pb-9">
+            <div className="flex min-w-0 gap-5 lg:gap-7">
+
+              {/* Avatar */}
+              <div className="-mt-14 shrink-0 lg:-mt-16">
+                <div className="relative size-28 overflow-hidden rounded-3xl border-[5px] border-white bg-muted shadow-lg lg:size-32">
+                  <Image
+                    src={avatar}
+                    alt={`${username} 头像`}
+                    fill
+                    sizes="128px"
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+
+              {/* Information */}
+              <div className="min-w-0 flex-1 pt-5 lg:pt-6">
+
+                {/* Name row */}
+                <div className="flex items-start justify-between gap-5">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+
+                      <h1 className="truncate pb-1 text-3xl font-semibold leading-[1.2] tracking-tight">
+                        {username}
+                      </h1>
+
+                      {profile?.rsi_verified &&
+                        profile?.star_citizen_handle && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRsiVerificationError(
+                                ''
+                              )
+                              setRsiBinding(
+                                true
+                              )
+                            }}
+                            title="RSI Handle 已认证 · 点击管理"
+                            className="group relative mb-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[#b87300] text-white shadow-[0_2px_7px_rgba(184,115,0,0.28)] transition-all hover:scale-105 hover:bg-[#a66700]"
+                          >
+                            <Check
+                              className="size-3.5"
+                              strokeWidth={
+                                2.7
+                              }
+                            />
+
+                            <span className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 w-max max-w-56 -translate-x-1/2 translate-y-1 rounded-xl border border-black/5 bg-neutral-950 px-3 py-2 text-left text-[11px] font-normal leading-5 text-white opacity-0 shadow-xl transition-all group-hover:translate-y-0 group-hover:opacity-100">
+                              RSI Handle
+                              已认证
+                              <span className="block text-white/60">
+                                {
+                                  profile.star_citizen_handle
+                                }
+                              </span>
+                            </span>
+                          </button>
+                        )}
+
+                      {starClubId && (
+                        <span className="mb-1 text-sm text-muted-foreground">
+                          @{starClubId}
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="mt-2.5 text-sm leading-6 text-muted-foreground">
+                      {profile?.bio ||
+                        '探索宇宙，记录传奇，连接同好。'}
+                    </p>
+                  </div>
+
+                  {/* Edit profile */}
+                  <Link
+                    href="/profile/settings"
+                    className="mt-0.5 hidden shrink-0 items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-xs font-medium text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all hover:border-black/15 hover:bg-neutral-50 lg:inline-flex"
+                  >
+                    <Pencil
+                      className="size-3.5"
+                      strokeWidth={1.7}
+                    />
+                    编辑个人资料
+                  </Link>
+                </div>
+
+                {/* Mobile edit */}
+                <Link
+                  href="/profile/settings"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-xs font-medium text-foreground lg:hidden"
+                >
+                  <Pencil className="size-3.5" />
+                  编辑个人资料
+                </Link>
+
+                {/* Trust / identity status */}
+                <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
+
+                  <div
+                    className={`inline-flex items-center gap-2 text-xs ${
+                      user
+                        ? 'text-foreground/75'
+                        : 'text-muted-foreground'
+                    }`}
+                  >
+                    <CircleCheck
+                      className={`size-4 ${
+                        user
+                          ? 'text-[#a66700]'
+                          : 'text-neutral-300'
+                      }`}
+                      strokeWidth={
+                        1.8
+                      }
+                    />
+
+                    <span>
+                      Discord
+                    </span>
+                  </div>
+
+                  <div
+                    className={`inline-flex items-center gap-2 text-xs ${
+                      discordMembership ===
+                      true
+                        ? 'text-foreground/75'
+                        : 'text-muted-foreground'
+                    }`}
+                  >
+                    <Users
+                      className={`size-4 ${
+                        discordMembership ===
+                        true
+                          ? 'text-[#a66700]'
+                          : 'text-neutral-300'
+                      }`}
+                      strokeWidth={
+                        1.8
+                      }
+                    />
+
+                    <span>
+                      酒馆社区
+                    </span>
+
+                    {discordMembership ===
+                      true && (
+                      <Check
+                        className="size-3 text-[#a66700]"
+                        strokeWidth={
+                          2.3
+                        }
+                      />
+                    )}
+                  </div>
+
+                  <div
+                    className={`inline-flex items-center gap-2 text-xs ${
+                      orgMembership ===
+                      true
+                        ? 'text-foreground/75'
+                        : 'text-muted-foreground'
+                    }`}
+                  >
+                    <ShieldCheck
+                      className={`size-4 ${
+                        orgMembership ===
+                        true
+                          ? 'text-[#a66700]'
+                          : 'text-neutral-300'
+                      }`}
+                      strokeWidth={
+                        1.8
+                      }
+                    />
+
+                    <span>
+                      STARCLUB ORG
+                    </span>
+
+                    {orgMembership ===
+                      true && (
+                      <Check
+                        className="size-3 text-[#a66700]"
+                        strokeWidth={
+                          2.3
+                        }
+                      />
+                    )}
+                  </div>
+
+                  {!profile?.rsi_verified && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRsiHandleInput(
+                          ''
+                        )
+                        setRsiVerificationCode(
+                          ''
+                        )
+                        setRsiBinding(
+                          true
+                        )
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs text-primary transition-opacity hover:opacity-70"
+                    >
+                      RSI Handle
+                      未认证
+                      <span>→</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Timezone */}
+                <div className="mt-4 flex items-center text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock3
+                      className="size-3.5"
+                      strokeWidth={1.6}
+                    />
+
+                    {formatTimezone(profile?.timezone)}
+                  </span>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Stats */}
+        <section className="mt-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-white shadow-[0_8px_24px_rgba(0,0,0,0.03)] sm:grid-cols-3 lg:grid-cols-6">
+          {stats.map((stat) => {
+            const Icon = stat.icon
+
+            return (
+              <div
+                key={stat.label}
+                className="flex items-center gap-3 border-b border-r border-border px-5 py-5 last:border-r-0 sm:last:border-b-0 lg:border-b-0"
+              >
+                <div className="flex size-8 shrink-0 items-center justify-center">
+                  <Icon
+                    className="size-4 text-[#a66700]"
+                    strokeWidth={1.6}
+                  />
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    {stat.label}
+                  </p>
+
+                  <p className="mt-0.5 text-xl font-medium">
+                    {stat.value}
+                  </p>
+                </div>
+              </div>
+            )
+          })}
+        </section>
+
+        {/* Lower content */}
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+
+          {/* Main column */}
+          <div className="flex flex-col gap-6">
+
+            <section className="overflow-hidden rounded-2xl border border-border bg-white">
+              <div className="flex items-center gap-8 border-b border-border px-6">
+                {[
+                  '动态',
+                  '帖子',
+                  '评论',
+                  '点赞',
+                  '收藏',
+                ].map(
+                  (
+                    tab,
+                    i
+                  ) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      className={`border-b-2 py-5 text-sm transition-colors ${
+                        i === 0
+                          ? 'border-primary text-foreground'
+                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  )
+                )}
+              </div>
+
+                {profilePostsLoading ? (
+                  <div className="flex min-h-96 items-center justify-center px-6 py-16">
+                    <p className="text-sm text-muted-foreground">
+                      正在加载动态...
+                    </p>
+                  </div>
+                ) : profilePosts.length > 0 ? (
+                  <div className="divide-y divide-border">
+                    {profilePosts.map(
+                      (post) => (
+                        <article
+                          key={post.id}
+                          className="px-6 py-6"
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-xs text-muted-foreground">
+                              发布了动态
+                            </span>
+
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(
+                                post.created_at,
+                              ).toLocaleString(
+                                'zh-CN',
+                                {
+                                  month: 'numeric',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                },
+                              )}
+                            </span>
+                          </div>
+
+                          <p className="mt-3 whitespace-pre-wrap wrap-break-word text-[15px] leading-7 text-foreground/85">
+                            {post.content}
+                          </p>
+
+                          <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>
+                              ♥ {post.like_count ?? 0}
+                            </span>
+                          </div>
+                        </article>
+                      ),
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex min-h-96 items-center justify-center px-6 py-16">
+                    <div className="text-center">
+                      <p className="text-base font-medium">
+                        还没有动态
+                      </p>
+
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        你在社区发布的动态会显示在这里。
+                      </p>
+                    </div>
+                  </div>
+                )}
+            </section>
+
+            {profile?.profile_slug && (
+              <ProfileGuestbook
+                profileSlug={
+                  profile.profile_slug
+                }
+                isOwner
+              />
+            )}
+          </div>
+
+          {/* Right column */}
+          <aside className="flex flex-col gap-5">
+
+            <section className="rounded-2xl border border-border bg-white p-5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-medium">
+                  酒馆身份
+                </h2>
+
+                <Link
+                  href="/profile/identities"
+                  className="text-xs text-primary transition-opacity hover:opacity-70"
+                >
+                  查看全部 →
+                </Link>
+              </div>
+
+              {unlockedIdentities.length >
+              0 ? (
+                <div className="mt-5 grid grid-cols-3 gap-3">
+                  {unlockedIdentities.map(
+                    (
+                      identity
+                    ) => (
+                      <div
+                        key={
+                          identity.id
+                        }
+                        className="flex min-w-0 flex-col items-center text-center"
+                      >
+                        <div className="flex h-16 w-full items-center justify-center">
+                          <img
+                            src={
+                              identity.logo
+                            }
+                            alt={
+                              identity.name
+                            }
+                            className="
+                              max-h-14 max-w-14 object-contain
+                              drop-shadow-[0_2px_2px_rgba(0,0,0,0.20)]
+                              transition-all duration-200
+                              hover:-translate-y-1
+                              hover:scale-105
+                              hover:drop-shadow-[0_5px_5px_rgba(0,0,0,0.24)]
+                            "
+                          />
+                        </div>
+
+                        <p className="mt-1 max-w-23 text-[11px] font-medium leading-[1.3] text-foreground">
+                          {
+                            identity.name
+                          }
+                        </p>
+                      </div>
+                    )
+                  )}
+                </div>
+              ) : (
+                <div className="mt-5 flex min-h-24 items-center justify-center rounded-xl border border-dashed border-border">
+                  <p className="text-xs text-muted-foreground">
+                    暂无酒馆特殊身份
+                  </p>
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-2xl border border-border bg-white p-5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-medium">
+                  最近访客
+                </h2>
+
+                <span className="text-xs text-muted-foreground">
+                  {visitors.length}
+                </span>
+              </div>
+
+              {visitors.length >
+              0 ? (
+                <div className="mt-5 space-y-4">
+                  {visitors.map(
+                    (
+                      visitor
+                    ) => {
+                      const visitorId =
+                        visitor.profileSlug &&
+                        visitor.memberNumber !==
+                          null &&
+                        visitor.memberNumber !==
+                          undefined
+                          ? `${visitor.profileSlug}#${String(
+                              visitor.memberNumber
+                            ).padStart(
+                              4,
+                              '0'
+                            )}`
+                          : null
+
+                      return (
+                        <Link
+                          key={
+                            visitor.id
+                          }
+                          href={
+                            visitor.profileSlug
+                              ? `/profile/${encodeURIComponent(
+                                  visitor.profileSlug
+                                )}`
+                              : '#'
+                          }
+                          className="group flex items-center gap-3"
+                        >
+                          {visitor.avatarUrl ? (
+                            <img
+                              src={
+                                visitor.avatarUrl
+                              }
+                              alt={
+                                visitor.starCitizenHandle ||
+                                visitor.displayName ||
+                                visitor.profileSlug ||
+                                '访客'
+                              }
+                              className="size-9 shrink-0 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="size-9 shrink-0 rounded-full bg-neutral-100" />
+                          )}
+
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium transition-colors group-hover:text-[#a66700]">
+                              {visitor.starCitizenHandle ||
+                                visitor.displayName ||
+                                visitor.profileSlug ||
+                                'StarClub 用户'}
+                            </p>
+
+                            {visitorId && (
+                              <p className="truncate text-[11px] text-muted-foreground">
+                                @
+                                {
+                                  visitorId
+                                }
+                              </p>
+                            )}
+                          </div>
+
+                          <span className="shrink-0 text-[10px] text-muted-foreground">
+                            {new Date(
+                              visitor.visitedAt
+                            ).toLocaleDateString(
+                              'zh-CN',
+                              {
+                                month:
+                                  'numeric',
+                                day:
+                                  'numeric',
+                              }
+                            )}
+                          </span>
+                        </Link>
+                      )
+                    }
+                  )}
+                </div>
+              ) : (
+                <div className="mt-5 flex min-h-24 items-center justify-center rounded-xl border border-dashed border-border">
+                  <p className="text-xs text-muted-foreground">
+                    暂无访客记录
+                  </p>
+                </div>
+              )}
+            </section>
+          </aside>
+        </div>
+      </div>
+
+      {/* RSI verification modal */}
+      {rsiBinding && (
+        <div className="fixed inset-0 z-130 flex items-center justify-center bg-black/25 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-border bg-white p-6 shadow-2xl">
+
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-display text-[0.65rem] tracking-[0.22em] text-primary">
+                  RSI VERIFICATION
+                </p>
+
+                <h2 className="mt-2 text-2xl font-semibold">
+                  绑定 Star Citizen
+                  Handle
+                </h2>
+
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  通过 RSI
+                  公开个人主页验证该
+                  Handle 确实属于你。
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  handleCancelRsiVerification
+                }
+                className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-sm text-muted-foreground transition-colors hover:bg-muted"
+                aria-label="关闭"
+              >
+                ×
+              </button>
+            </div>
+
+            {!rsiVerificationCode ? (
+              <>
+                <label className="mt-6 block">
+                  <span className="text-sm font-medium">
+                    Star Citizen Handle
+                  </span>
+
+                  <input
+                    value={
+                      rsiHandleInput
+                    }
+                    onChange={(e) =>
+                      setRsiHandleInput(
+                        e.target.value
+                      )
+                    }
+                    placeholder="例如 GuMieHaoRen"
+                    autoComplete="off"
+                    className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary"
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={
+                    handleStartRsiVerification
+                  }
+                  disabled={
+                    rsiStarting
+                  }
+                  className="mt-6 w-full rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {rsiStarting
+                    ? '正在创建验证...'
+                    : '开始验证'}
+                </button>
+              </>
+            ) : (
+              <div className="mt-6">
+
+                <div className="rounded-2xl border border-border bg-muted/40 p-5">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    你正在验证
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold">
+                    {rsiHandleInput.trim()}
+                  </p>
+                </div>
+
+                <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
+                  请将下面这段验证码临时添加到你的
+                  RSI Profile Bio 中：
+                </p>
+
+                <div className="mt-3 select-all rounded-2xl border border-primary/20 bg-primary/5 px-5 py-4 text-center font-mono text-lg font-semibold tracking-wider text-primary">
+                  {
+                    rsiVerificationCode
+                  }
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-border p-4 text-sm leading-7 text-muted-foreground">
+                  <p>
+                    添加并保存 Bio
+                    后，回到这里进行验证。验证成功后即可删除
+                    Bio 中的验证码。
+                  </p>
+
+                  <p className="mt-2 font-medium text-foreground">
+                    {rsiTimeLeft >
+                    0 ? (
+                      <>
+                        验证码剩余有效时间：
+                        {String(
+                          Math.floor(
+                            rsiTimeLeft /
+                              60
+                          )
+                        ).padStart(
+                          2,
+                          '0'
+                        )}
+                        :
+                        {String(
+                          rsiTimeLeft %
+                            60
+                        ).padStart(
+                          2,
+                          '0'
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        验证码已过期
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                {rsiVerificationError && (
+                  <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700">
+                    {
+                      rsiVerificationError
+                    }
+
+                    <p className="mt-1 text-xs text-red-600/80">
+                      验证失败不会使验证码失效。请确认
+                      RSI Bio
+                      已保存，稍等片刻后可以再次验证。
+                    </p>
+                  </div>
+                )}
+
+                {rsiTimeLeft >
+                0 ? (
+                  <button
+                    type="button"
+                    onClick={
+                      handleVerifyRsi
+                    }
+                    disabled={
+                      rsiVerifying
+                    }
+                    className="mt-6 w-full rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {rsiVerifying
+                      ? '正在验证...'
+                      : '我已添加，开始验证'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={
+                      handleResetRsiVerification
+                    }
+                    className="mt-6 w-full rounded-xl border border-border bg-muted px-5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
+                  >
+                    验证码已过期 ·
+                    重新开始
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={
+                    handleResetRsiVerification
+                  }
+                  className="mt-3 w-full rounded-xl px-5 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  ← 修改 Handle
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </main>
+  )
+}
