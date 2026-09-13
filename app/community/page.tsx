@@ -166,6 +166,42 @@ function formatPostTime(
   )
 }
 
+function getNotificationActor(
+  notification: CommunityNotification,
+): NotificationActor | null {
+  if (!notification.actor) {
+    return null
+  }
+
+  return Array.isArray(
+    notification.actor,
+  )
+    ? notification.actor[0] ??
+        null
+    : notification.actor
+}
+
+function getNotificationText(
+  type: CommunityNotification['type'],
+) {
+  switch (type) {
+    case 'post_like':
+      return '赞了你的动态'
+
+    case 'post_comment':
+      return '评论了你的动态'
+
+    case 'comment_like':
+      return '赞了你的评论'
+
+    case 'comment_reply':
+      return '回复了你的评论'
+
+    default:
+      return '与你进行了互动'
+  }
+}
+
 export default function CommunityPage() {
   const [
     feedMode,
@@ -935,6 +971,76 @@ const [
     [],
   )
 
+  const loadNotificationCounts =
+  useCallback(
+    async () => {
+      try {
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          !session?.access_token
+        ) {
+          setUnseenNotificationCount(
+            0,
+          )
+
+          setUnreadNotificationCount(
+            0,
+          )
+
+          return
+        }
+
+        const response =
+          await fetch(
+            '/api/community/notifications',
+            {
+              cache:
+                'no-store',
+
+              headers: {
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+            },
+          )
+
+        if (!response.ok) {
+          return
+        }
+
+        const data =
+          await response.json()
+
+        setUnseenNotificationCount(
+          typeof data.unseenCount ===
+            'number'
+            ? data.unseenCount
+            : 0,
+        )
+
+        setUnreadNotificationCount(
+          typeof data.unreadCount ===
+            'number'
+            ? data.unreadCount
+            : 0,
+        )
+      } catch (error) {
+        console.error(
+          'Failed to load notification counts:',
+          error,
+        )
+      }
+    },
+    [],
+  )
+
   const markNotificationsSeen =
   useCallback(
     async () => {
@@ -996,6 +1102,198 @@ const [
     },
     [],
   )
+
+  const markAllNotificationsRead =
+  async () => {
+    try {
+      const supabase =
+        getSupabaseBrowser()
+
+      const {
+        data: { session },
+      } =
+        await supabase.auth.getSession()
+
+      if (
+        !session?.access_token
+      ) {
+        return
+      }
+
+      const response =
+        await fetch(
+          '/api/community/notifications',
+          {
+            method: 'PATCH',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+
+            body:
+              JSON.stringify({
+                action:
+                  'read-all',
+              }),
+          },
+        )
+
+      if (!response.ok) {
+        const data =
+          await response.json()
+
+        throw new Error(
+          data.error ||
+            '全部标为已读失败',
+        )
+      }
+
+      const now =
+        new Date().toISOString()
+
+      setNotifications(
+        (
+          currentNotifications,
+        ) =>
+          currentNotifications.map(
+            (
+              notification,
+            ) => ({
+              ...notification,
+
+              seen_at:
+                notification.seen_at ??
+                now,
+
+              read_at:
+                notification.read_at ??
+                now,
+            }),
+          ),
+      )
+
+      setUnseenNotificationCount(
+        0,
+      )
+
+      setUnreadNotificationCount(
+        0,
+      )
+    } catch (error) {
+      console.error(
+        'Failed to mark all notifications read:',
+        error,
+      )
+
+      setError(
+        '全部标为已读失败',
+      )
+    }
+  }
+
+  const markNotificationRead =
+  async (
+    notificationId: string,
+  ) => {
+    const notification =
+      notifications.find(
+        (item) =>
+          item.id ===
+          notificationId,
+      )
+
+    if (
+      !notification ||
+      notification.read_at
+    ) {
+      return
+    }
+
+    try {
+      const supabase =
+        getSupabaseBrowser()
+
+      const {
+        data: { session },
+      } =
+        await supabase.auth.getSession()
+
+      if (
+        !session?.access_token
+      ) {
+        return
+      }
+
+      const response =
+        await fetch(
+          '/api/community/notifications',
+          {
+            method: 'PATCH',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+
+            body:
+              JSON.stringify({
+                action:
+                  'read',
+
+                notificationId,
+              }),
+          },
+        )
+
+      if (!response.ok) {
+        return
+      }
+
+      const now =
+        new Date().toISOString()
+
+      setNotifications(
+        (
+          currentNotifications,
+        ) =>
+          currentNotifications.map(
+            (item) =>
+              item.id ===
+              notificationId
+                ? {
+                    ...item,
+
+                    seen_at:
+                      item.seen_at ??
+                      now,
+
+                    read_at: now,
+                  }
+                : item,
+          ),
+      )
+
+      setUnreadNotificationCount(
+        (current) =>
+          Math.max(
+            0,
+            current - 1,
+          ),
+      )
+    } catch (error) {
+      console.error(
+        'Failed to mark notification read:',
+        error,
+      )
+    }
+  }
 
   const loadMorePosts =
     async () => {
@@ -1217,6 +1515,25 @@ const [
   useEffect(() => {
     void loadNews()
   }, [loadNews])
+
+  useEffect(() => {
+  if (!loggedIn) {
+    setUnseenNotificationCount(
+      0,
+    )
+
+    setUnreadNotificationCount(
+      0,
+    )
+
+    return
+  }
+
+  void loadNotificationCounts()
+}, [
+  loggedIn,
+  loadNotificationCounts,
+])
 
   useEffect(() => {
   if (
@@ -2037,8 +2354,302 @@ const pageDescription =
                             : '正在加载社区动态...'}
                     </p>
                   </div>
-                ) : feedMode ===
-                  'comments' ? (
+                  ) : feedMode ===
+                    'notifications' ? (
+                    <div className="space-y-4">
+
+                      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.025)] sm:flex-row sm:items-center sm:justify-between">
+
+                        <div className="flex items-center gap-1 rounded-full bg-neutral-100 p-1">
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNotificationFilter(
+                                'all',
+                              )
+                            }}
+                            className={
+                              notificationFilter ===
+                              'all'
+                                ? 'rounded-full bg-white px-4 py-2 text-xs font-semibold text-foreground shadow-sm'
+                                : 'rounded-full px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
+                            }
+                          >
+                            全部
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNotificationFilter(
+                                'replies',
+                              )
+                            }}
+                            className={
+                              notificationFilter ===
+                              'replies'
+                                ? 'rounded-full bg-white px-4 py-2 text-xs font-semibold text-foreground shadow-sm'
+                                : 'rounded-full px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
+                            }
+                          >
+                            评论与回复
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNotificationFilter(
+                                'likes',
+                              )
+                            }}
+                            className={
+                              notificationFilter ===
+                              'likes'
+                                ? 'rounded-full bg-white px-4 py-2 text-xs font-semibold text-foreground shadow-sm'
+                                : 'rounded-full px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
+                            }
+                          >
+                            点赞
+                          </button>
+
+                        </div>
+
+                        {unreadNotificationCount >
+                          0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void markAllNotificationsRead()
+                            }}
+                            className="inline-flex items-center gap-1.5 self-start text-xs font-medium text-muted-foreground transition-colors hover:text-foreground sm:self-auto"
+                          >
+                            <CheckCheck
+                              className="size-4"
+                              strokeWidth={1.7}
+                            />
+
+                            全部标为已读
+                          </button>
+                        )}
+
+                      </div>
+
+
+                      {notifications.filter(
+                        (notification) => {
+                          if (
+                            notificationFilter ===
+                            'replies'
+                          ) {
+                            return (
+                              notification.type ===
+                                'post_comment' ||
+                              notification.type ===
+                                'comment_reply'
+                            )
+                          }
+
+                          if (
+                            notificationFilter ===
+                            'likes'
+                          ) {
+                            return (
+                              notification.type ===
+                                'post_like' ||
+                              notification.type ===
+                                'comment_like'
+                            )
+                          }
+
+                          return true
+                        },
+                      ).length > 0 ? (
+
+                        <div className="overflow-hidden rounded-2xl border border-border bg-white">
+
+                          {notifications
+                            .filter(
+                              (
+                                notification,
+                              ) => {
+                                if (
+                                  notificationFilter ===
+                                  'replies'
+                                ) {
+                                  return (
+                                    notification.type ===
+                                      'post_comment' ||
+                                    notification.type ===
+                                      'comment_reply'
+                                  )
+                                }
+
+                                if (
+                                  notificationFilter ===
+                                  'likes'
+                                ) {
+                                  return (
+                                    notification.type ===
+                                      'post_like' ||
+                                    notification.type ===
+                                      'comment_like'
+                                  )
+                                }
+
+                                return true
+                              },
+                            )
+                            .map(
+                              (
+                                notification,
+                              ) => {
+                                const actor =
+                                  getNotificationActor(
+                                    notification,
+                                  )
+
+                                const displayName =
+                                  actor
+                                    ?.star_citizen_handle ||
+                                  actor
+                                    ?.display_name ||
+                                  actor?.username ||
+                                  actor
+                                    ?.profile_slug ||
+                                  'StarClub 用户'
+
+                                const unread =
+                                  !notification.read_at
+
+                                return (
+                                  <button
+                                    key={
+                                      notification.id
+                                    }
+                                    type="button"
+                                    onClick={() => {
+                                      void markNotificationRead(
+                                        notification.id,
+                                      )
+                                    }}
+                                    className={
+                                      unread
+                                        ? 'group relative flex w-full items-start gap-4 border-b border-border bg-[#fffaf2] px-5 py-5 text-left transition-colors last:border-b-0 hover:bg-[#fff7e8]'
+                                        : 'group relative flex w-full items-start gap-4 border-b border-border bg-white px-5 py-5 text-left transition-colors last:border-b-0 hover:bg-neutral-50'
+                                    }
+                                  >
+
+                                    <div className="relative shrink-0">
+
+                                      {actor
+                                        ?.avatar_url ? (
+                                        <img
+                                          src={
+                                            actor.avatar_url
+                                          }
+                                          alt={
+                                            displayName
+                                          }
+                                          className="size-11 rounded-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="size-11 rounded-full bg-neutral-100" />
+                                      )}
+
+                                      {unread && (
+                                        <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-white bg-red-500" />
+                                      )}
+
+                                    </div>
+
+
+                                    <div className="min-w-0 flex-1">
+
+                                      <p
+                                        className={
+                                          unread
+                                            ? 'text-sm leading-6 text-neutral-900'
+                                            : 'text-sm leading-6 text-neutral-700'
+                                        }
+                                      >
+                                        <span
+                                          className={
+                                            unread
+                                              ? 'font-semibold'
+                                              : 'font-medium'
+                                          }
+                                        >
+                                          {displayName}
+                                        </span>
+
+                                        {' '}
+
+                                        {
+                                          getNotificationText(
+                                            notification.type,
+                                          )
+                                        }
+                                      </p>
+
+                                      <p className="mt-1 text-xs text-muted-foreground">
+                                        {formatPostTime(
+                                          notification.created_at,
+                                        )}
+                                      </p>
+
+                                    </div>
+
+
+                                    {notification.type ===
+                                      'post_like' ||
+                                    notification.type ===
+                                      'comment_like' ? (
+                                      <Heart
+                                        className="mt-1 size-4 shrink-0 fill-red-500 text-red-500"
+                                        strokeWidth={
+                                          1.6
+                                        }
+                                      />
+                                    ) : (
+                                      <MessageCircle
+                                        className="mt-1 size-4 shrink-0 text-[#a66700]"
+                                        strokeWidth={
+                                          1.6
+                                        }
+                                      />
+                                    )}
+
+                                  </button>
+                                )
+                              },
+                            )}
+
+                        </div>
+
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center">
+
+                          <Bell
+                            className="mx-auto size-6 text-muted-foreground"
+                            strokeWidth={1.5}
+                          />
+
+                          <p className="mt-4 text-base font-medium">
+                            暂无消息
+                          </p>
+
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            与你相关的点赞、评论和回复会显示在这里。
+                          </p>
+
+                        </div>
+                      )}
+
+                    </div>
+
+                  ) : feedMode ===
+                    'comments' ? (
                   myComments.length >
                   0 ? (
                     myComments.map(
