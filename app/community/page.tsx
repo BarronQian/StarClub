@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 import Link from 'next/link'
@@ -14,6 +15,7 @@ import {
   House,
   Users,
   Bell,
+  Smile,
   FileText,
   CheckCheck,
 } from 'lucide-react'
@@ -29,6 +31,11 @@ import {
 import {
   CommunityPostMenu,
 } from '@/components/community-post-menu'
+
+import EmojiPicker, {
+  EmojiClickData,
+  Theme,
+} from 'emoji-picker-react'
 
 type FeedMode =
   | 'community'
@@ -285,6 +292,21 @@ export default function CommunityPage() {
     content,
     setContent,
   ] = useState('')
+
+  const [
+  emojiOpen,
+  setEmojiOpen,
+] = useState(false)
+
+const textareaRef =
+  useRef<HTMLTextAreaElement>(
+    null,
+  )
+
+const emojiPickerRef =
+  useRef<HTMLDivElement>(
+    null,
+  )
 
   const [
     publishing,
@@ -1579,6 +1601,40 @@ const [
   }, [])
 
   useEffect(() => {
+  if (!emojiOpen) {
+    return
+  }
+
+  const handlePointerDown = (
+    event: MouseEvent,
+  ) => {
+    const target =
+      event.target as Node
+
+    if (
+      emojiPickerRef.current &&
+      !emojiPickerRef.current.contains(
+        target,
+      )
+    ) {
+      setEmojiOpen(false)
+    }
+  }
+
+  document.addEventListener(
+    'mousedown',
+    handlePointerDown,
+  )
+
+  return () => {
+    document.removeEventListener(
+      'mousedown',
+      handlePointerDown,
+    )
+  }
+}, [emojiOpen])
+
+  useEffect(() => {
     if (
       feedMode ===
       'comments'
@@ -1774,6 +1830,7 @@ const [
         }
 
         setContent('')
+        setEmojiOpen(false)
 
         await loadPosts(
           null,
@@ -2341,9 +2398,8 @@ const pageDescription =
                     <div className="min-w-0 flex-1">
 
                       <textarea
-                        value={
-                          content
-                        }
+                        ref={textareaRef}
+                        value={content}
                         onChange={(
                           event,
                         ) => {
@@ -2374,30 +2430,116 @@ const pageDescription =
 
                       <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
 
-                          <button
-                            type="button"
-                            disabled
-                            title="图片功能稍后加入"
-                            className="inline-flex size-9 cursor-not-allowed items-center justify-center rounded-full text-muted-foreground opacity-40"
-                          >
-                            <ImageIcon
-                              className="size-4"
-                              strokeWidth={
-                                1.7
-                              }
-                            />
-                          </button>
+  <button
+    type="button"
+    disabled
+    title="图片功能稍后加入"
+    className="inline-flex size-9 cursor-not-allowed items-center justify-center rounded-full text-muted-foreground opacity-40"
+  >
+    <ImageIcon
+      className="size-4"
+      strokeWidth={1.7}
+    />
+  </button>
 
-                          <span className="text-xs text-muted-foreground">
-                            {
-                              content.length
-                            }
-                            /1000
-                          </span>
 
-                        </div>
+  <div
+    ref={emojiPickerRef}
+    className="relative"
+  >
+    <button
+      type="button"
+      onClick={() => {
+        setEmojiOpen(
+          (current) =>
+            !current,
+        )
+      }}
+      aria-label="添加表情"
+      title="添加表情"
+      className="inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+    >
+      <Smile
+        className="size-4"
+        strokeWidth={1.7}
+      />
+    </button>
+
+
+    {emojiOpen && (
+      <div className="absolute bottom-11 left-0 z-50">
+        <EmojiPicker
+          theme={Theme.LIGHT}
+          lazyLoadEmojis
+          searchPlaceholder="搜索表情"
+          previewConfig={{
+            showPreview: false,
+          }}
+          onEmojiClick={(
+            emojiData:
+              EmojiClickData,
+          ) => {
+            const textarea =
+              textareaRef.current
+
+            if (!textarea) {
+              return
+            }
+
+            const start =
+              textarea.selectionStart
+
+            const end =
+              textarea.selectionEnd
+
+            const next =
+              content.slice(
+                0,
+                start,
+              ) +
+              emojiData.emoji +
+              content.slice(end)
+
+            if (
+              next.length >
+              1000
+            ) {
+              return
+            }
+
+            setContent(next)
+
+            requestAnimationFrame(
+              () => {
+                const position =
+                  start +
+                  emojiData
+                    .emoji.length
+
+                textarea.focus()
+
+                textarea.setSelectionRange(
+                  position,
+                  position,
+                )
+              },
+            )
+
+            setEmojiOpen(false)
+          }}
+        />
+      </div>
+    )}
+  </div>
+
+
+  <span className="text-xs text-muted-foreground">
+    {content.length}/1000
+  </span>
+
+</div>
 
                         <button
                           type="button"
