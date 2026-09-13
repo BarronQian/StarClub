@@ -207,23 +207,10 @@ export default async function SponsorsPage() {
                   <div
                     className={
                       isTop
-                        ? 'group relative overflow-hidden rounded-xl border border-[#c05a87]/25 bg-white px-5 py-5 shadow-[0_14px_50px_-30px_rgba(134,38,90,0.45)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_60px_-28px_rgba(134,38,90,0.5)] sm:px-7'
+                        ? 'sponsor-liquid-border group relative rounded-xl bg-white px-5 py-4 transition-transform duration-300 hover:-translate-y-0.5 sm:px-7'
                         : 'group rounded-xl border border-[#e6e0d7] bg-white/75 px-5 py-4 transition-all duration-300 hover:translate-x-1 hover:border-[#c9a36d]/45 hover:bg-white hover:shadow-[0_10px_30px_-22px_rgba(74,57,35,0.22)] sm:px-7'
                     }
                   >
-                    {isTop && (
-                      <>
-                        <div
-                          aria-hidden="true"
-                          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-[#9d3286] via-[#d44758] to-[#d4772d]"
-                        />
-
-                        <div
-                          aria-hidden="true"
-                          className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-[#d44758]/5 blur-3xl"
-                        />
-                      </>
-                    )}
 
                     <div className="relative flex items-center justify-between gap-4">
                       <div className="flex min-w-0 items-center gap-4 sm:gap-5">

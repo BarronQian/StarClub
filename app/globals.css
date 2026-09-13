@@ -349,3 +349,81 @@ body {
     animation: none;
   }
 }
+
+/* =========================================
+   Sponsor #1 - Liquid Flow Border
+   ========================================= */
+
+.sponsor-liquid-border {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(170, 0, 255, 0.16);
+}
+
+.sponsor-liquid-border::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+
+  left: 50%;
+  top: 50%;
+
+  width: 180%;
+  aspect-ratio: 1;
+
+  transform:
+    translate(-50%, -50%)
+    rotate(0deg);
+
+  background:
+    conic-gradient(
+      from 0deg,
+
+      transparent 0deg,
+      transparent 205deg,
+
+      rgba(170, 0, 255, 0) 220deg,
+      #aa00ff 248deg,
+
+      #d0008f 270deg,
+
+      #b50101 300deg,
+      rgba(181, 1, 1, 0) 330deg,
+
+      transparent 360deg
+    );
+
+  animation:
+    sponsor-liquid-flow
+    3.4s
+    linear
+    infinite;
+}
+
+.sponsor-liquid-border::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+
+  inset: 1.5px;
+
+  border-radius:
+    calc(0.75rem - 1.5px);
+
+  background: white;
+}
+
+@keyframes sponsor-liquid-flow {
+  from {
+    transform:
+      translate(-50%, -50%)
+      rotate(0deg);
+  }
+
+  to {
+    transform:
+      translate(-50%, -50%)
+      rotate(360deg);
+  }
+}
