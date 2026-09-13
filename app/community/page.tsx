@@ -13,8 +13,7 @@ import {
   Heart,
   Smile,
 } from 'lucide-react'
-const [content, setContent] = useState('')
-const [emojiOpen, setEmojiOpen] = useState(false)
+
 import {
   getSupabaseBrowser,
 } from '@/lib/supabase-browser'
@@ -222,6 +221,11 @@ export default function CommunityPage() {
     content,
     setContent,
   ] = useState('')
+
+  const [
+  emojiOpen,
+  setEmojiOpen,
+] = useState(false)
 
   const [
     publishing,
