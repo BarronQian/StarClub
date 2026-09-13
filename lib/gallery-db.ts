@@ -48,8 +48,9 @@ type GalleryRow = {
   hero_featured: boolean
 }
 
-type GalleryLikeRow = {
+type GalleryLikeCountRow = {
   gallery_id: number
+  like_count: number
 }
 
 type ProfileRow = {
@@ -153,13 +154,13 @@ async function loadGalleryLikeCounts(
   const {
     data,
     error,
-  } = await supabase
-    .from('gallery_likes')
-    .select('gallery_id')
+  } = await supabase.rpc(
+    'get_gallery_like_counts',
+  )
 
   if (error) {
     console.error(
-      'Failed to load gallery likes:',
+      'Failed to load gallery like counts:',
       error,
     )
 
@@ -172,18 +173,16 @@ async function loadGalleryLikeCounts(
   for (
     const row of
       (data ??
-        []) as GalleryLikeRow[]
+        []) as GalleryLikeCountRow[]
   ) {
-    const galleryId =
+    counts.set(
       Number(
         row.gallery_id,
-      )
-
-    counts.set(
-      galleryId,
-      (counts.get(
-        galleryId,
-      ) ?? 0) + 1,
+      ),
+      Number(
+        row.like_count ??
+          0,
+      ),
     )
   }
 
@@ -372,7 +371,7 @@ export const getGalleryFromDb =
       revalidate: 60,
     },
   )
-  
+
 export async function getFeaturedGalleryFromDb(
   limit = 8,
 ): Promise<
