@@ -11,6 +11,11 @@ import {
   MessageCircle,
   Send,
   Heart,
+  House,
+  Users,
+  Bell,
+  FileText,
+  CheckCheck,
 } from 'lucide-react'
 
 import {
@@ -28,6 +33,7 @@ import {
 type FeedMode =
   | 'community'
   | 'following'
+  | 'notifications'
   | 'mine'
   | 'comments'
 
@@ -98,6 +104,34 @@ type CommunityNews = {
   sourceUrl: string
   imageUrl: string | null
   publishedAt: string
+}
+
+type NotificationActor = {
+  username: string | null
+  display_name: string | null
+  avatar_url: string | null
+  star_citizen_handle: string | null
+  profile_slug: string | null
+}
+
+type CommunityNotification = {
+  id: string
+  recipient_id: string
+  actor_id: string
+  type:
+    | 'post_like'
+    | 'post_comment'
+    | 'comment_like'
+    | 'comment_reply'
+  post_id: string | null
+  comment_id: string | null
+  created_at: string
+  seen_at: string | null
+  read_at: string | null
+  actor:
+    | NotificationActor
+    | NotificationActor[]
+    | null
 }
 
 function getPostAuthor(
@@ -258,6 +292,30 @@ export default function CommunityPage() {
     newsLoading,
     setNewsLoading,
   ] = useState(true)
+
+  const [
+  notifications,
+  setNotifications,
+] = useState<
+  CommunityNotification[]
+>([])
+
+const [
+  unseenNotificationCount,
+  setUnseenNotificationCount,
+] = useState(0)
+
+const [
+  unreadNotificationCount,
+  setUnreadNotificationCount,
+] = useState(0)
+
+const [
+  notificationFilter,
+  setNotificationFilter,
+] = useState<
+  'all' | 'replies' | 'likes'
+>('all')
 
   const loadPosts =
     useCallback(
