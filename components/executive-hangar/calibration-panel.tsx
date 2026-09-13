@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
+  clockInZone,
+  dateInZone,
   utcStamp,
   CLOSED_MS,
 } from '@/lib/executive-hangar'
@@ -160,14 +162,22 @@ export function CalibrationPanel({
                     什么时候需要校准？
                   </p>
 
-                  <p className="mt-1.5 max-w-2xl text-[11px] leading-5 text-muted-foreground">
-                    服务器重启、版本更新或游戏内周期发生偏移后，网页预测时间可能与实际灯位不同。
-                    如果你已经确认游戏内信号灯刚刚转绿，可以将该时间设置为新的周期基准。
-                  </p>
+                    <p className="mt-1.5 max-w-2xl text-[11px] leading-5 text-muted-foreground">
+                      服务器重启、版本更新或游戏内周期发生偏移后，网页预测时间可能与实际灯位不同。
+                      请记录游戏内
+                      <span className="font-semibold text-neutral-800">
+                        {' '}五盏信号灯全部转绿
+                      </span>
+                      、行政机库正式进入开放阶段的准确时间，并将该时间作为新的校准点。
+                    </p>
 
-                  <p className="mt-2 text-[10px] leading-4 text-muted-foreground/75">
-                    校准只会影响当前浏览器中的计时基准，不会修改服务器数据，也不会影响其他访客。
-                  </p>
+                    <p className="mt-2 text-[10px] leading-4 text-amber-700/80">
+                      注意：不要使用第一盏、第二盏或其他单独信号灯转绿的时间。
+                    </p>
+
+                    <p className="mt-2 text-[10px] leading-4 text-muted-foreground/75">
+                      系统会根据这个“全绿时刻”自动向前推算 120 分钟，得到新的周期起点。
+                    </p>
                 </div>
 
               </div>
@@ -182,9 +192,9 @@ export function CalibrationPanel({
 
                 <div className="flex items-center justify-between gap-3">
 
-                  <span className="text-[9px] font-semibold tracking-[0.16em] text-muted-foreground">
-                    最近一次转绿时间
-                  </span>
+                <span className="text-[9px] font-semibold tracking-[0.16em] text-muted-foreground">
+                  最近一次五盏灯全部转绿时间
+                </span>
 
                   <span className="text-[8px] tracking-[0.12em] text-muted-foreground">
                     LOCAL TIME
@@ -274,34 +284,66 @@ export function CalibrationPanel({
 
 
             {/* 当前基准 */}
-            <div className="mt-4 rounded-xl border border-neutral-400/60 bg-[#d9d9d4] p-1.5 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]">
+              <div className="mt-4 rounded-xl border border-neutral-400/60 bg-[#d9d9d4] p-1.5 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]">
 
-              <div className="flex flex-col gap-3 rounded-lg border border-neutral-400/60 bg-[linear-gradient(180deg,#2c2c29_0%,#20201e_100%)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="rounded-lg border border-neutral-400/60 bg-[linear-gradient(180deg,#2c2c29_0%,#20201e_100%)] px-4 py-4">
 
-                <div>
-                  <p className="text-[8px] font-semibold tracking-[0.16em] text-white/35">
-                    CURRENT
-                    CALIBRATION
-                    ANCHOR
-                  </p>
+                  <div>
+                    <p className="text-[8px] font-semibold tracking-[0.16em] text-white/35">
+                      FULL GREEN / OPEN ANCHOR
+                    </p>
 
-                  <p className="mt-1 text-[10px] text-white/45">
-                    当前转绿基准时间
-                  </p>
+                    <p className="mt-1 text-[10px] text-white/45">
+                      当前全绿 / 开放基准时间
+                    </p>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+
+                    <div className="rounded-lg border border-white/10 bg-white/4 px-3 py-3">
+                      <p className="text-[8px] font-semibold tracking-[0.14em] text-white/35">
+                        LOCAL TIME
+                      </p>
+
+                      <p className="mt-1.5 font-mono text-sm font-semibold tabular-nums text-white/85">
+                        {clockInZone(
+                          new Date(
+                            anchor +
+                              CLOSED_MS,
+                          ),
+                        )}
+                      </p>
+
+                      <p className="mt-1 font-mono text-[9px] tabular-nums text-white/40">
+                        {dateInZone(
+                          new Date(
+                            anchor +
+                              CLOSED_MS,
+                          ),
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/10 bg-white/4 px-3 py-3">
+                      <p className="text-[8px] font-semibold tracking-[0.14em] text-white/35">
+                        UTC REFERENCE
+                      </p>
+
+                      <p className="mt-1.5 font-mono text-xs tabular-nums text-white/75 sm:text-sm">
+                        {utcStamp(
+                          new Date(
+                            anchor +
+                              CLOSED_MS,
+                          ),
+                        )}
+                      </p>
+                    </div>
+
+                  </div>
+
                 </div>
 
-                <p className="font-mono text-xs tabular-nums text-white/80 sm:text-sm">
-                  {utcStamp(
-                    new Date(
-                      anchor +
-                        CLOSED_MS,
-                    ),
-                  )}
-                </p>
-
               </div>
-
-            </div>
 
           </div>
 
