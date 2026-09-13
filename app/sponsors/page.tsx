@@ -207,7 +207,7 @@ export default async function SponsorsPage() {
                   <div
                     className={
                       isTop
-                        ? 'sponsor-liquid-border group relative rounded-xl bg-white px-5 py-4 transition-transform duration-300 hover:-translate-y-0.5 sm:px-7'
+                         ? 'sponsor-liquid-border group relative rounded-xl bg-white px-5 py-4 transition-transform duration-300 hover:-translate-y-0.5 sm:px-7'
                         : 'group rounded-xl border border-[#e6e0d7] bg-white/75 px-5 py-4 transition-all duration-300 hover:translate-x-1 hover:border-[#c9a36d]/45 hover:bg-white hover:shadow-[0_10px_30px_-22px_rgba(74,57,35,0.22)] sm:px-7'
                     }
                   >
