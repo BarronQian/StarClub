@@ -264,7 +264,8 @@ function MosaicItem({
           src={shot.src}
           alt={shot.alt}
           fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 40vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 32vw"
+          quality={62}
           className="object-cover"
         />
 
