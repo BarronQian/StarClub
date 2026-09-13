@@ -9,6 +9,7 @@ import {
 } from 'react'
 
 import {
+  Heart,
   Loader2,
   MessageCircle,
   Smile,
@@ -57,6 +58,8 @@ type CommunityComment = {
   reply_to_comment_id: string | null
   created_at: string
   updated_at: string
+  like_count?: number
+  liked_by_me?: boolean
   profiles?: CommentAuthor | null
 }
 
@@ -272,16 +275,36 @@ export function CommunityCommentDialog({
           setHasMore(false)
           setNextCursor(null)
 
-          const response =
-            await fetch(
-              `/api/community/comments?postId=${encodeURIComponent(
-                post.id,
-              )}`,
-              {
-                cache:
-                  'no-store',
-              },
-            )
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase.auth.getSession()
+
+        const response =
+          await fetch(
+            `/api/community/comments?postId=${encodeURIComponent(
+              post.id,
+            )}`,
+            {
+              cache:
+                'no-store',
+
+              ...(session
+                ?.access_token
+                ? {
+                    headers: {
+                      Authorization:
+                        `Bearer ${session.access_token}`,
+                    },
+                  }
+                : {}),
+            },
+          )
 
           const data =
             await response.json()
@@ -492,18 +515,38 @@ export function CommunityCommentDialog({
       try {
         setLoadingMore(true)
 
-        const response =
-          await fetch(
-            `/api/community/comments?postId=${encodeURIComponent(
-              post.id,
-            )}&cursor=${encodeURIComponent(
-              nextCursor,
-            )}`,
-            {
-              cache:
-                'no-store',
-            },
-          )
+      const supabase =
+        getSupabaseBrowser()
+
+      const {
+        data: {
+          session,
+        },
+      } =
+        await supabase.auth.getSession()
+
+      const response =
+        await fetch(
+          `/api/community/comments?postId=${encodeURIComponent(
+            post.id,
+          )}&cursor=${encodeURIComponent(
+            nextCursor,
+          )}`,
+          {
+            cache:
+              'no-store',
+
+            ...(session
+              ?.access_token
+              ? {
+                  headers: {
+                    Authorization:
+                      `Bearer ${session.access_token}`,
+                  },
+                }
+              : {}),
+          },
+        )
 
         const data =
           await response.json()
@@ -763,6 +806,97 @@ export function CommunityCommentDialog({
         setSubmitting(false)
       }
     }
+  
+  const toggleCommentLike =
+  async (
+    commentId: string,
+  ) => {
+    try {
+      const supabase =
+        getSupabaseBrowser()
+
+      const {
+        data: {
+          session,
+        },
+      } =
+        await supabase.auth.getSession()
+
+      if (
+        !session
+          ?.access_token
+      ) {
+        setErrorMessage(
+          '请先登录后再点赞',
+        )
+        return
+      }
+
+      const response =
+        await fetch(
+          `/api/community/comments/${encodeURIComponent(
+            commentId,
+          )}/like`,
+          {
+            method:
+              'POST',
+
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+          },
+        )
+
+      const data =
+        await response.json()
+
+      if (
+        !response.ok
+      ) {
+        throw new Error(
+          data.error ||
+            '点赞失败',
+        )
+      }
+
+      setComments(
+        (
+          current,
+        ) =>
+          current.map(
+            (
+              comment,
+            ) =>
+              comment.id ===
+              commentId
+                ? {
+                    ...comment,
+
+                    liked_by_me:
+                      Boolean(
+                        data.liked,
+                      ),
+
+                    like_count:
+                      Number(
+                        data.likeCount ??
+                          0,
+                      ),
+                  }
+                : comment,
+          ),
+      )
+    } catch (
+      error
+    ) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : '点赞失败',
+      )
+    }
+  }
 
   const deleteComment =
     async (
@@ -1042,23 +1176,56 @@ export function CommunityCommentDialog({
                 {comment.content}
               </p>
 
+            <div className="mt-2 flex items-center gap-4">
+
               <button
                 type="button"
-                  onClick={() => {
-                    setReplyingTo(
-                      comment,
-                    )
+                onClick={() => {
+                  void toggleCommentLike(
+                    comment.id,
+                  )
+                }}
+                className={
+                  comment.liked_by_me
+                    ? 'inline-flex items-center gap-1.5 text-xs font-medium text-red-500 transition-colors'
+                    : 'inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-red-500'
+                }
+              >
+                <Heart
+                  className={
+                    comment.liked_by_me
+                      ? 'size-3.5 fill-current'
+                      : 'size-3.5'
+                  }
+                  strokeWidth={1.8}
+                />
 
-                    setErrorMessage('')
+                {(comment.like_count ?? 0) > 0 && (
+                  <span>
+                    {comment.like_count}
+                  </span>
+                )}
+              </button>
 
-                    requestAnimationFrame(() => {
-                      textareaRef.current?.focus()
-                    })
-                  }}
-                className="mt-2 text-xs font-medium text-muted-foreground transition-colors hover:text-[#a66700]"
+              <button
+                type="button"
+                onClick={() => {
+                  setReplyingTo(
+                    comment,
+                  )
+
+                  setErrorMessage('')
+
+                  requestAnimationFrame(() => {
+                    textareaRef.current?.focus()
+                  })
+                }}
+                className="text-xs font-medium text-muted-foreground transition-colors hover:text-[#a66700]"
               >
                 回复
               </button>
+
+            </div>
 
             </div>
           </div>
