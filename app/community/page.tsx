@@ -748,6 +748,193 @@ const [
       [],
     )
 
+  const loadNotifications =
+  useCallback(
+    async (
+      cursor?: string | null,
+      append = false,
+    ) => {
+      try {
+        if (append) {
+          setLoadingMore(true)
+        } else {
+          setLoading(true)
+        }
+
+        setError(null)
+
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          !session?.access_token
+        ) {
+          setNotifications([])
+          setUnseenNotificationCount(0)
+          setUnreadNotificationCount(0)
+          setHasMore(false)
+          setNextCursor(null)
+          setError(
+            '请先登录后查看我的消息',
+          )
+          return
+        }
+
+        const params =
+          new URLSearchParams()
+
+        if (cursor) {
+          params.set(
+            'cursor',
+            cursor,
+          )
+        }
+
+        const query =
+          params.toString()
+
+        const controller =
+          new AbortController()
+
+        const timeout =
+          window.setTimeout(
+            () => {
+              controller.abort()
+            },
+            10000,
+          )
+
+        const response =
+          await fetch(
+            `/api/community/notifications${
+              query
+                ? `?${query}`
+                : ''
+            }`,
+            {
+              cache:
+                'no-store',
+
+              signal:
+                controller.signal,
+
+              headers: {
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+            },
+          )
+
+        window.clearTimeout(
+          timeout,
+        )
+
+        const data =
+          await response.json()
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+              '读取消息失败',
+          )
+        }
+
+        const newNotifications:
+          CommunityNotification[] =
+          Array.isArray(
+            data.notifications,
+          )
+            ? data.notifications
+            : []
+
+        if (append) {
+          setNotifications(
+            (
+              currentNotifications,
+            ) => {
+              const existingIds =
+                new Set(
+                  currentNotifications.map(
+                    (
+                      notification,
+                    ) =>
+                      notification.id,
+                  ),
+                )
+
+              const uniqueNotifications =
+                newNotifications.filter(
+                  (
+                    notification,
+                  ) =>
+                    !existingIds.has(
+                      notification.id,
+                    ),
+                )
+
+              return [
+                ...currentNotifications,
+                ...uniqueNotifications,
+              ]
+            },
+          )
+        } else {
+          setNotifications(
+            newNotifications,
+          )
+        }
+
+        setUnseenNotificationCount(
+          typeof data.unseenCount ===
+            'number'
+            ? data.unseenCount
+            : 0,
+        )
+
+        setUnreadNotificationCount(
+          typeof data.unreadCount ===
+            'number'
+            ? data.unreadCount
+            : 0,
+        )
+
+        setHasMore(
+          data.hasMore === true,
+        )
+
+        setNextCursor(
+          typeof data.nextCursor ===
+            'string'
+            ? data.nextCursor
+            : null,
+        )
+      } catch (error) {
+        console.error(
+          'Failed to load notifications:',
+          error,
+        )
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : '读取消息失败',
+        )
+      } finally {
+        if (append) {
+          setLoadingMore(false)
+        } else {
+          setLoading(false)
+        }
+      }
+    },
+    [],
+  )
+
   const loadMorePosts =
     async () => {
       if (
@@ -769,6 +956,18 @@ const [
 
         return
       }
+
+      if (
+          feedMode ===
+          'notifications'
+        ) {
+          await loadNotifications(
+            nextCursor,
+            true,
+          )
+
+          return
+        }
 
       await loadPosts(
         nextCursor,
@@ -927,6 +1126,18 @@ const [
       return
     }
 
+    if (
+      feedMode ===
+      'notifications'
+    ) {
+      void loadNotifications(
+        null,
+        false,
+      )
+
+      return
+    }
+
     void loadPosts(
       null,
       false,
@@ -938,6 +1149,7 @@ const [
     currentUserId,
     loadPosts,
     loadMyComments,
+    loadNotifications,
   ])
 
   useEffect(() => {
@@ -951,7 +1163,8 @@ const [
         if (
           (mode === 'mine' ||
             mode === 'comments' ||
-            mode === 'following') &&
+            mode === 'following' ||
+            mode === 'notifications') &&
           !loggedIn
         ) {
           setError(
@@ -959,7 +1172,9 @@ const [
               ? '请先登录后查看我的评论'
               : mode === 'following'
                 ? '请先登录后查看关注动态'
-                : '请先登录后查看我的帖子',
+                : mode === 'notifications'
+                  ? '请先登录后查看我的消息'
+                  : '请先登录后查看我的帖子',
           )
 
           return
