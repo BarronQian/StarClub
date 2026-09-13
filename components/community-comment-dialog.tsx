@@ -55,6 +55,7 @@ type CommunityComment = {
   author_id: string
   content: string
   parent_comment_id: string | null
+  reply_to_comment_id: string | null
   created_at: string
   updated_at: string
   profiles?: CommentAuthor | null
@@ -609,6 +610,10 @@ export function CommunityCommentDialog({
                         replyingTo.id
                       )
                     : null,
+                    replyToCommentId:
+                      replyingTo
+                        ? replyingTo.id
+                        : null,
                   },
                 ),
             },
@@ -910,17 +915,17 @@ export function CommunityCommentDialog({
               </div>
 
               <p className="mt-1.5 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-foreground/85">
-                {comment.parent_comment_id &&
+                {comment.reply_to_comment_id &&
                   (() => {
-                    const parentComment =
+                    const replyTarget =
                       comments.find(
                         (item) =>
                           item.id ===
-                          comment.parent_comment_id,
+                          comment.reply_to_comment_id,
                       )
 
-                    const parentAuthor =
-                      parentComment?.profiles
+                    const replyTargetAuthor =
+                      replyTarget?.profiles
 
                     return (
                       <>
@@ -928,9 +933,9 @@ export function CommunityCommentDialog({
                           回复
                         </span>
 
-                        {parentAuthor?.profile_slug ? (
+                        {replyTargetAuthor?.profile_slug ? (
                           <Link
-                            href={`/profile/${parentAuthor.profile_slug}`}
+                            href={`/profile/${replyTargetAuthor.profile_slug}`}
                             onClick={(event) => {
                               event.stopPropagation()
                             }}
@@ -938,14 +943,14 @@ export function CommunityCommentDialog({
                           >
                             @
                             {getDisplayName(
-                              parentAuthor,
+                              replyTargetAuthor,
                             )}
                           </Link>
                         ) : (
                           <span className="mr-1 font-medium text-[#a66700]">
                             @
                             {getDisplayName(
-                              parentAuthor,
+                              replyTargetAuthor,
                             )}
                           </span>
                         )}

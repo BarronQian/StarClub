@@ -87,6 +87,7 @@ export async function GET(
           author_id,
           content,
           parent_comment_id,
+          reply_to_comment_id,
           created_at,
           updated_at,
           profiles!post_comments_author_fk (
@@ -380,6 +381,13 @@ export async function POST(
         ? body.parentCommentId.trim()
         : null
 
+    const replyToCommentId =
+      typeof body.replyToCommentId ===
+        'string' &&
+      body.replyToCommentId.trim()
+        ? body.replyToCommentId.trim()
+        : null
+
     if (!postId) {
       return NextResponse.json(
         {
@@ -509,6 +517,55 @@ export async function POST(
       }
     }
 
+    if (replyToCommentId) {
+      const {
+        data: replyToComment,
+        error: replyToCommentError,
+      } = await supabase
+        .from('post_comments')
+        .select(`
+          id,
+          post_id,
+          deleted_at
+        `)
+        .eq(
+          'id',
+          replyToCommentId,
+        )
+        .maybeSingle()
+
+      if (
+        replyToCommentError ||
+        !replyToComment ||
+        replyToComment.deleted_at
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              '要回复的评论不存在',
+          },
+          {
+            status: 404,
+          },
+        )
+      }
+
+      if (
+        replyToComment.post_id !==
+        postId
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              '无法回复其他动态下的评论',
+          },
+          {
+            status: 400,
+          },
+        )
+      }
+    }
+
     const {
       data: insertedComment,
       error:
@@ -528,6 +585,9 @@ export async function POST(
 
         parent_comment_id:
           parentCommentId,
+
+        reply_to_comment_id:
+          replyToCommentId,
       })
       .select(`
         id,
@@ -535,6 +595,7 @@ export async function POST(
         author_id,
         content,
         parent_comment_id,
+        reply_to_comment_id,
         created_at,
         updated_at
       `)
@@ -573,6 +634,7 @@ export async function POST(
         author_id,
         content,
         parent_comment_id,
+        reply_to_comment_id,
         created_at,
         updated_at,
         profiles!post_comments_author_fk (
