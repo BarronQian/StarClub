@@ -100,12 +100,16 @@ export default async function HallOfFameCategoryPage({ params }: Params) {
         </Reveal>
       </section>
 
-      {category === 'racing' && (
+{category === 'racing' && (
   <PageCompanion companion="inorath" />
 )}
 
 {category === 'gun' && (
   <PageCompanion companion="ilqwqli" />
+)}
+
+{category === 'ace' && (
+  <PageCompanion companion="coolapplepie" />
 )}
     </div>
   )
