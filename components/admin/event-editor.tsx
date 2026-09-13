@@ -174,6 +174,13 @@ const [
 )
 
 const [
+  uploadedImagePath,
+  setUploadedImagePath,
+] = useState<
+  string | null
+>(null)
+
+const [
   uploadingImage,
   setUploadingImage,
 ] = useState(false)
@@ -184,6 +191,71 @@ const [
 ] = useState<
   string | null
 >(null)
+
+  function getEventStoragePathFromUrl(
+  url: string | null | undefined,
+) {
+  if (!url) {
+    return null
+  }
+
+  const marker =
+    '/storage/v1/object/public/gallery/'
+
+  const index =
+    url.indexOf(marker)
+
+  if (index === -1) {
+    return null
+  }
+
+  const path =
+    decodeURIComponent(
+      url.slice(
+        index +
+          marker.length,
+      ),
+    )
+
+  if (
+    !path.startsWith(
+      'events/',
+    )
+  ) {
+    return null
+  }
+
+  return path
+}
+
+async function cleanupEventImage(
+  path: string | null,
+) {
+  if (!path) {
+    return
+  }
+
+  try {
+    await fetch(
+      '/api/admin/events/upload/cleanup',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+        body: JSON.stringify({
+          path,
+        }),
+      },
+    )
+  } catch (error) {
+    console.error(
+      'Event image cleanup failed:',
+      error,
+    )
+  }
+}
 
   async function handleImageUpload(
   file: File,
@@ -231,9 +303,29 @@ const [
       )
     }
 
+    const previousUploadedPath =
+      uploadedImagePath
+
     setImageUrl(
       data.url,
     )
+
+    setUploadedImagePath(
+      data.path ??
+        null,
+    )
+
+    // 如果本次编辑过程中已经上传过一张临时封面，
+    // 现在又换了一张，则删除上一张未保存的图片。
+    if (
+      previousUploadedPath &&
+      previousUploadedPath !==
+        data.path
+    ) {
+      void cleanupEventImage(
+        previousUploadedPath,
+      )
+    }
   } catch (error) {
     setUploadError(
       error instanceof Error
