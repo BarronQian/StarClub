@@ -98,20 +98,12 @@ export function GalleryFilmBackground({
 }: {
   shots: GalleryDbShot[]
 }) {
-  const featuredShots =
-    shots.filter(
-      (shot) =>
-        shot.heroFeatured,
-    )
 
   /*
    * 没有 Hero 精选时，
    * 不显示滚动背景。
    */
-  if (
-    featuredShots.length ===
-    0
-  ) {
+  if (shots.length === 0) {
     return null
   }
 
@@ -120,9 +112,9 @@ export function GalleryFilmBackground({
     row2,
     row3,
   } =
-    splitIntoRows(
-      featuredShots,
-    )
+  splitIntoRows(
+    shots,
+  )
 
   return (
     <div
