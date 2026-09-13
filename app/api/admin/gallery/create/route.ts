@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { requireAdminApi } from '@/lib/admin-auth'
@@ -230,27 +231,30 @@ export async function POST(
     )
     .single()
 
-  if (
-    error ||
-    !data
-  ) {
-    console.error(
-      '[v0] Gallery create error:',
-      error,
-    )
+if (
+  error ||
+  !data
+) {
+  console.error(
+    '[v0] Gallery create error:',
+    error,
+  )
 
-    return NextResponse.json(
-      {
-        error:
-          '发布失败，请重试',
-      },
-      {
-        status: 500,
-      },
-    )
-  }
+  return NextResponse.json(
+    {
+      error:
+        '发布失败，请重试',
+    },
+    {
+      status: 500,
+    },
+  )
+}
 
-  return NextResponse.json({
+revalidatePath('/gallery')
+revalidatePath('/')
+
+return NextResponse.json({
     shot: {
       id:
         data.id,

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { requireAdminApi } from '@/lib/admin-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { revalidatePath } from 'next/cache'
 
 export async function POST(request: NextRequest) {
   const auth = await requireAdminApi()
@@ -22,5 +23,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '删除失败，请重试' }, { status: 500 })
   }
 
+    revalidatePath('/gallery')
+    revalidatePath('/')
+    
   return NextResponse.json({ ok: true })
 }

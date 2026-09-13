@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { requireAdminApi } from '@/lib/admin-auth'
@@ -275,6 +276,9 @@ export async function POST(
       },
     )
   }
+
+  revalidatePath('/gallery')
+  revalidatePath('/')
 
   return NextResponse.json({
     shot: {
