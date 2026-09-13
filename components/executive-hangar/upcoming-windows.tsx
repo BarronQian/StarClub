@@ -2,7 +2,10 @@
 
 import { cn } from '@/lib/utils'
 import type { HangarWindow } from '@/lib/executive-hangar'
-import { clockInZone, dateInZone } from '@/lib/executive-hangar'
+import {
+  clockInZone,
+  dateInZone,
+} from '@/lib/executive-hangar'
 import {
   HANGAR_TIMEZONES,
   type HangarTimezoneId,
@@ -18,72 +21,200 @@ export function UpcomingWindows({
   windows: HangarWindow[]
   now: number
   timezone: HangarTimezoneId
-  onTimezoneChange: (id: HangarTimezoneId) => void
+  onTimezoneChange: (
+    id: HangarTimezoneId,
+  ) => void
 }) {
-  const zone = HANGAR_TIMEZONES.find((t) => t.id === timezone)?.zone
+  const zone =
+    HANGAR_TIMEZONES.find(
+      (t) =>
+        t.id === timezone,
+    )?.zone
 
   return (
     <section className="flex flex-col gap-5">
+
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1.5">
-          <span className="font-display text-[0.58rem] tracking-[0.3em] text-primary">
+
+        <div>
+          <p className="text-[9px] font-semibold tracking-[0.2em] text-muted-foreground">
             UPCOMING WINDOWS
-          </span>
-          <h2 className="font-display text-xl tracking-tight text-foreground">
+          </p>
+
+          <h2 className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
             后续开放窗口
           </h2>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            查看接下来几次行政机库开放时间
+          </p>
         </div>
-        <TimezoneSelector value={timezone} onChange={onTimezoneChange} />
+
+        <TimezoneSelector
+          value={timezone}
+          onChange={
+            onTimezoneChange
+          }
+        />
+
       </div>
 
-      <div className="corner-cut border border-border bg-background">
-        <ul className="flex flex-col divide-y divide-border lg:flex-row lg:divide-x lg:divide-y-0">
-          {windows.map((w, i) => {
-            const live = w.open.getTime() <= now && w.close.getTime() > now
-            const isNext = !live && i === 0
-            return (
-              <li
-                key={w.open.toISOString()}
-                className={cn(
-                  'relative flex flex-1 flex-col gap-2.5 px-5 py-5',
-                  (live || isNext) && 'bg-primary/[0.04]',
-                )}
-              >
-                {(live || isNext) && (
-                  <span
-                    className="absolute inset-x-0 top-0 h-px bg-primary"
-                    aria-hidden="true"
-                  />
-                )}
-                <div className="flex items-center justify-between gap-2">
-                  <span
-                    className={cn(
-                      'font-display text-[0.6rem] tabular-nums tracking-[0.22em]',
-                      live || isNext ? 'text-primary' : 'text-muted-foreground',
+
+      <div className="overflow-hidden rounded-2xl border border-neutral-300 bg-[#ededE9] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
+
+        {/* 顶部设备标签 */}
+        <div className="flex items-center justify-between border-b border-neutral-300 bg-[#e3e3de] px-4 py-2.5">
+
+          <span className="text-[8px] font-semibold tracking-[0.18em] text-neutral-600">
+            EXECUTIVE HANGAR SCHEDULE
+          </span>
+
+          <span className="font-mono text-[8px] tracking-[0.12em] text-muted-foreground">
+            LIVE CYCLE DATA
+          </span>
+
+        </div>
+
+
+        <ul className="grid lg:grid-cols-5">
+
+          {windows.map(
+            (
+              w,
+              i,
+            ) => {
+              const live =
+                w.open.getTime() <=
+                  now &&
+                w.close.getTime() >
+                  now
+
+              const isNext =
+                !live &&
+                i === 0
+
+              return (
+                <li
+                  key={w.open.toISOString()}
+                  className={cn(
+                    'relative min-w-0 border-b border-neutral-300 bg-[#f8f8f5] p-4 transition-colors lg:border-b-0 lg:border-r last:lg:border-r-0',
+                    live &&
+                      'bg-emerald-50/70',
+                    !live &&
+                      isNext &&
+                      'bg-amber-50/60',
+                  )}
+                >
+
+                  {/* 顶部状态灯 */}
+                  <div className="mb-4 flex items-center justify-between">
+
+                    <div className="flex items-center gap-2">
+
+                      <span
+                        className={cn(
+                          'size-2 rounded-full',
+                          live
+                            ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.65)]'
+                            : isNext
+                              ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.55)]'
+                              : 'bg-neutral-300',
+                        )}
+                      />
+
+                      <span
+                        className={cn(
+                          'font-mono text-[9px] font-semibold tabular-nums',
+                          live
+                            ? 'text-emerald-700'
+                            : isNext
+                              ? 'text-[#a66700]'
+                              : 'text-muted-foreground',
+                        )}
+                      >
+                        SLOT{' '}
+                        {String(
+                          i +
+                            1,
+                        ).padStart(
+                          2,
+                          '0',
+                        )}
+                      </span>
+
+                    </div>
+
+                    <span
+                      className={cn(
+                        'text-[8px] font-semibold tracking-[0.12em]',
+                        live
+                          ? 'text-emerald-700'
+                          : isNext
+                            ? 'text-[#a66700]'
+                            : 'text-muted-foreground',
+                      )}
+                    >
+                      {live
+                        ? 'OPEN NOW'
+                        : isNext
+                          ? 'NEXT'
+                          : 'QUEUED'}
+                    </span>
+
+                  </div>
+
+
+                  {/* 日期 */}
+                  <p className="text-[8px] tracking-[0.14em] text-muted-foreground">
+                    {dateInZone(
+                      w.open,
+                      zone,
                     )}
-                  >
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <span
-                    className={cn(
-                      'text-[0.52rem] tracking-[0.22em] uppercase',
-                      live ? 'text-primary' : 'text-muted-foreground/70',
-                    )}
-                  >
-                    {live ? 'OPEN NOW' : dateInZone(w.open, zone)}
-                  </span>
-                </div>
-                <span className="font-display text-2xl leading-none tabular-nums tracking-tight text-foreground">
-                  {clockInZone(w.open, zone)}
-                </span>
-                <span className="text-[0.6rem] tabular-nums tracking-[0.14em] text-muted-foreground">
-                  → {clockInZone(w.close, zone)} CLOSE
-                </span>
-              </li>
-            )
-          })}
+                  </p>
+
+
+                  {/* 开放时间 */}
+                  <div className="mt-2 rounded-lg border border-neutral-400/60 bg-[linear-gradient(180deg,#2d2d2a_0%,#20201e_100%)] px-3 py-3 shadow-[inset_0_0_16px_rgba(0,0,0,0.55)]">
+
+                    <p className="font-mono text-2xl font-semibold leading-none tabular-nums text-white">
+                      {clockInZone(
+                        w.open,
+                        zone,
+                      )}
+                    </p>
+
+                    <p className="mt-1 text-[8px] tracking-[0.14em] text-white/35">
+                      OPEN
+                    </p>
+
+                  </div>
+
+
+                  {/* 关闭时间 */}
+                  <div className="mt-3 flex items-center justify-between border-t border-neutral-300 pt-3">
+
+                    <span className="text-[8px] tracking-[0.12em] text-muted-foreground">
+                      关闭
+                    </span>
+
+                    <span className="font-mono text-[10px] font-semibold tabular-nums text-neutral-800">
+                      {clockInZone(
+                        w.close,
+                        zone,
+                      )}
+                    </span>
+
+                  </div>
+
+                </li>
+              )
+            },
+          )}
+
         </ul>
+
       </div>
+
     </section>
   )
 }

@@ -4,10 +4,28 @@ import {
 } from './executive-hangar-config'
 
 const MIN = 60_000
-export const CYCLE_MS = cfg.cycleMinutes * MIN
-export const CLOSED_MS = cfg.closedMinutes * MIN
-export const OPEN_MS = cfg.openMinutes * MIN
-export const RESET_MS = cfg.resetMinutes * MIN
+
+export const CLOSED_MS =
+  cfg.closedMinutes * MIN
+
+export const OPEN_MS =
+  cfg.openMinutes * MIN
+
+/*
+ * Xyxyll 当前周期不是严格的 185:00.000，
+ * 每轮约多 699ms。
+ *
+ * 将这段额外时间放在周期末尾，
+ * 避免长期运行后开放时间逐渐漂移。
+ */
+export const RESET_MS =
+  cfg.resetMinutes * MIN +
+  cfg.cycleOffsetMs
+
+export const CYCLE_MS =
+  CLOSED_MS +
+  OPEN_MS +
+  RESET_MS
 
 export type HangarWindow = { open: Date; close: Date }
 

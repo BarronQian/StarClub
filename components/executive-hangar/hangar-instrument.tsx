@@ -28,151 +28,376 @@ export function HangarInstrument({
   anchor: number
   now: number | null
 }) {
-  const phase = state?.phase ?? 'closed'
-  const meta = PHASE_META[phase]
-  const color = HANGAR_PHASE_COLORS[phase]
+  const phase =
+    state?.phase ?? 'closed'
+
+  const meta =
+    PHASE_META[phase]
+
+  const color =
+    HANGAR_PHASE_COLORS[phase]
+
   const aging =
-    now !== null && now - anchor > cfg.syncAgingDays * 86_400_000
+    now !== null &&
+    now - anchor >
+      cfg.syncAgingDays *
+        86_400_000
+
+  const nextTransition =
+    state
+      ? phase === 'open'
+        ? state.nextClose
+        : state.nextOpen
+      : null
 
   return (
-    <div className="corner-cut border border-border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-3.5 lg:px-8">
-        <span className="flex items-center gap-2.5 font-display text-[0.58rem] tracking-[0.3em] text-muted-foreground">
-          <Radio className="size-3.5 text-primary" strokeWidth={1.8} />
-          {cfg.location} / LIVE SYNC
-        </span>
-        <span className="flex items-center gap-5 font-display text-[0.55rem] tracking-[0.26em] text-muted-foreground">
-          <span className="flex items-center gap-2">
-            <span
-              className={cn(
-                'size-1.5 rounded-full',
-                aging ? 'bg-primary' : 'bg-[oklch(0.62_0.135_150)]',
-              )}
-              aria-hidden="true"
-            />
-            {state ? (aging ? 'SYNC AGING' : 'SYNCED') : 'SYNCING'}
-          </span>
-          <span className="tabular-nums">CYCLE {cfg.cycleMinutes} MIN</span>
-        </span>
+    <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-[#f5f5f2] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+
+      {/* 顶部工业状态条 */}
+      <div className="border-b border-neutral-300/80 bg-[#ecece8] px-5 py-3">
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+
+          <div className="flex items-center gap-3">
+
+            <div className="flex size-8 items-center justify-center rounded-lg border border-neutral-300 bg-[#f8f8f5] shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]">
+              <Radio
+                className="size-4 text-[#a66700]"
+                strokeWidth={1.7}
+              />
+            </div>
+
+            <div>
+              <p className="font-display text-[0.58rem] tracking-[0.26em] text-neutral-800">
+                {cfg.location}
+              </p>
+
+              <p className="mt-0.5 text-[9px] tracking-[0.16em] text-muted-foreground">
+                行政机库周期监测系统
+              </p>
+            </div>
+
+          </div>
+
+
+          <div className="flex items-center gap-5 text-[10px] text-muted-foreground">
+
+            <div className="flex items-center gap-2">
+
+              <span
+                className={cn(
+                  'size-2 rounded-full',
+                  aging
+                    ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.75)]'
+                    : state
+                      ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.7)]'
+                      : 'bg-neutral-400',
+                )}
+              />
+
+              <span className="font-medium tracking-[0.12em]">
+                {state
+                  ? aging
+                    ? '校准数据可能过期'
+                    : '周期同步正常'
+                  : '正在同步'}
+              </span>
+
+            </div>
+
+            <span className="hidden font-mono tabular-nums sm:inline">
+              周期 {cfg.cycleMinutes} MIN
+            </span>
+
+          </div>
+
+        </div>
+
       </div>
 
-      <div className="grid gap-10 px-6 py-8 lg:grid-cols-[45fr_55fr] lg:gap-0 lg:px-0 lg:py-0">
-        {/* 左：倒计时仪表 */}
-        <div className="relative flex flex-col items-center gap-6 lg:justify-center lg:px-8 lg:py-10">
+
+      <div className="grid lg:grid-cols-[0.95fr_1.05fr]">
+
+        {/* 左侧主仪表 */}
+        <div className="relative border-b border-neutral-300/80 px-5 py-7 lg:border-b-0 lg:border-r lg:px-7 lg:py-8">
+
           <div
             aria-hidden="true"
-            className="absolute top-1/2 left-1/2 -z-10 size-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-70 blur-3xl transition-colors duration-700"
+            className="pointer-events-none absolute left-1/2 top-1/2 size-65 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-50 blur-3xl"
             style={{
-              background: `radial-gradient(circle, color-mix(in oklab, ${color} 30%, transparent) 0%, transparent 72%)`,
+              background: `radial-gradient(circle, color-mix(in oklab, ${color} 22%, transparent) 0%, transparent 70%)`,
             }}
           />
-          <PhaseGauge phase={phase} progress={state?.phaseProgress ?? 0}>
-            <span className="flex items-center gap-2">
-              <span
-                className="size-2 rounded-full transition-colors duration-300"
-                style={{ background: color }}
-                aria-hidden="true"
-              />
-              <span
-                className="font-display text-[0.66rem] font-medium tracking-[0.22em]"
-                style={{ color }}
+
+          <div className="relative z-10 flex flex-col items-center">
+
+            <div className="mb-5 flex w-full items-center justify-between">
+
+              <div>
+                <p className="text-[9px] font-semibold tracking-[0.2em] text-muted-foreground">
+                  主周期仪表
+                </p>
+
+                <p className="mt-1 text-xs text-neutral-600">
+                  当前阶段剩余时间
+                </p>
+              </div>
+
+              <div
+                className="rounded-lg border px-3 py-1.5 text-[10px] font-semibold tracking-[0.14em]"
+                style={{
+                  borderColor: color,
+                  color,
+                  background:
+                    `color-mix(in oklab, ${color} 7%, white)`,
+                }}
               >
                 {meta.label}
-              </span>
-            </span>
-            <span className="font-display text-[2.5rem] leading-none tabular-nums tracking-tight text-foreground sm:text-[3rem] lg:text-[3.5rem]">
-              {state ? formatDuration(state.phaseRemaining) : '--:--'}
-            </span>
-            <span className="text-[0.55rem] tracking-[0.26em] text-muted-foreground uppercase">
-              距离下一状态变化
-            </span>
-          </PhaseGauge>
+              </div>
 
-          <div className="flex w-full items-center justify-between border-t border-border pt-5 text-[0.6rem] tracking-[0.16em] text-muted-foreground">
-            <span>
-              {phase === 'open' ? '关闭时间' : '开启时间'}{' '}
-              <span className="tabular-nums text-foreground">
+            </div>
+
+
+            <PhaseGauge
+              phase={phase}
+              progress={
+                state?.phaseProgress ??
+                0
+              }
+            >
+              <div className="flex items-center gap-2">
+
+                <span
+                  className="size-2 rounded-full"
+                  style={{
+                    background:
+                      color,
+                    boxShadow:
+                      `0 0 12px ${color}`,
+                  }}
+                />
+
+                <span
+                  className="text-[10px] font-semibold tracking-[0.18em]"
+                  style={{
+                    color,
+                  }}
+                >
+                  {meta.en}
+                </span>
+
+              </div>
+
+
+              <span className="font-display text-[2.8rem] leading-none tabular-nums tracking-tight text-neutral-950 sm:text-[3.2rem]">
                 {state
-                  ? clockInZone(
-                      phase === 'open' ? state.nextClose : state.nextOpen,
+                  ? formatDuration(
+                      state.phaseRemaining,
                     )
                   : '--:--'}
               </span>
-            </span>
-            <span className="font-display text-[0.55rem] tracking-[0.22em]">
-              {meta.en}
-            </span>
+
+
+              <span className="text-[10px] tracking-[0.14em] text-muted-foreground">
+                距离下一状态变化
+              </span>
+
+            </PhaseGauge>
+
+
+            <div className="mt-6 grid w-full grid-cols-2 gap-3">
+
+              <div className="rounded-xl border border-neutral-300 bg-[#ededE9] px-4 py-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]">
+
+                <p className="text-[9px] tracking-[0.16em] text-muted-foreground">
+                  下一状态时间
+                </p>
+
+                <p className="mt-1 font-mono text-sm font-semibold tabular-nums text-neutral-900">
+                  {nextTransition
+                    ? clockInZone(
+                        nextTransition,
+                      )
+                    : '--:--'}
+                </p>
+
+              </div>
+
+
+              <div className="rounded-xl border border-neutral-300 bg-[#ededE9] px-4 py-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]">
+
+                <p className="text-[9px] tracking-[0.16em] text-muted-foreground">
+                  当前阶段
+                </p>
+
+                <p className="mt-1 text-sm font-semibold text-neutral-900">
+                  {meta.label}
+                </p>
+
+              </div>
+
+            </div>
+
           </div>
+
         </div>
 
-        {/* 右：信息栈 */}
-        <div className="flex flex-col gap-7 border-t border-border pt-8 lg:border-t-0 lg:border-l lg:px-8 lg:py-10 lg:pt-10">
-          <HangarSignalLights
-            phase={phase}
-            active={state?.activeSignals ?? 0}
-            nextChange={state ? formatDuration(state.signalRemaining) : '--:--'}
-          />
 
-          <dl className="grid gap-6 border-y border-border py-6 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <dt
-                className={cn(
-                  'text-[0.55rem] tracking-[0.26em] uppercase',
-                  phase === 'open' ? 'text-muted-foreground' : 'text-primary',
-                )}
-              >
-                Next Open
-              </dt>
-              <dd
-                className={cn(
-                  'font-display text-xl tabular-nums tracking-tight',
-                  phase === 'open' ? 'text-foreground' : 'text-foreground font-semibold',
-                )}
-              >
+        {/* 右侧设备状态区 */}
+        <div className="flex flex-col gap-6 px-5 py-7 lg:px-7 lg:py-8">
+
+          <div>
+
+            <div className="mb-4 flex items-center justify-between">
+
+              <div>
+                <p className="text-[9px] font-semibold tracking-[0.2em] text-muted-foreground">
+                  SIGNAL ARRAY
+                </p>
+
+                <h4 className="mt-1 text-sm font-semibold text-neutral-900">
+                  信号灯状态
+                </h4>
+              </div>
+
+              <span className="font-mono text-[10px] text-muted-foreground">
                 {state
-                  ? `${dateInZone(state.nextOpen)} ${clockInZone(state.nextOpen)}`
+                  ? formatDuration(
+                      state.signalRemaining,
+                    )
+                  : '--:--'}
+              </span>
+
+            </div>
+
+            <div className="rounded-2xl border border-neutral-300 bg-[#e9e9e5] p-4 shadow-[inset_0_2px_5px_rgba(0,0,0,0.06)]">
+              <HangarSignalLights
+                phase={phase}
+                active={
+                  state?.activeSignals ??
+                  0
+                }
+                nextChange={
+                  state
+                    ? formatDuration(
+                        state.signalRemaining,
+                      )
+                    : '--:--'
+                }
+              />
+            </div>
+
+          </div>
+
+
+          <dl className="grid gap-3 sm:grid-cols-2">
+
+            <div className="rounded-2xl border border-neutral-300 bg-[#f8f8f5] p-4">
+
+              <dt className="text-[9px] font-semibold tracking-[0.18em] text-muted-foreground">
+                下一次开放
+              </dt>
+
+              <dd className="mt-2 font-display text-lg font-semibold tabular-nums tracking-tight text-neutral-950">
+                {state
+                  ? `${dateInZone(
+                      state.nextOpen,
+                    )} ${clockInZone(
+                      state.nextOpen,
+                    )}`
                   : '--'}
               </dd>
-              <dd className="text-[0.62rem] tracking-[0.12em] text-muted-foreground">
-                {state ? `in ${formatMinutesRough(state.untilNextOpen)}` : '—'}
-              </dd>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <dt
-                className={cn(
-                  'text-[0.55rem] tracking-[0.26em] uppercase',
-                  phase === 'open' ? 'text-primary' : 'text-muted-foreground',
-                )}
-              >
-                Next Close
-              </dt>
-              <dd
-                className={cn(
-                  'font-display text-xl tabular-nums tracking-tight',
-                  phase === 'open' ? 'text-foreground font-semibold' : 'text-foreground',
-                )}
-              >
+
+              <dd className="mt-1 text-[10px] text-muted-foreground">
                 {state
-                  ? `${dateInZone(state.nextClose)} ${clockInZone(state.nextClose)}`
+                  ? `${formatMinutesRough(
+                      state.untilNextOpen,
+                    )} 后`
+                  : '—'}
+              </dd>
+
+            </div>
+
+
+            <div className="rounded-2xl border border-neutral-300 bg-[#f8f8f5] p-4">
+
+              <dt className="text-[9px] font-semibold tracking-[0.18em] text-muted-foreground">
+                下一次关闭
+              </dt>
+
+              <dd className="mt-2 font-display text-lg font-semibold tabular-nums tracking-tight text-neutral-950">
+                {state
+                  ? `${dateInZone(
+                      state.nextClose,
+                    )} ${clockInZone(
+                      state.nextClose,
+                    )}`
                   : '--'}
               </dd>
-              <dd className="text-[0.62rem] tracking-[0.12em] text-muted-foreground">
-                {cfg.openMinutes} min window
+
+              <dd className="mt-1 text-[10px] text-muted-foreground">
+                开放窗口 {cfg.openMinutes} 分钟
               </dd>
+
             </div>
+
           </dl>
 
-          <CycleRail progress={state?.cycleProgress ?? 0} />
 
-          <div className="flex flex-wrap items-center justify-between gap-3 text-[0.55rem] tracking-[0.22em] text-muted-foreground uppercase">
-            <span>
-              Last sync ·{' '}
-              <span className="tabular-nums">{utcStamp(new Date(anchor))}</span>
-            </span>
-            <span>Build {cfg.gameVersion}</span>
+          <div>
+
+            <div className="mb-3 flex items-center justify-between">
+
+              <p className="text-[9px] font-semibold tracking-[0.2em] text-muted-foreground">
+                周期进度
+              </p>
+
+              <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                {Math.round(
+                  (state?.cycleProgress ??
+                    0) *
+                    100,
+                )}
+                %
+              </span>
+
+            </div>
+
+            <div className="rounded-xl border border-neutral-300 bg-[#ecece8] p-3 shadow-[inset_0_1px_3px_rgba(0,0,0,0.06)]">
+              <CycleRail
+                progress={
+                  state?.cycleProgress ??
+                  0
+                }
+              />
+            </div>
+
           </div>
+
+
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-neutral-300 pt-4 text-[9px] tracking-[0.12em] text-muted-foreground">
+
+            <span>
+              最后校准 ·{' '}
+              <span className="font-mono tabular-nums">
+                {utcStamp(
+                  new Date(
+                    anchor,
+                  ),
+                )}
+              </span>
+            </span>
+
+            <span>
+              BUILD {cfg.gameVersion}
+            </span>
+
+          </div>
+
         </div>
+
       </div>
+
     </div>
   )
 }

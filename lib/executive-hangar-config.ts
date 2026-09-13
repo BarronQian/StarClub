@@ -4,6 +4,10 @@
  */
 export const executiveHangarConfig = {
   cycleMinutes: 185,
+
+  /** 每轮周期额外偏移，来源于当前行政机库周期数据 */
+  cycleOffsetMs: 699,
+
   closedMinutes: 120,
   openMinutes: 60,
   resetMinutes: 5,
@@ -13,11 +17,11 @@ export const executiveHangarConfig = {
   /** 开启阶段每盏灯熄灭间隔（分钟） */
   activeLightInterval: 12,
 
-  /** 基准：一次周期起点（即红灯充能阶段开始）的 UTC 时间 */
-  anchorTime: '2026-08-16T19:29:33Z',
+  /** 基准：一次关闭阶段起点的 UTC 时间 */
+  anchorTime: '2026-09-13T09:11:52Z',
 
   location: 'PYAM-EXHANG',
-  gameVersion: '4.10',
+  gameVersion: '4.10.0-HOTFIX',
 
   /** 基准超过该天数未复核则标记 SYNC AGING */
   syncAgingDays: 14,
