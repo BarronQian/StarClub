@@ -410,100 +410,105 @@ export function GalleryMosaic({
     let cancelled =
       false
 
-    async function loadLikeStates() {
-      const supabase =
-        getBrowserSupabase()
+async function loadLikeStates() {
+  const supabase =
+    getBrowserSupabase()
 
-      let accessToken:
-        | string
-        | undefined
+  let accessToken:
+    | string
+    | undefined
 
-      if (supabase) {
-        const {
-          data,
-        } =
-          await supabase.auth.getSession()
+  if (supabase) {
+    const {
+      data,
+    } =
+      await supabase.auth.getSession()
 
-        accessToken =
-          data.session
-            ?.access_token
-      }
+    accessToken =
+      data.session
+        ?.access_token
+  }
 
-      await Promise.all(
-        shots.map(
-          async (
-            shot,
-          ) => {
-            if (
-              shot.id ===
-              undefined
-            ) {
-              return
-            }
+  /*
+   * 未登录用户直接使用服务端已经传下来的点赞数。
+   * 不再为每张作品单独请求点赞状态。
+   */
+  if (!accessToken) {
+    return
+  }
 
-            try {
-              const response =
-                await fetch(
-                  `/api/gallery/${shot.id}/like`,
-                  {
-                    method:
-                      'GET',
+  await Promise.all(
+    shots.map(
+      async (
+        shot,
+      ) => {
+        if (
+          shot.id ===
+          undefined
+        ) {
+          return
+        }
 
-                    headers:
-                      accessToken
-                        ? {
-                            Authorization: `Bearer ${accessToken}`,
-                          }
-                        : undefined,
+        try {
+          const response =
+            await fetch(
+              `/api/gallery/${shot.id}/like`,
+              {
+                method:
+                  'GET',
 
-                    cache:
-                      'no-store',
-                  },
-                )
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
 
-              if (
-                !response.ok
-              ) {
-                return
-              }
+                cache:
+                  'no-store',
+              },
+            )
 
-              const data =
-                await response.json()
+          if (
+            !response.ok
+          ) {
+            return
+          }
 
-              if (
-                cancelled
-              ) {
-                return
-              }
+          const data =
+            await response.json()
 
-              setLikeStates(
-                (
-                  previous,
-                ) => ({
-                  ...previous,
+          if (
+            cancelled
+          ) {
+            return
+          }
 
-                  [shot.id!]:
-                    {
-                      liked:
-                        Boolean(
-                          data.liked,
-                        ),
+          setLikeStates(
+            (
+              previous,
+            ) => ({
+              ...previous,
 
-                      likeCount:
-                        Number(
-                          data.likeCount ??
-                            0,
-                        ),
-                    },
-                }),
-              )
-            } catch {
-              // 保留初始点赞数
-            }
-          },
-        ),
-      )
-    }
+              [shot.id!]:
+                {
+                  liked:
+                    Boolean(
+                      data.liked,
+                    ),
+
+                  likeCount:
+                    Number(
+                      data.likeCount ??
+                        0,
+                    ),
+                },
+            }),
+          )
+        } catch {
+          // 保留服务端传下来的初始点赞数
+        }
+      },
+    ),
+  )
+}
 
     void loadLikeStates()
 
