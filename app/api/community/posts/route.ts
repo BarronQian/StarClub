@@ -67,6 +67,11 @@ export async function GET(
     const supabase =
       getAdminSupabase()
 
+      const postId =
+  request.nextUrl.searchParams.get(
+    'postId',
+  )
+
     const authorId =
       request.nextUrl.searchParams.get(
         'authorId',
@@ -87,6 +92,32 @@ export async function GET(
 
       let followingUserId:
         string | null = null
+
+      const authorization =
+        request.headers.get(
+          'authorization',
+        )
+
+      if (
+        authorization?.startsWith(
+          'Bearer ',
+        )
+      ) {
+        const accessToken =
+          authorization.slice(7)
+
+        const {
+          data: { user },
+        } =
+          await supabase.auth.getUser(
+            accessToken,
+          )
+
+        if (user) {
+          followingUserId =
+            user.id
+        }
+      }
 
       if (following) {
         const authorization =
@@ -236,6 +267,15 @@ export async function GET(
         .limit(
           POSTS_PAGE_SIZE + 1,
         )
+
+    // 指定单条动态
+      if (postId) {
+        postsQuery =
+          postsQuery.eq(
+            'id',
+            postId,
+          )
+      }
 
     // 个人主页动态
     if (authorId) {
@@ -494,6 +534,35 @@ export async function GET(
       lastPost
         ? lastPost.created_at
         : null
+
+        if (postId) {
+  const post =
+    posts[0] ?? null
+
+  if (!post) {
+    return NextResponse.json(
+      {
+        error:
+          '动态不存在或已被删除',
+      },
+      {
+        status: 404,
+      },
+    )
+  }
+
+  return NextResponse.json(
+    {
+      post,
+    },
+    {
+      headers: {
+        'Cache-Control':
+          'no-store, max-age=0',
+      },
+    },
+  )
+}
 
     return NextResponse.json(
       {

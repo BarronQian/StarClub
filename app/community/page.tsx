@@ -11,6 +11,11 @@ import {
   MessageCircle,
   Send,
   Heart,
+  House,
+  Users,
+  Bell,
+  FileText,
+  CheckCheck,
 } from 'lucide-react'
 
 import {
@@ -28,6 +33,7 @@ import {
 type FeedMode =
   | 'community'
   | 'following'
+  | 'notifications'
   | 'mine'
   | 'comments'
 
@@ -100,6 +106,34 @@ type CommunityNews = {
   publishedAt: string
 }
 
+type NotificationActor = {
+  username: string | null
+  display_name: string | null
+  avatar_url: string | null
+  star_citizen_handle: string | null
+  profile_slug: string | null
+}
+
+type CommunityNotification = {
+  id: string
+  recipient_id: string
+  actor_id: string
+  type:
+    | 'post_like'
+    | 'post_comment'
+    | 'comment_like'
+    | 'comment_reply'
+  post_id: string | null
+  comment_id: string | null
+  created_at: string
+  seen_at: string | null
+  read_at: string | null
+  actor:
+    | NotificationActor
+    | NotificationActor[]
+    | null
+}
+
 function getPostAuthor(
   post: CommunityPost,
 ): PostAuthor | null {
@@ -130,6 +164,42 @@ function formatPostTime(
       minute: '2-digit',
     },
   )
+}
+
+function getNotificationActor(
+  notification: CommunityNotification,
+): NotificationActor | null {
+  if (!notification.actor) {
+    return null
+  }
+
+  return Array.isArray(
+    notification.actor,
+  )
+    ? notification.actor[0] ??
+        null
+    : notification.actor
+}
+
+function getNotificationText(
+  type: CommunityNotification['type'],
+) {
+  switch (type) {
+    case 'post_like':
+      return '赞了你的动态'
+
+    case 'post_comment':
+      return '评论了你的动态'
+
+    case 'comment_like':
+      return '赞了你的评论'
+
+    case 'comment_reply':
+      return '回复了你的评论'
+
+    default:
+      return '与你进行了互动'
+  }
 }
 
 export default function CommunityPage() {
@@ -258,6 +328,30 @@ export default function CommunityPage() {
     newsLoading,
     setNewsLoading,
   ] = useState(true)
+
+  const [
+  notifications,
+  setNotifications,
+] = useState<
+  CommunityNotification[]
+>([])
+
+const [
+  unseenNotificationCount,
+  setUnseenNotificationCount,
+] = useState(0)
+
+const [
+  unreadNotificationCount,
+  setUnreadNotificationCount,
+] = useState(0)
+
+const [
+  notificationFilter,
+  setNotificationFilter,
+] = useState<
+  'all' | 'replies' | 'likes'
+>('all')
 
   const loadPosts =
     useCallback(
@@ -690,6 +784,622 @@ export default function CommunityPage() {
       [],
     )
 
+  const loadNotifications =
+  useCallback(
+    async (
+      cursor?: string | null,
+      append = false,
+    ) => {
+      try {
+        if (append) {
+          setLoadingMore(true)
+        } else {
+          setLoading(true)
+        }
+
+        setError(null)
+
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          !session?.access_token
+        ) {
+          setNotifications([])
+          setUnseenNotificationCount(0)
+          setUnreadNotificationCount(0)
+          setHasMore(false)
+          setNextCursor(null)
+          setError(
+            '请先登录后查看我的消息',
+          )
+          return
+        }
+
+        const params =
+          new URLSearchParams()
+
+        if (cursor) {
+          params.set(
+            'cursor',
+            cursor,
+          )
+        }
+
+        const query =
+          params.toString()
+
+        const controller =
+          new AbortController()
+
+        const timeout =
+          window.setTimeout(
+            () => {
+              controller.abort()
+            },
+            10000,
+          )
+
+        const response =
+          await fetch(
+            `/api/community/notifications${
+              query
+                ? `?${query}`
+                : ''
+            }`,
+            {
+              cache:
+                'no-store',
+
+              signal:
+                controller.signal,
+
+              headers: {
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+            },
+          )
+
+        window.clearTimeout(
+          timeout,
+        )
+
+        const data =
+          await response.json()
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+              '读取消息失败',
+          )
+        }
+
+        const newNotifications:
+          CommunityNotification[] =
+          Array.isArray(
+            data.notifications,
+          )
+            ? data.notifications
+            : []
+
+        if (append) {
+          setNotifications(
+            (
+              currentNotifications,
+            ) => {
+              const existingIds =
+                new Set(
+                  currentNotifications.map(
+                    (
+                      notification,
+                    ) =>
+                      notification.id,
+                  ),
+                )
+
+              const uniqueNotifications =
+                newNotifications.filter(
+                  (
+                    notification,
+                  ) =>
+                    !existingIds.has(
+                      notification.id,
+                    ),
+                )
+
+              return [
+                ...currentNotifications,
+                ...uniqueNotifications,
+              ]
+            },
+          )
+        } else {
+          setNotifications(
+            newNotifications,
+          )
+        }
+
+        setUnseenNotificationCount(
+          typeof data.unseenCount ===
+            'number'
+            ? data.unseenCount
+            : 0,
+        )
+
+        setUnreadNotificationCount(
+          typeof data.unreadCount ===
+            'number'
+            ? data.unreadCount
+            : 0,
+        )
+
+        setHasMore(
+          data.hasMore === true,
+        )
+
+        setNextCursor(
+          typeof data.nextCursor ===
+            'string'
+            ? data.nextCursor
+            : null,
+        )
+      } catch (error) {
+        console.error(
+          'Failed to load notifications:',
+          error,
+        )
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : '读取消息失败',
+        )
+      } finally {
+        if (append) {
+          setLoadingMore(false)
+        } else {
+          setLoading(false)
+        }
+      }
+    },
+    [],
+  )
+
+  const loadNotificationCounts =
+  useCallback(
+    async () => {
+      try {
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          !session?.access_token
+        ) {
+          setUnseenNotificationCount(
+            0,
+          )
+
+          setUnreadNotificationCount(
+            0,
+          )
+
+          return
+        }
+
+        const response =
+          await fetch(
+            '/api/community/notifications',
+            {
+              cache:
+                'no-store',
+
+              headers: {
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+            },
+          )
+
+        if (!response.ok) {
+          return
+        }
+
+        const data =
+          await response.json()
+
+        setUnseenNotificationCount(
+          typeof data.unseenCount ===
+            'number'
+            ? data.unseenCount
+            : 0,
+        )
+
+        setUnreadNotificationCount(
+          typeof data.unreadCount ===
+            'number'
+            ? data.unreadCount
+            : 0,
+        )
+      } catch (error) {
+        console.error(
+          'Failed to load notification counts:',
+          error,
+        )
+      }
+    },
+    [],
+  )
+
+  const markNotificationsSeen =
+  useCallback(
+    async () => {
+      try {
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          !session?.access_token
+        ) {
+          return
+        }
+
+        const response =
+          await fetch(
+            '/api/community/notifications',
+            {
+              method: 'PATCH',
+
+              headers: {
+                'Content-Type':
+                  'application/json',
+
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+
+              body:
+                JSON.stringify({
+                  action: 'seen',
+                }),
+            },
+          )
+
+        if (!response.ok) {
+          const data =
+            await response.json()
+
+          throw new Error(
+            data.error ||
+              '更新消息状态失败',
+          )
+        }
+
+        setUnseenNotificationCount(
+          0,
+        )
+      } catch (error) {
+        console.error(
+          'Failed to mark notifications seen:',
+          error,
+        )
+      }
+    },
+    [],
+  )
+
+  const markAllNotificationsRead =
+  async () => {
+    try {
+      const supabase =
+        getSupabaseBrowser()
+
+      const {
+        data: { session },
+      } =
+        await supabase.auth.getSession()
+
+      if (
+        !session?.access_token
+      ) {
+        return
+      }
+
+      const response =
+        await fetch(
+          '/api/community/notifications',
+          {
+            method: 'PATCH',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+
+            body:
+              JSON.stringify({
+                action:
+                  'read-all',
+              }),
+          },
+        )
+
+      if (!response.ok) {
+        const data =
+          await response.json()
+
+        throw new Error(
+          data.error ||
+            '全部标为已读失败',
+        )
+      }
+
+      const now =
+        new Date().toISOString()
+
+      setNotifications(
+        (
+          currentNotifications,
+        ) =>
+          currentNotifications.map(
+            (
+              notification,
+            ) => ({
+              ...notification,
+
+              seen_at:
+                notification.seen_at ??
+                now,
+
+              read_at:
+                notification.read_at ??
+                now,
+            }),
+          ),
+      )
+
+      setUnseenNotificationCount(
+        0,
+      )
+
+      setUnreadNotificationCount(
+        0,
+      )
+    } catch (error) {
+      console.error(
+        'Failed to mark all notifications read:',
+        error,
+      )
+
+      setError(
+        '全部标为已读失败',
+      )
+    }
+  }
+
+  const markNotificationRead =
+  async (
+    notificationId: string,
+  ) => {
+    const notification =
+      notifications.find(
+        (item) =>
+          item.id ===
+          notificationId,
+      )
+
+    if (
+      !notification ||
+      notification.read_at
+    ) {
+      return
+    }
+
+    try {
+      const supabase =
+        getSupabaseBrowser()
+
+      const {
+        data: { session },
+      } =
+        await supabase.auth.getSession()
+
+      if (
+        !session?.access_token
+      ) {
+        return
+      }
+
+      const response =
+        await fetch(
+          '/api/community/notifications',
+          {
+            method: 'PATCH',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+
+            body:
+              JSON.stringify({
+                action:
+                  'read',
+
+                notificationId,
+              }),
+          },
+        )
+
+      if (!response.ok) {
+        return
+      }
+
+      const now =
+        new Date().toISOString()
+
+      setNotifications(
+        (
+          currentNotifications,
+        ) =>
+          currentNotifications.map(
+            (item) =>
+              item.id ===
+              notificationId
+                ? {
+                    ...item,
+
+                    seen_at:
+                      item.seen_at ??
+                      now,
+
+                    read_at: now,
+                  }
+                : item,
+          ),
+      )
+
+      setUnreadNotificationCount(
+        (current) =>
+          Math.max(
+            0,
+            current - 1,
+          ),
+      )
+    } catch (error) {
+      console.error(
+        'Failed to mark notification read:',
+        error,
+      )
+    }
+  }
+
+  const openNotificationPost =
+  async (
+    notification: CommunityNotification,
+  ) => {
+    if (!notification.post_id) {
+      return
+    }
+
+    try {
+      await markNotificationRead(
+        notification.id,
+      )
+
+      const existingPost =
+        posts.find(
+          (post) =>
+            post.id ===
+            notification.post_id,
+        )
+
+      if (existingPost) {
+        setCommentPost(
+          existingPost,
+        )
+
+        return
+      }
+
+      const supabase =
+        getSupabaseBrowser()
+
+      const {
+        data: { session },
+      } =
+        await supabase.auth.getSession()
+
+      const params =
+        new URLSearchParams({
+          postId:
+            notification.post_id,
+        })
+
+      const response =
+        await fetch(
+          `/api/community/posts?${params.toString()}`,
+          {
+            cache: 'no-store',
+
+            ...(session
+              ?.access_token
+              ? {
+                  headers: {
+                    Authorization:
+                      `Bearer ${session.access_token}`,
+                  },
+                }
+              : {}),
+          },
+        )
+
+      const data =
+        await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            '读取动态失败',
+        )
+      }
+
+      const post:
+        CommunityPost | null =
+        data.post ??
+        (
+          Array.isArray(
+            data.posts,
+          )
+            ? data.posts[0] ??
+              null
+            : null
+        )
+
+      if (!post) {
+        setError(
+          '这条动态已不存在',
+        )
+
+        return
+      }
+
+      setCommentPost(post)
+    } catch (error) {
+      console.error(
+        'Failed to open notification post:',
+        error,
+      )
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : '打开动态失败',
+      )
+    }
+  }
+
   const loadMorePosts =
     async () => {
       if (
@@ -711,6 +1421,18 @@ export default function CommunityPage() {
 
         return
       }
+
+      if (
+          feedMode ===
+          'notifications'
+        ) {
+          await loadNotifications(
+            nextCursor,
+            true,
+          )
+
+          return
+        }
 
       await loadPosts(
         nextCursor,
@@ -869,6 +1591,18 @@ export default function CommunityPage() {
       return
     }
 
+    if (
+      feedMode ===
+      'notifications'
+    ) {
+      void loadNotifications(
+        null,
+        false,
+      )
+
+      return
+    }
+
     void loadPosts(
       null,
       false,
@@ -880,11 +1614,45 @@ export default function CommunityPage() {
     currentUserId,
     loadPosts,
     loadMyComments,
+    loadNotifications,
   ])
 
   useEffect(() => {
     void loadNews()
   }, [loadNews])
+
+  useEffect(() => {
+  if (!loggedIn) {
+    setUnseenNotificationCount(
+      0,
+    )
+
+    setUnreadNotificationCount(
+      0,
+    )
+
+    return
+  }
+
+  void loadNotificationCounts()
+}, [
+  loggedIn,
+  loadNotificationCounts,
+])
+
+  useEffect(() => {
+  if (
+    feedMode !==
+    'notifications'
+  ) {
+    return
+  }
+
+  void markNotificationsSeen()
+}, [
+  feedMode,
+  markNotificationsSeen,
+])
 
   const switchFeed =
     (
@@ -893,7 +1661,8 @@ export default function CommunityPage() {
         if (
           (mode === 'mine' ||
             mode === 'comments' ||
-            mode === 'following') &&
+            mode === 'following' ||
+            mode === 'notifications') &&
           !loggedIn
         ) {
           setError(
@@ -901,7 +1670,9 @@ export default function CommunityPage() {
               ? '请先登录后查看我的评论'
               : mode === 'following'
                 ? '请先登录后查看关注动态'
-                : '请先登录后查看我的帖子',
+                : mode === 'notifications'
+                  ? '请先登录后查看我的消息'
+                  : '请先登录后查看我的帖子',
           )
 
           return
@@ -1329,26 +2100,32 @@ export default function CommunityPage() {
     }
   }
 
-  const pageTitle =
-    feedMode === 'mine'
-      ? '我的帖子'
+const pageTitle =
+  feedMode === 'mine'
+    ? '我的帖子'
+    : feedMode ===
+        'comments'
+      ? '我的评论'
       : feedMode ===
-          'comments'
-        ? '我的评论'
+          'following'
+        ? '我的关注'
         : feedMode ===
-            'following'
-          ? '我的关注'
+            'notifications'
+          ? '我的消息'
           : '社区动态'
 
-  const pageDescription =
-    feedMode === 'mine'
-      ? '查看和管理你在 StarClub 社区发布的动态。'
+const pageDescription =
+  feedMode === 'mine'
+    ? '查看和管理你在 StarClub 社区发布的动态。'
+    : feedMode ===
+        'comments'
+      ? '查看你在 StarClub 社区参与过的讨论。'
       : feedMode ===
-          'comments'
-        ? '查看你在 StarClub 社区参与过的讨论。'
+          'following'
+        ? '查看你关注的酒友最新发布的动态。'
         : feedMode ===
-            'following'
-          ? '查看你关注的酒友最新发布的动态。'
+            'notifications'
+          ? '查看与你相关的点赞、评论和回复。'
           : '分享你在星际公民宇宙中的故事、截图和见闻。'
 
   return (
@@ -1359,85 +2136,171 @@ export default function CommunityPage() {
           <div className="grid h-full grid-cols-1 xl:grid-cols-[240px_minmax(0,780px)_360px] xl:justify-center">
 
             <aside className="hidden h-full px-5 pb-6 pt-14 xl:block">
-              <nav className="sticky top-14 space-y-2">
+                <nav className="sticky top-14 space-y-2">
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    switchFeed(
-                      'community',
-                    )
-                  }}
-                  className={
-                    feedMode ===
-                    'community'
-                      ? 'flex h-11 w-full items-center rounded-xl bg-neutral-100 px-4 text-left text-sm font-medium text-foreground'
-                      : 'flex h-11 w-full items-center rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
-                  }
-                >
-                  社区主页
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      switchFeed(
+                        'community',
+                      )
+                    }}
+                    className={
+                      feedMode ===
+                      'community'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                    }
+                  >
+                    <House
+                      className="size-5"
+                      strokeWidth={1.8}
+                      fill={
+                        feedMode ===
+                        'community'
+                          ? 'currentColor'
+                          : 'none'
+                      }
+                    />
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    switchFeed(
-                      'following',
-                    )
-                  }}
-                  className={
-                    feedMode ===
-                    'following'
-                      ? 'flex h-11 w-full items-center rounded-xl bg-neutral-100 px-4 text-left text-sm font-medium text-foreground'
-                      : 'flex h-11 w-full items-center rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
-                  }
-                >
-                  关注
-                </button>
+                    <span>
+                      社区主页
+                    </span>
+                  </button>
 
-                <button
-                  type="button"
-                  disabled
-                  className="flex h-11 w-full cursor-not-allowed items-center rounded-xl px-4 text-left text-sm text-muted-foreground opacity-60"
-                >
-                  收藏
-                </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    switchFeed(
-                      'mine',
-                    )
-                  }}
-                  className={
-                    feedMode ===
-                    'mine'
-                      ? 'flex h-11 w-full items-center rounded-xl bg-neutral-100 px-4 text-left text-sm font-medium text-foreground'
-                      : 'flex h-11 w-full items-center rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
-                  }
-                >
-                  我的帖子
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      switchFeed(
+                        'following',
+                      )
+                    }}
+                    className={
+                      feedMode ===
+                      'following'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                    }
+                  >
+                    <Users
+                      className="size-5"
+                      strokeWidth={1.8}
+                      fill={
+                        feedMode ===
+                        'following'
+                          ? 'currentColor'
+                          : 'none'
+                      }
+                    />
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    switchFeed(
-                      'comments',
-                    )
-                  }}
-                  className={
-                    feedMode ===
-                    'comments'
-                      ? 'flex h-11 w-full items-center rounded-xl bg-neutral-100 px-4 text-left text-sm font-medium text-foreground'
-                      : 'flex h-11 w-full items-center rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
-                  }
-                >
-                  我的评论
-                </button>
+                    <span>
+                      关注
+                    </span>
+                  </button>
 
-              </nav>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      switchFeed(
+                        'notifications',
+                      )
+                    }}
+                    className={
+                      feedMode ===
+                      'notifications'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                    }
+                  >
+                    <Bell
+                      className="size-5"
+                      strokeWidth={1.8}
+                      fill={
+                        feedMode ===
+                        'notifications'
+                          ? 'currentColor'
+                          : 'none'
+                      }
+                    />
+
+                    <span>
+                      我的消息
+                    </span>
+
+                    {unseenNotificationCount >
+                      0 && (
+                      <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                        {unseenNotificationCount >
+                        99
+                          ? '99+'
+                          : unseenNotificationCount}
+                      </span>
+                    )}
+                  </button>
+
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      switchFeed(
+                        'mine',
+                      )
+                    }}
+                    className={
+                      feedMode === 'mine'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                    }
+                  >
+                    <FileText
+                      className="size-5"
+                      strokeWidth={1.8}
+                      fill={
+                        feedMode === 'mine'
+                          ? 'currentColor'
+                          : 'none'
+                      }
+                    />
+
+                    <span>
+                      我的帖子
+                    </span>
+                  </button>
+
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      switchFeed(
+                        'comments',
+                      )
+                    }}
+                    className={
+                      feedMode ===
+                      'comments'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                    }
+                  >
+                    <MessageCircle
+                      className="size-5"
+                      strokeWidth={1.8}
+                      fill={
+                        feedMode ===
+                        'comments'
+                          ? 'currentColor'
+                          : 'none'
+                      }
+                    />
+
+                    <span>
+                      我的评论
+                    </span>
+                  </button>
+
+                </nav>
             </aside>
 
             <div className="h-full overflow-y-auto border-x border-border bg-[#f7f7f5] px-5 pb-6 pt-14 lg:px-6">
@@ -1454,8 +2317,10 @@ export default function CommunityPage() {
 
               </div>
 
-              {feedMode !== 'comments' &&
-                feedMode !== 'following' && (
+                {feedMode !== 'comments' &&
+                  feedMode !== 'following' &&
+                  feedMode !==
+                    'notifications' && (
                 <section className="rounded-2xl border border-border bg-white p-5 shadow-[0_8px_28px_rgba(0,0,0,0.04)]">
 
                 {loggedIn ? (
@@ -1594,8 +2459,302 @@ export default function CommunityPage() {
                             : '正在加载社区动态...'}
                     </p>
                   </div>
-                ) : feedMode ===
-                  'comments' ? (
+                  ) : feedMode ===
+                    'notifications' ? (
+                    <div className="space-y-4">
+
+                      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.025)] sm:flex-row sm:items-center sm:justify-between">
+
+                        <div className="flex items-center gap-1 rounded-full bg-neutral-100 p-1">
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNotificationFilter(
+                                'all',
+                              )
+                            }}
+                            className={
+                              notificationFilter ===
+                              'all'
+                                ? 'rounded-full bg-white px-4 py-2 text-xs font-semibold text-foreground shadow-sm'
+                                : 'rounded-full px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
+                            }
+                          >
+                            全部
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNotificationFilter(
+                                'replies',
+                              )
+                            }}
+                            className={
+                              notificationFilter ===
+                              'replies'
+                                ? 'rounded-full bg-white px-4 py-2 text-xs font-semibold text-foreground shadow-sm'
+                                : 'rounded-full px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
+                            }
+                          >
+                            评论与回复
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNotificationFilter(
+                                'likes',
+                              )
+                            }}
+                            className={
+                              notificationFilter ===
+                              'likes'
+                                ? 'rounded-full bg-white px-4 py-2 text-xs font-semibold text-foreground shadow-sm'
+                                : 'rounded-full px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
+                            }
+                          >
+                            点赞
+                          </button>
+
+                        </div>
+
+                        {unreadNotificationCount >
+                          0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void markAllNotificationsRead()
+                            }}
+                            className="inline-flex items-center gap-1.5 self-start text-xs font-medium text-muted-foreground transition-colors hover:text-foreground sm:self-auto"
+                          >
+                            <CheckCheck
+                              className="size-4"
+                              strokeWidth={1.7}
+                            />
+
+                            全部标为已读
+                          </button>
+                        )}
+
+                      </div>
+
+
+                      {notifications.filter(
+                        (notification) => {
+                          if (
+                            notificationFilter ===
+                            'replies'
+                          ) {
+                            return (
+                              notification.type ===
+                                'post_comment' ||
+                              notification.type ===
+                                'comment_reply'
+                            )
+                          }
+
+                          if (
+                            notificationFilter ===
+                            'likes'
+                          ) {
+                            return (
+                              notification.type ===
+                                'post_like' ||
+                              notification.type ===
+                                'comment_like'
+                            )
+                          }
+
+                          return true
+                        },
+                      ).length > 0 ? (
+
+                        <div className="overflow-hidden rounded-2xl border border-border bg-white">
+
+                          {notifications
+                            .filter(
+                              (
+                                notification,
+                              ) => {
+                                if (
+                                  notificationFilter ===
+                                  'replies'
+                                ) {
+                                  return (
+                                    notification.type ===
+                                      'post_comment' ||
+                                    notification.type ===
+                                      'comment_reply'
+                                  )
+                                }
+
+                                if (
+                                  notificationFilter ===
+                                  'likes'
+                                ) {
+                                  return (
+                                    notification.type ===
+                                      'post_like' ||
+                                    notification.type ===
+                                      'comment_like'
+                                  )
+                                }
+
+                                return true
+                              },
+                            )
+                            .map(
+                              (
+                                notification,
+                              ) => {
+                                const actor =
+                                  getNotificationActor(
+                                    notification,
+                                  )
+
+                                const displayName =
+                                  actor
+                                    ?.star_citizen_handle ||
+                                  actor
+                                    ?.display_name ||
+                                  actor?.username ||
+                                  actor
+                                    ?.profile_slug ||
+                                  'StarClub 用户'
+
+                                const unread =
+                                  !notification.read_at
+
+                                return (
+                                  <button
+                                    key={
+                                      notification.id
+                                    }
+                                    type="button"
+                                        onClick={() => {
+                                          void openNotificationPost(
+                                            notification,
+                                          )
+                                        }}
+                                    className={
+                                      unread
+                                        ? 'group relative flex w-full items-start gap-4 border-b border-border bg-[#fffaf2] px-5 py-5 text-left transition-colors last:border-b-0 hover:bg-[#fff7e8]'
+                                        : 'group relative flex w-full items-start gap-4 border-b border-border bg-white px-5 py-5 text-left transition-colors last:border-b-0 hover:bg-neutral-50'
+                                    }
+                                  >
+
+                                    <div className="relative shrink-0">
+
+                                      {actor
+                                        ?.avatar_url ? (
+                                        <img
+                                          src={
+                                            actor.avatar_url
+                                          }
+                                          alt={
+                                            displayName
+                                          }
+                                          className="size-11 rounded-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="size-11 rounded-full bg-neutral-100" />
+                                      )}
+
+                                      {unread && (
+                                        <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-white bg-red-500" />
+                                      )}
+
+                                    </div>
+
+
+                                    <div className="min-w-0 flex-1">
+
+                                      <p
+                                        className={
+                                          unread
+                                            ? 'text-sm leading-6 text-neutral-900'
+                                            : 'text-sm leading-6 text-neutral-700'
+                                        }
+                                      >
+                                        <span
+                                          className={
+                                            unread
+                                              ? 'font-semibold'
+                                              : 'font-medium'
+                                          }
+                                        >
+                                          {displayName}
+                                        </span>
+
+                                        {' '}
+
+                                        {
+                                          getNotificationText(
+                                            notification.type,
+                                          )
+                                        }
+                                      </p>
+
+                                      <p className="mt-1 text-xs text-muted-foreground">
+                                        {formatPostTime(
+                                          notification.created_at,
+                                        )}
+                                      </p>
+
+                                    </div>
+
+
+                                    {notification.type ===
+                                      'post_like' ||
+                                    notification.type ===
+                                      'comment_like' ? (
+                                      <Heart
+                                        className="mt-1 size-4 shrink-0 fill-red-500 text-red-500"
+                                        strokeWidth={
+                                          1.6
+                                        }
+                                      />
+                                    ) : (
+                                      <MessageCircle
+                                        className="mt-1 size-4 shrink-0 text-[#a66700]"
+                                        strokeWidth={
+                                          1.6
+                                        }
+                                      />
+                                    )}
+
+                                  </button>
+                                )
+                              },
+                            )}
+
+                        </div>
+
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center">
+
+                          <Bell
+                            className="mx-auto size-6 text-muted-foreground"
+                            strokeWidth={1.5}
+                          />
+
+                          <p className="mt-4 text-base font-medium">
+                            暂无消息
+                          </p>
+
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            与你相关的点赞、评论和回复会显示在这里。
+                          </p>
+
+                        </div>
+                      )}
+
+                    </div>
+
+                  ) : feedMode ===
+                    'comments' ? (
                   myComments.length >
                   0 ? (
                     myComments.map(
