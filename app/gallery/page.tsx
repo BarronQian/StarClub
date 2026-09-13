@@ -6,8 +6,7 @@ import { GalleryPageGrid } from '@/components/gallery-page-grid'
 import { GalleryFilmBackground } from '@/components/gallery-film-background'
 import { getGalleryFromDb } from '@/lib/gallery-db'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: '社区影廊 | 星际酒馆 StarClub',
