@@ -1,25 +1,22 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import {
-  HANGAR_PHASE_COLORS,
-  type HangarPhase,
+import type {
+  HangarPhase,
 } from '@/lib/executive-hangar-config'
+import type {
+  SignalState,
+} from '@/lib/executive-hangar'
 
 export function HangarSignalLights({
   phase,
-  active,
+  signalStates,
   nextChange,
 }: {
   phase: HangarPhase
-  active: number
+  signalStates: SignalState[]
   nextChange: string
 }) {
-  const color =
-    phase === 'open'
-      ? HANGAR_PHASE_COLORS.open
-      : HANGAR_PHASE_COLORS.closed
-
   const signalLabels = [
     '01',
     '02',
@@ -27,6 +24,24 @@ export function HangarSignalLights({
     '04',
     '05',
   ]
+
+  const greenCount =
+    signalStates.filter(
+      (state) =>
+        state === 'green',
+    ).length
+
+  const redCount =
+    signalStates.filter(
+      (state) =>
+        state === 'red',
+    ).length
+
+  const offCount =
+    signalStates.filter(
+      (state) =>
+        state === 'off',
+    ).length
 
   return (
     <div className="flex flex-col gap-5">
@@ -45,19 +60,45 @@ export function HangarSignalLights({
         </div>
 
         <div className="text-right">
-          <p className="font-mono text-[10px] font-semibold tabular-nums text-neutral-800">
-            {active} / 5
-          </p>
 
-          <p className="mt-0.5 text-[8px] tracking-[0.14em] text-muted-foreground">
-            ACTIVE
-          </p>
+          {phase === 'closed' ? (
+            <>
+              <p className="font-mono text-[10px] font-semibold tabular-nums text-neutral-800">
+                {greenCount} GREEN · {redCount} RED
+              </p>
+
+              <p className="mt-0.5 text-[8px] tracking-[0.14em] text-muted-foreground">
+                CHARGING
+              </p>
+            </>
+          ) : phase === 'open' ? (
+            <>
+              <p className="font-mono text-[10px] font-semibold tabular-nums text-neutral-800">
+                {greenCount} / 5
+              </p>
+
+              <p className="mt-0.5 text-[8px] tracking-[0.14em] text-muted-foreground">
+                ACTIVE
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-mono text-[10px] font-semibold tabular-nums text-neutral-800">
+                {offCount} / 5
+              </p>
+
+              <p className="mt-0.5 text-[8px] tracking-[0.14em] text-muted-foreground">
+                BLACKOUT
+              </p>
+            </>
+          )}
+
         </div>
 
       </div>
 
 
-      {/* 五个圆形工业指示灯 */}
+      {/* 五个周期信号灯 */}
       <div className="grid grid-cols-5 gap-3">
 
         {signalLabels.map(
@@ -65,8 +106,18 @@ export function HangarSignalLights({
             label,
             index,
           ) => {
-            const on =
-              index < active
+            const state =
+              signalStates[index] ??
+              'off'
+
+            const isGreen =
+              state === 'green'
+
+            const isRed =
+              state === 'red'
+
+            const isOff =
+              state === 'off'
 
             return (
               <div
@@ -74,44 +125,66 @@ export function HangarSignalLights({
                 className="flex flex-col items-center gap-2"
               >
 
+                {/* 工业灯座 */}
                 <div className="relative flex aspect-square w-full max-w-13 items-center justify-center rounded-full border border-neutral-400 bg-[#d9d9d4] shadow-[inset_0_2px_4px_rgba(0,0,0,0.18),0_1px_0_rgba(255,255,255,0.8)]">
 
-                  {/* 外圈金属环 */}
+                  {/* 金属外环 */}
                   <div className="absolute inset-0.75 rounded-full border border-neutral-300 bg-[linear-gradient(145deg,#f4f4f0,#bfbfba)]" />
 
-                  {/* 灯体 */}
-                  <div
-                    className={cn(
-                      'relative size-[58%] rounded-full border transition-all duration-300',
-                      on
-                        ? 'border-white/70'
-                        : 'border-neutral-400 bg-[#777773]',
-                    )}
-                    style={
-                      on
-                        ? {
-                            background: `radial-gradient(circle at 35% 30%, white 0%, color-mix(in oklab, ${color} 72%, white) 20%, ${color} 58%, color-mix(in oklab, ${color} 65%, black) 100%)`,
-                            boxShadow: `
-                              0 0 10px color-mix(in oklab, ${color} 75%, transparent),
-                              0 0 20px color-mix(in oklab, ${color} 40%, transparent),
-                              inset 0 0 5px rgba(255,255,255,0.8)
-                            `,
-                          }
-                        : {
-                            boxShadow:
-                              'inset 0 2px 4px rgba(0,0,0,0.35)',
-                          }
-                    }
-                  />
+
+                  {/* 绿色 */}
+                  {isGreen && (
+                    <div
+                      className="relative size-[58%] rounded-full border border-white/70"
+                      style={{
+                        background:
+                          'radial-gradient(circle at 35% 30%, #f5fff6 0%, #8ee29c 20%, #3faa59 58%, #1d6a31 100%)',
+
+                        boxShadow: `
+                          0 0 10px rgba(63,170,89,0.8),
+                          0 0 20px rgba(63,170,89,0.42),
+                          inset 0 0 5px rgba(255,255,255,0.85)
+                        `,
+                      }}
+                    />
+                  )}
+
+
+                  {/* 红色 */}
+                  {isRed && (
+                    <div
+                      className="relative size-[58%] rounded-full border border-white/60"
+                      style={{
+                        background:
+                          'radial-gradient(circle at 35% 30%, #fff1ef 0%, #ef8b82 20%, #c94840 58%, #7c2420 100%)',
+
+                        boxShadow: `
+                          0 0 9px rgba(201,72,64,0.65),
+                          0 0 17px rgba(201,72,64,0.3),
+                          inset 0 0 5px rgba(255,255,255,0.75)
+                        `,
+                      }}
+                    />
+                  )}
+
+
+                  {/* 熄灭 / 黑灯 */}
+                  {isOff && (
+                    <div className="relative size-[58%] rounded-full border border-neutral-500 bg-[radial-gradient(circle_at_35%_30%,#8b8b87_0%,#62625f_35%,#444441_75%,#353532_100%)] shadow-[inset_0_2px_5px_rgba(0,0,0,0.5)]" />
+                  )}
 
                 </div>
+
 
                 <span
                   className={cn(
                     'font-mono text-[9px] tabular-nums tracking-[0.12em]',
-                    on
-                      ? 'text-neutral-800'
-                      : 'text-muted-foreground',
+                    isGreen &&
+                      'text-emerald-700',
+                    isRed &&
+                      'text-red-700',
+                    isOff &&
+                      'text-muted-foreground',
                   )}
                 >
                   {label}
@@ -125,20 +198,24 @@ export function HangarSignalLights({
       </div>
 
 
-      {/* 底部状态文字 */}
-      <div className="flex items-center justify-between gap-3 border-t border-neutral-300 pt-3">
+      {/* 状态说明 */}
+      <div className="border-t border-neutral-300 pt-3">
 
-        <p className="text-[9px] leading-4 text-muted-foreground">
-          {phase === 'reset'
-            ? '系统正在执行重置程序'
-            : phase === 'open'
-              ? '当前行政机库处于开放周期'
-              : '当前行政机库处于关闭周期'}
-        </p>
+        <div className="flex items-center justify-between gap-3">
 
-        <span className="shrink-0 font-mono text-[9px] tabular-nums text-neutral-700">
-          {nextChange}
-        </span>
+          <p className="text-[9px] leading-4 text-muted-foreground">
+            {phase === 'closed'
+              ? '红灯依次转绿，全部转绿后进入开放阶段'
+              : phase === 'open'
+                ? '绿灯依次熄灭，全部熄灭后进入重置阶段'
+                : '全部信号灯熄灭，系统正在执行重置'}
+          </p>
+
+          <span className="shrink-0 font-mono text-[9px] tabular-nums text-neutral-700">
+            {nextChange}
+          </span>
+
+        </div>
 
       </div>
 
