@@ -8,6 +8,15 @@ export const metadata: Metadata = {
     '星际酒馆 StarClub 的社区合作伙伴与友好组织。',
 }
 
+const PARTNERS = [
+  {
+    name: 'Kitsune 泛星际报团队',
+    logo: '/images/partners/kitsune.png',
+    description: '星际公民中文社区攻略内容创作团队',
+    href: 'https://kitsuneint.com',
+  },
+]
+
 export default function PartnersPage() {
   return (
     <div className="pb-24 lg:pb-32">
@@ -53,7 +62,63 @@ export default function PartnersPage() {
       </section>
 
 <section className="site-container pt-16 lg:pt-24">
-  <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+    <Reveal>
+    <div className="border-b border-border pb-14 lg:pb-18">
+      <div className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr] lg:items-center">
+        <div>
+          <span className="font-display text-[0.65rem] tracking-[0.3em] text-primary">
+            COOPERATIVE ORGANIZATIONS
+          </span>
+
+          <h2 className="mt-3 font-display text-2xl tracking-tight sm:text-3xl">
+            合作组织
+          </h2>
+
+          <p className="mt-5 max-w-md text-sm leading-7 text-muted-foreground">
+            与星际酒馆保持长期交流、内容合作与社区互动的伙伴。
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {PARTNERS.map((partner) => (
+            <a
+              key={partner.name}
+              href={partner.href}
+              target={
+                partner.href !== '#'
+                  ? '_blank'
+                  : undefined
+              }
+              rel={
+                partner.href !== '#'
+                  ? 'noopener noreferrer'
+                  : undefined
+              }
+              className="group flex min-h-48 flex-col items-center justify-center border border-border bg-background px-6 py-7 text-center transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_14px_40px_rgba(0,0,0,0.06)]"
+            >
+              <div className="flex h-20 w-full items-center justify-center">
+                <img
+                  src={partner.logo}
+                  alt={partner.name}
+                  className="max-h-16 max-w-45 object-contain transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
+
+              <h3 className="mt-5 font-display text-sm font-medium">
+                {partner.name}
+              </h3>
+
+              <p className="mt-2 max-w-55 text-xs leading-5 text-muted-foreground">
+                {partner.description}
+              </p>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </Reveal>
+  
+    <div className="mt-16 grid gap-12 lg:mt-20 lg:grid-cols-[0.8fr_1.2fr]">
     <div>
       <span className="font-display text-[0.65rem] tracking-[0.3em] text-primary">
         WORK WITH STARCLUB
