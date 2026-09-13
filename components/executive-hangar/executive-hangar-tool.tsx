@@ -14,6 +14,9 @@ import { NextOpen } from './next-open'
 import { UpcomingWindows } from './upcoming-windows'
 import { CalibrationPanel } from './calibration-panel'
 
+const LOCAL_ANCHOR_KEY =
+  'starclub-executive-hangar-local-anchor'
+
 function formatLocalClock(
   value: number,
 ) {
@@ -110,11 +113,51 @@ export function ExecutiveHangarTool({
       globalAnchorMs,
     )
 
-    useEffect(
+  const [
+  hasLocalCalibration,
+  setHasLocalCalibration,
+] =
+  useState(false)
+
+useEffect(
   () => {
-    setAnchor(
-      globalAnchorMs,
-    )
+    const saved =
+      window.localStorage.getItem(
+        LOCAL_ANCHOR_KEY,
+      )
+
+    if (saved) {
+      const savedAnchor =
+        Number(saved)
+
+      if (
+        Number.isFinite(
+          savedAnchor,
+        )
+      ) {
+        setAnchor(
+          savedAnchor,
+        )
+
+        setHasLocalCalibration(
+          true,
+        )
+
+        return
+      }
+
+      window.localStorage.removeItem(
+        LOCAL_ANCHOR_KEY,
+      )
+    }
+
+      setHasLocalCalibration(
+        false,
+      )
+
+      setAnchor(
+        globalAnchorMs,
+      )
   },
   [
     globalAnchorMs,
@@ -408,6 +451,22 @@ export function ExecutiveHangarTool({
             周期校准
           </h3>
 
+          <div className="mt-2 flex items-center gap-2">
+            <span
+              className={`size-1.5 rounded-full ${
+                hasLocalCalibration
+                  ? 'bg-amber-500'
+                  : 'bg-emerald-500'
+              }`}
+            />
+
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {hasLocalCalibration
+                ? '当前使用：个人校准'
+                : '当前使用：酒馆全局基准'}
+            </span>
+          </div>
+
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             如果游戏内实际开放时间与网页预测存在偏差，可以重新校准当前周期。
           </p>
@@ -419,17 +478,39 @@ export function ExecutiveHangarTool({
           }
           onCalibrate={(
             greenStart,
-          ) =>
-            setAnchor(
+          ) => {
+            const calibratedAnchor =
               greenStart -
-                CLOSED_MS,
-            )
-          }
-          onReset={() =>
+              CLOSED_MS
+
             setAnchor(
-              globalAnchorMs,
+              calibratedAnchor,
             )
-          }
+
+            window.localStorage.setItem(
+              LOCAL_ANCHOR_KEY,
+              String(
+                calibratedAnchor,
+              ),
+            )
+
+            setHasLocalCalibration(
+                true,
+              )
+          }}
+            onReset={() => {
+              window.localStorage.removeItem(
+                LOCAL_ANCHOR_KEY,
+              )
+
+              setHasLocalCalibration(
+                false,
+              )
+
+              setAnchor(
+                globalAnchorMs,
+              )
+            }}
         />
 
       </section>
