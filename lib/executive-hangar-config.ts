@@ -18,7 +18,7 @@ export const executiveHangarConfig = {
   activeLightInterval: 12,
 
   /** 基准：一次关闭阶段起点的 UTC 时间 */
-  anchorTime: '2026-09-13T09:11:52Z',
+  anchorTime: '2026-09-13T17:36:58Z',
 
   location: 'PYAM-EXHANG',
   gameVersion: '4.10.0-HOTFIX',

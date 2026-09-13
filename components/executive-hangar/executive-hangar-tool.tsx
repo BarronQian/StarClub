@@ -7,7 +7,6 @@ import {
   CLOSED_MS,
 } from '@/lib/executive-hangar'
 import {
-  executiveHangarConfig as cfg,
   type HangarTimezoneId,
 } from '@/lib/executive-hangar-config'
 import { HangarInstrument } from './hangar-instrument'
@@ -15,10 +14,8 @@ import { NextOpen } from './next-open'
 import { UpcomingWindows } from './upcoming-windows'
 import { CalibrationPanel } from './calibration-panel'
 
-const DEFAULT_ANCHOR =
-  new Date(
-    cfg.anchorTime,
-  ).getTime()
+const LOCAL_ANCHOR_KEY =
+  'starclub-executive-hangar-local-anchor'
 
 function formatLocalClock(
   value: number,
@@ -53,14 +50,119 @@ function formatUtcClock(
   )
 }
 
-export function ExecutiveHangarTool() {
+function formatUtcDateTime(
+  value: number,
+) {
+  const date =
+    new Date(value)
+
+  const datePart =
+    new Intl.DateTimeFormat(
+      'zh-CN',
+      {
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'UTC',
+      },
+    ).format(date)
+
+  const timePart =
+    new Intl.DateTimeFormat(
+      'zh-CN',
+      {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: 'UTC',
+      },
+    ).format(date)
+
+  return `${datePart} · ${timePart}`
+}
+
+export function ExecutiveHangarTool({
+  globalAnchor,
+}: {
+  globalAnchor: string
+}) {
+  const globalAnchorMs =
+    useMemo(
+      () => {
+        const value =
+          new Date(
+            globalAnchor,
+          ).getTime()
+
+        return Number.isFinite(
+          value,
+        )
+          ? value
+          : Date.now()
+      },
+      [
+        globalAnchor,
+      ],
+    )
+
   const [
     anchor,
     setAnchor,
   ] =
     useState(
-      DEFAULT_ANCHOR,
+      globalAnchorMs,
     )
+
+  const [
+  hasLocalCalibration,
+  setHasLocalCalibration,
+] =
+  useState(false)
+
+useEffect(
+  () => {
+    const saved =
+      window.localStorage.getItem(
+        LOCAL_ANCHOR_KEY,
+      )
+
+    if (saved) {
+      const savedAnchor =
+        Number(saved)
+
+      if (
+        Number.isFinite(
+          savedAnchor,
+        )
+      ) {
+        setAnchor(
+          savedAnchor,
+        )
+
+        setHasLocalCalibration(
+          true,
+        )
+
+        return
+      }
+
+      window.localStorage.removeItem(
+        LOCAL_ANCHOR_KEY,
+      )
+    }
+
+      setHasLocalCalibration(
+        false,
+      )
+
+      setAnchor(
+        globalAnchorMs,
+      )
+  },
+  [
+    globalAnchorMs,
+  ],
+)
 
   const [
     timezone,
@@ -130,24 +232,27 @@ export function ExecutiveHangarTool() {
     )
 
   const statusLabel =
-    state?.phase ===
-    'open'
+    state?.phase === 'open'
       ? '当前可进入'
-      : state
-        ? '等待开放'
-        : '正在同步'
+      : state?.phase === 'reset'
+        ? '正在重置'
+        : state
+          ? '等待开放'
+          : '正在同步'
 
   const statusTone =
-    state?.phase ===
-    'open'
+    state?.phase === 'open'
       ? 'text-emerald-700'
-      : 'text-[#a66700]'
+      : state?.phase === 'reset'
+        ? 'text-yellow-700'
+        : 'text-[#a66700]'
 
   const statusDot =
-    state?.phase ===
-    'open'
+    state?.phase === 'open'
       ? 'bg-emerald-500 shadow-[0_0_14px_rgba(16,185,129,0.7)]'
-      : 'bg-amber-500 shadow-[0_0_14px_rgba(245,158,11,0.55)]'
+      : state?.phase === 'reset'
+        ? 'bg-yellow-400 shadow-[0_0_14px_rgba(250,204,21,0.65)]'
+        : 'bg-amber-500 shadow-[0_0_14px_rgba(245,158,11,0.55)]'
 
   return (
     <div className="flex flex-col gap-6">
@@ -202,12 +307,13 @@ export function ExecutiveHangarTool() {
                 </p>
 
                 <p className="mt-1 text-sm font-semibold text-neutral-900">
-                  {state?.phase ===
-                  'open'
+                  {state?.phase === 'open'
                     ? '开放阶段'
-                    : state
-                      ? '关闭阶段'
-                      : '同步中'}
+                    : state?.phase === 'reset'
+                      ? '重置阶段'
+                      : state
+                        ? '关闭阶段'
+                        : '同步中'}
                 </p>
               </div>
 
@@ -217,7 +323,7 @@ export function ExecutiveHangarTool() {
                 </p>
 
                 <p className="mt-1 font-mono text-sm font-semibold tabular-nums text-neutral-900">
-                  {formatUtcClock(
+                  {formatUtcDateTime(
                     anchor,
                   )}
                 </p>
@@ -243,34 +349,6 @@ export function ExecutiveHangarTool() {
                 <h3 className="mt-1 text-base font-semibold text-neutral-950">
                   周期主仪表
                 </h3>
-              </div>
-
-              <div className="flex items-center gap-2">
-
-                {[
-                  0,
-                  1,
-                  2,
-                  3,
-                  4,
-                ].map(
-                  (
-                    index,
-                  ) => (
-                    <span
-                      key={
-                        index
-                      }
-                      className={
-                        index ===
-                        0
-                          ? `size-3 rounded-full ${statusDot}`
-                          : 'size-3 rounded-full border border-neutral-300 bg-neutral-100'
-                      }
-                    />
-                  ),
-                )}
-
               </div>
 
             </div>
@@ -305,16 +383,10 @@ export function ExecutiveHangarTool() {
 
             {state ? (
               <NextOpen
-                nextOpen={
-                  state.nextOpen
-                }
-                untilNextOpen={
-                  state.untilNextOpen
-                }
-                isOpenNow={
-                  state.phase ===
-                  'open'
-                }
+                nextOpen={state.nextOpen}
+                untilNextOpen={state.untilNextOpen}
+                isOpenNow={state.phase === 'open'}
+                phase={state.phase}
               />
             ) : (
               <div className="rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted-foreground">
@@ -379,6 +451,22 @@ export function ExecutiveHangarTool() {
             周期校准
           </h3>
 
+          <div className="mt-2 flex items-center gap-2">
+            <span
+              className={`size-1.5 rounded-full ${
+                hasLocalCalibration
+                  ? 'bg-amber-500'
+                  : 'bg-emerald-500'
+              }`}
+            />
+
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {hasLocalCalibration
+                ? '当前使用：个人校准'
+                : '当前使用：酒馆全局基准'}
+            </span>
+          </div>
+
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             如果游戏内实际开放时间与网页预测存在偏差，可以重新校准当前周期。
           </p>
@@ -390,17 +478,39 @@ export function ExecutiveHangarTool() {
           }
           onCalibrate={(
             greenStart,
-          ) =>
-            setAnchor(
+          ) => {
+            const calibratedAnchor =
               greenStart -
-                CLOSED_MS,
-            )
-          }
-          onReset={() =>
+              CLOSED_MS
+
             setAnchor(
-              DEFAULT_ANCHOR,
+              calibratedAnchor,
             )
-          }
+
+            window.localStorage.setItem(
+              LOCAL_ANCHOR_KEY,
+              String(
+                calibratedAnchor,
+              ),
+            )
+
+            setHasLocalCalibration(
+                true,
+              )
+          }}
+            onReset={() => {
+              window.localStorage.removeItem(
+                LOCAL_ANCHOR_KEY,
+              )
+
+              setHasLocalCalibration(
+                false,
+              )
+
+              setAnchor(
+                globalAnchorMs,
+              )
+            }}
         />
 
       </section>

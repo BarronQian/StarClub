@@ -2,8 +2,16 @@
 
 import {
   executiveHangarConfig as cfg,
-  HANGAR_PHASE_COLORS,
 } from '@/lib/executive-hangar-config'
+
+const SIGNAL_RED =
+  '#c94840'
+
+const SIGNAL_GREEN =
+  '#3faa59'
+
+const RESET_AMBER =
+  '#b7791f'
 
 const SEGMENTS = [
   {
@@ -11,21 +19,21 @@ const SEGMENTS = [
     minutes: cfg.closedMinutes,
     label: '关闭',
     en: 'CLOSED',
-    color: HANGAR_PHASE_COLORS.closed,
+    color: SIGNAL_RED,
   },
   {
     key: 'open' as const,
     minutes: cfg.openMinutes,
     label: '开放',
     en: 'OPEN',
-    color: HANGAR_PHASE_COLORS.open,
+    color: SIGNAL_GREEN,
   },
   {
     key: 'reset' as const,
     minutes: cfg.resetMinutes,
     label: '重置',
     en: 'RESET',
-    color: HANGAR_PHASE_COLORS.reset,
+    color: RESET_AMBER,
   },
 ]
 
@@ -34,13 +42,23 @@ export function CycleRail({
 }: {
   progress: number
 }) {
-  const pct = Math.min(
-    100,
-    Math.max(
-      0,
-      progress * 100,
-    ),
-  )
+  const pct =
+    Math.min(
+      100,
+      Math.max(
+        0,
+        progress * 100,
+      ),
+    )
+
+  const cursorPct =
+    Math.min(
+      99.2,
+      Math.max(
+        0.8,
+        pct,
+      ),
+    )
 
   return (
     <div className="flex flex-col gap-4">
@@ -73,7 +91,9 @@ export function CycleRail({
           <div className="absolute inset-0.75 flex overflow-hidden rounded-md">
 
             {SEGMENTS.map(
-              (segment) => (
+              (
+                segment,
+              ) => (
                 <div
                   key={
                     segment.key
@@ -84,21 +104,26 @@ export function CycleRail({
                       segment.minutes,
                   }}
                 >
+
                   <div
                     className="absolute inset-0"
                     style={{
-                      background: `linear-gradient(
-                        180deg,
-                        color-mix(in oklab, ${segment.color} 38%, white) 0%,
-                        ${segment.color} 48%,
-                        color-mix(in oklab, ${segment.color} 70%, black) 100%
-                      )`,
+                      background: `
+                        linear-gradient(
+                          180deg,
+                          color-mix(in oklab, ${segment.color} 38%, white) 0%,
+                          ${segment.color} 48%,
+                          color-mix(in oklab, ${segment.color} 68%, black) 100%
+                        )
+                      `,
                     }}
                   />
 
+                  {/* 上沿高光 */}
                   <div className="absolute inset-x-0 top-0 h-px bg-white/35" />
 
-                  <div className="absolute inset-y-0 right-0 w-px bg-black/30" />
+                  {/* 分段边界 */}
+                  <div className="absolute inset-y-0 right-0 w-px bg-black/35" />
 
                 </div>
               ),
@@ -111,25 +136,30 @@ export function CycleRail({
           <div
             className="absolute inset-y-0 z-20 w-0.75 -translate-x-1/2 transition-[left] duration-1000 ease-linear"
             style={{
-              left: `${pct}%`,
+              left:
+                `${cursorPct}%`,
             }}
           >
+
             <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
 
             <div className="absolute -top-1 left-1/2 size-2.5 -translate-x-1/2 rounded-full border border-white bg-neutral-900 shadow-[0_0_8px_rgba(255,255,255,0.65)]" />
+
           </div>
 
         </div>
 
 
-        {/* 上方游标 */}
+        {/* NOW 游标 */}
         <div
           className="pointer-events-none absolute -top-3 z-30 -translate-x-1/2 transition-[left] duration-1000 ease-linear"
           style={{
-            left: `${pct}%`,
+            left:
+              `${cursorPct}%`,
           }}
           aria-hidden="true"
         >
+
           <div className="flex flex-col items-center">
 
             <span className="rounded-sm border border-neutral-700 bg-neutral-900 px-1.5 py-0.5 font-mono text-[7px] leading-none text-white shadow-sm">
@@ -139,48 +169,49 @@ export function CycleRail({
             <span className="mt-0.5 size-0 border-x-4 border-t-[5px] border-x-transparent border-t-neutral-900" />
 
           </div>
+
         </div>
 
       </div>
 
 
-      {/* 阶段说明 */}
-      <div className="flex w-full gap-2">
+      {/* 三阶段说明 */}
+      <div className="grid grid-cols-3 gap-3">
 
         {SEGMENTS.map(
-          (segment) => (
+          (
+            segment,
+          ) => (
             <div
               key={
                 segment.key
               }
-              className="min-w-0"
-              style={{
-                flex:
-                  segment.minutes,
-              }}
+              className="min-w-0 rounded-lg border border-neutral-300/70 bg-[#f8f8f5] px-3 py-2.5"
             >
 
               <div className="flex items-center gap-2">
 
                 <span
-                  className="size-2 rounded-full"
+                  className="size-2 shrink-0 rounded-full"
                   style={{
                     background:
                       segment.color,
+
                     boxShadow:
                       `0 0 6px color-mix(in oklab, ${segment.color} 55%, transparent)`,
                   }}
                 />
 
-                <span className="text-[10px] font-semibold text-neutral-800">
+                <span className="truncate text-[10px] font-semibold text-neutral-800">
                   {segment.label}
                 </span>
 
               </div>
 
-              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
 
-                <span
+              <div className="mt-1.5">
+
+                <p
                   className="font-mono text-[9px] font-semibold tabular-nums"
                   style={{
                     color:
@@ -188,11 +219,11 @@ export function CycleRail({
                   }}
                 >
                   {segment.minutes} MIN
-                </span>
+                </p>
 
-                <span className="text-[8px] tracking-[0.12em] text-muted-foreground">
+                <p className="mt-0.5 text-[8px] tracking-[0.12em] text-muted-foreground">
                   {segment.en}
-                </span>
+                </p>
 
               </div>
 

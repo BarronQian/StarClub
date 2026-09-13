@@ -12,6 +12,7 @@ type AdminSection =
   | 'users'
   | 'market'
   | 'events'
+  | 'executive-hangar'
 
 export function AdminHeader({
   adminEmail,
@@ -134,6 +135,21 @@ export function AdminHeader({
         >
           活动管理
         </Button>
+
+        <Button
+          variant={
+            active === 'executive-hangar'
+              ? 'default'
+              : 'outline'
+          }
+          size="sm"
+          onClick={() =>
+            go('/admin/executive-hangar')
+          }
+        >
+          行政机库
+        </Button>
+
       </nav>
     </section>
   )
