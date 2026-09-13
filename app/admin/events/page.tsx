@@ -15,31 +15,9 @@ import {
 } from '@/components/admin/admin-header'
 
 import {
-  Badge,
-} from '@/components/ui/badge'
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-
-import {
-  EVENT_CATEGORY_LABEL,
-  EVENT_STATUS_LABEL,
-} from '@/lib/events'
-
-import type {
-  EventCategory,
-  EventStatus,
-} from '@/lib/events'
-
-import {
-  EventActions,
-} from '@/components/admin/event-actions'
+  EventsSortableTable,
+  type AdminEventRow,
+} from '@/components/admin/events-sortable-table'
 
 export const metadata: Metadata = {
   title:
@@ -49,49 +27,6 @@ export const metadata: Metadata = {
     index: false,
     follow: false,
   },
-}
-
-type CommunityEventRow = {
-  id: string
-
-  slug: string
-  tag: string
-  title: string
-  subtitle: string | null
-
-  date: string
-  location: string
-
-  category: EventCategory
-  status: EventStatus
-
-  featured_on_home: boolean
-  is_published: boolean
-
-  sort_order: number
-
-  deleted_at: string | null
-
-  created_at: string
-  updated_at: string
-}
-
-function getStatusClass(
-  status: EventStatus,
-) {
-  if (status === 'open') {
-    return 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-  }
-
-  if (status === 'ongoing') {
-    return 'border-blue-500/30 text-blue-600 dark:text-blue-400'
-  }
-
-  if (status === 'upcoming') {
-    return 'border-amber-500/30 text-amber-600 dark:text-amber-400'
-  }
-
-  return 'border-muted-foreground/30 text-muted-foreground'
 }
 
 export default async function AdminEventsPage() {
@@ -225,7 +160,7 @@ export default async function AdminEventsPage() {
     (
       eventsResult.data ??
       []
-    ) as CommunityEventRow[]
+    ) as AdminEventRow[]
 
   const totalCount =
     totalResult.count ?? 0
@@ -310,165 +245,11 @@ export default async function AdminEventsPage() {
             </Link>
           </div>
 
-          <div className="corner-cut overflow-hidden border border-border bg-card">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>
-                      活动
-                    </TableHead>
-
-                    <TableHead>
-                      分类
-                    </TableHead>
-
-                    <TableHead>
-                      状态
-                    </TableHead>
-
-                    <TableHead>
-                      日期
-                    </TableHead>
-
-                    <TableHead>
-                      发布
-                    </TableHead>
-
-                    <TableHead>
-                      首页
-                    </TableHead>
-
-                    <TableHead className="text-right">
-                      操作
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {events.length ===
-                  0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="py-12 text-center text-sm text-muted-foreground"
-                      >
-                        当前没有活动
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    events.map(
-                      (
-                        event,
-                      ) => (
-                        <TableRow
-                          key={
-                            event.id
-                          }
-                        >
-                          <TableCell className="max-w-72">
-                            <div className="font-medium text-foreground">
-                              {
-                                event.title
-                              }
-                            </div>
-
-                            {event.subtitle ? (
-                              <div className="mt-1 truncate text-[0.68rem] text-muted-foreground">
-                                {
-                                  event.subtitle
-                                }
-                              </div>
-                            ) : null}
-
-                            <div className="mt-1 text-[0.65rem] text-muted-foreground/70">
-                              {
-                                event.slug
-                              }
-                            </div>
-                          </TableCell>
-
-                          <TableCell>
-                            <Badge variant="outline">
-                              {
-                                EVENT_CATEGORY_LABEL[
-                                  event.category
-                                ]
-                              }
-                            </Badge>
-                          </TableCell>
-
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                getStatusClass(
-                                  event.status,
-                                )
-                              }
-                            >
-                              {
-                                EVENT_STATUS_LABEL[
-                                  event.status
-                                ]
-                              }
-                            </Badge>
-                          </TableCell>
-
-                          <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                            {
-                              event.date
-                            }
-                          </TableCell>
-
-                          <TableCell>
-                            {event.is_published ? (
-                              <Badge
-                                variant="outline"
-                                className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                              >
-                                已发布
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="outline"
-                                className="border-muted-foreground/30 text-muted-foreground"
-                              >
-                                草稿
-                              </Badge>
-                            )}
-                          </TableCell>
-
-                              <TableCell>
-                                {event.featured_on_home ? (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-primary/30 text-primary"
-                                  >
-                                    推荐
-                                  </Badge>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">
-                                    —
-                                  </span>
-                                )}
-                              </TableCell>
-
-                              <TableCell className="text-right">
-                                <EventActions
-                                  id={event.id}
-                                  slug={event.slug}
-                                  status={event.status}
-                                />
-                              </TableCell>
-                        </TableRow>
-                      ),
-                    )
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+         <EventsSortableTable
+            initialEvents={
+              events
+            }
+          />
         </section>
       </main>
     </div>

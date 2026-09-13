@@ -3,10 +3,12 @@ import Link from 'next/link'
 import { ArrowUpRight, CalendarDays, MapPin, Users } from 'lucide-react'
 import { Reveal } from '@/components/reveal'
 import { SectionHeading } from '@/components/section-heading'
-import { EVENT_STATUS_LABEL, getHomeFeaturedEvents } from '@/lib/events'
+import { EVENT_STATUS_LABEL } from '@/lib/events'
+import { getHomeFeaturedEventsFromDb } from '@/lib/events-db'
 
-export function FeaturedEvents() {
-  const [featured, ...rest] = getHomeFeaturedEvents()
+export async function FeaturedEvents() {
+  const [featured, ...rest] =
+    await getHomeFeaturedEventsFromDb()
 
   if (!featured) return null
 
