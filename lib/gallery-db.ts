@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
 
 import type { GalleryShot } from '@/lib/gallery'
@@ -245,7 +246,7 @@ async function loadProfilesByIds(
   )
 }
 
-export async function getGalleryFromDb(): Promise<
+async function getGalleryFromDbUncached(): Promise<
   GalleryDbShot[]
 > {
   const supabase =
@@ -363,6 +364,15 @@ export async function getGalleryFromDb(): Promise<
   )
 }
 
+export const getGalleryFromDb =
+  unstable_cache(
+    getGalleryFromDbUncached,
+    ['public-gallery'],
+    {
+      revalidate: 60,
+    },
+  )
+  
 export async function getFeaturedGalleryFromDb(
   limit = 8,
 ): Promise<
