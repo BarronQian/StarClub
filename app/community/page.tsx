@@ -11,8 +11,10 @@ import {
   MessageCircle,
   Send,
   Heart,
+  Smile,
 } from 'lucide-react'
-
+const [content, setContent] = useState('')
+const [emojiOpen, setEmojiOpen] = useState(false)
 import {
   getSupabaseBrowser,
 } from '@/lib/supabase-browser'
@@ -24,6 +26,11 @@ import {
 import {
   CommunityPostMenu,
 } from '@/components/community-post-menu'
+
+import EmojiPicker, {
+  EmojiClickData,
+  Theme,
+} from 'emoji-picker-react'
 
 type FeedMode =
   | 'community'
@@ -1510,6 +1517,54 @@ export default function CommunityPage() {
                       <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
 
                         <div className="flex items-center gap-3">
+
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEmojiOpen((current) => !current)
+                              }}
+                              aria-label="添加表情"
+                              title="添加表情"
+                              className="inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-neutral-100 hover:text-foreground"
+                            >
+                              <Smile
+                                className="size-4"
+                                strokeWidth={1.7}
+                              />
+                            </button>
+
+                            {emojiOpen && (
+                              <div className="absolute bottom-12 left-0 z-50">
+                                <EmojiPicker
+                                  theme={Theme.LIGHT}
+                                  onEmojiClick={(
+                                    emojiData: EmojiClickData,
+                                  ) => {
+                                    setContent(
+                                      (current) => {
+                                        const next =
+                                          current +
+                                          emojiData.emoji
+
+                                        return next.slice(
+                                          0,
+                                          1000,
+                                        )
+                                      },
+                                    )
+
+                                    setEmojiOpen(false)
+                                  }}
+                                  lazyLoadEmojis
+                                  searchPlaceholder="搜索表情"
+                                  previewConfig={{
+                                    showPreview: false,
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
 
                           <button
                             type="button"
