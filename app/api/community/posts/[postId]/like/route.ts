@@ -175,8 +175,11 @@ export async function POST(
       data: post,
       error: postError,
     } = await supabase
-      .from('posts')
-      .select('id')
+        .from('posts')
+        .select(`
+          id,
+          author_id
+        `)
       .eq(
         'id',
         postId,
@@ -252,26 +255,100 @@ export async function POST(
         throw error
       }
 
-      liked = false
-    } else {
-      // 没点赞 → 点赞
+      // 同时删除对应的点赞通知
+      // 自己给自己点赞不会生成通知，
+      // 所以这里删除不到也没有关系。
       const {
-        error,
+        error:
+          notificationDeleteError,
       } = await supabase
-        .from('post_likes')
-        .insert({
-          post_id:
-            postId,
-          user_id:
-            user.id,
-        })
+        .from(
+          'community_notifications',
+        )
+        .delete()
+        .eq(
+          'type',
+          'post_like',
+        )
+        .eq(
+          'post_id',
+          postId,
+        )
+        .eq(
+          'actor_id',
+          user.id,
+        )
 
-      if (error) {
-        throw error
+      if (
+        notificationDeleteError
+      ) {
+        console.error(
+          'Failed to delete post like notification:',
+          notificationDeleteError,
+        )
       }
 
-      liked = true
-    }
+      liked = false
+      } else {
+        // 没点赞 → 点赞
+        const {
+          error,
+        } = await supabase
+          .from('post_likes')
+          .insert({
+            post_id:
+              postId,
+            user_id:
+              user.id,
+          })
+
+        if (error) {
+          throw error
+        }
+
+        // 别人给自己的动态点赞时创建通知。
+        // 自己点赞自己的动态不发送通知。
+        if (
+          post.author_id &&
+          post.author_id !==
+            user.id
+        ) {
+          const {
+            error:
+              notificationError,
+          } = await supabase
+            .from(
+              'community_notifications',
+            )
+            .insert({
+              recipient_id:
+                post.author_id,
+
+              actor_id:
+                user.id,
+
+              type:
+                'post_like',
+
+              post_id:
+                postId,
+
+              comment_id:
+                null,
+            })
+
+          if (
+            notificationError
+          ) {
+            console.error(
+              'Failed to create post like notification:',
+              notificationError,
+            )
+          }
+        }
+
+        liked = true
+      }
 
     // 返回最新点赞数
     const {
