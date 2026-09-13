@@ -1039,37 +1039,6 @@ export function CommunityCommentDialog({
                       )
                     })()}
 
-                    return (
-                      <>
-                        <span className="mr-1 text-muted-foreground">
-                          回复
-                        </span>
-
-                        {parentAuthor?.profile_slug ? (
-                          <Link
-                            href={`/profile/${parentAuthor.profile_slug}`}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                            }}
-                            className="mr-1 font-medium text-[#a66700] hover:underline"
-                          >
-                            @
-                            {getDisplayName(
-                              parentAuthor,
-                            )}
-                          </Link>
-                        ) : (
-                          <span className="mr-1 font-medium text-[#a66700]">
-                            @
-                            {getDisplayName(
-                              parentAuthor,
-                            )}
-                          </span>
-                        )}
-                      </>
-                    )
-                  })()}
-
                 {comment.content}
               </p>
 
