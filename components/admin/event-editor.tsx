@@ -1180,7 +1180,10 @@ const [
               id="sortOrder"
               name="sortOrder"
               type="number"
-              defaultValue={0}
+              defaultValue={
+                initialData?.sortOrder ??
+                0
+              }
               className={
                 inputClass
               }
@@ -1206,6 +1209,10 @@ const [
             <input
               id="discordUrl"
               name="discordUrl"
+              defaultValue={
+                initialData?.discordUrl ??
+                ''
+              }
               className={
                 inputClass
               }
@@ -1226,6 +1233,10 @@ const [
             <input
               id="archiveHref"
               name="archiveHref"
+              defaultValue={
+                initialData?.archiveHref ??
+                ''
+              }
               className={
                 inputClass
               }
@@ -1246,6 +1257,11 @@ const [
             <textarea
               id="customTags"
               name="customTags"
+              defaultValue={
+                initialData?.customTags?.join(
+                  '\n',
+                ) ?? ''
+              }
               className={
                 textareaClass
               }
@@ -1266,6 +1282,11 @@ const [
             <textarea
               id="tags"
               name="tags"
+              defaultValue={
+                initialData?.tags?.join(
+                  '\n',
+                ) ?? ''
+              }
               className={
                 textareaClass
               }
@@ -1365,12 +1386,13 @@ const [
             submitting
           }
         >
-          {submitting
-            ? '正在创建...'
-            : mode ===
-                'create'
-              ? '创建活动'
-              : '保存活动'}
+        {submitting
+          ? mode === 'edit'
+            ? '正在保存...'
+            : '正在创建...'
+          : mode === 'edit'
+            ? '保存活动'
+            : '创建活动'}
         </Button>
       </div>
     </form>
