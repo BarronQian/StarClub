@@ -722,3 +722,361 @@ export async function PATCH(
     )
   }
 }
+export async function DELETE(
+  request: NextRequest,
+  context: {
+    params: Promise<{
+      id: string
+    }>
+  },
+) {
+  try {
+    const session =
+      await getAdminSession()
+
+    if (!session) {
+      return NextResponse.json(
+        {
+          error:
+            '没有管理员权限',
+        },
+        {
+          status: 401,
+        },
+      )
+    }
+
+    const { id } =
+      await context.params
+
+    const supabase =
+      createAdminClient()
+
+    const {
+      data: currentEvent,
+      error:
+        currentEventError,
+    } =
+      await supabase
+        .from(
+          'community_events',
+        )
+        .select(
+          'id, title, deleted_at',
+        )
+        .eq(
+          'id',
+          id,
+        )
+        .maybeSingle()
+
+    if (
+      currentEventError
+    ) {
+      console.error(
+        'Failed to load event before delete:',
+        currentEventError,
+      )
+
+      return NextResponse.json(
+        {
+          error:
+            '读取活动失败',
+        },
+        {
+          status: 500,
+        },
+      )
+    }
+
+    if (
+      !currentEvent ||
+      currentEvent.deleted_at
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            '活动不存在或已删除',
+        },
+        {
+          status: 404,
+        },
+      )
+    }
+
+    const now =
+      new Date().toISOString()
+
+    const {
+      error: deleteError,
+    } =
+      await supabase
+        .from(
+          'community_events',
+        )
+        .update({
+          deleted_at:
+            now,
+          is_published:
+            false,
+          featured_on_home:
+            false,
+          updated_at:
+            now,
+        })
+        .eq(
+          'id',
+          id,
+        )
+
+    if (deleteError) {
+      console.error(
+        'Failed to soft delete event:',
+        deleteError,
+      )
+
+      return NextResponse.json(
+        {
+          error:
+            '删除活动失败',
+        },
+        {
+          status: 500,
+        },
+      )
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+      },
+      {
+        headers: {
+          'Cache-Control':
+            'no-store, max-age=0',
+        },
+      },
+    )
+  } catch (error) {
+    console.error(
+      'Admin event DELETE error:',
+      error,
+    )
+
+    return NextResponse.json(
+      {
+        error:
+          '删除活动失败',
+      },
+      {
+        status: 500,
+      },
+    )
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  context: {
+    params: Promise<{
+      id: string
+    }>
+  },
+) {
+  try {
+    const session =
+      await getAdminSession()
+
+    if (!session) {
+      return NextResponse.json(
+        {
+          error:
+            '没有管理员权限',
+        },
+        {
+          status: 401,
+        },
+      )
+    }
+
+    const { id } =
+      await context.params
+
+    let body: {
+      status?: string
+    } = {}
+
+    try {
+      body =
+        await request.json()
+    } catch {
+      return NextResponse.json(
+        {
+          error:
+            '请求内容格式错误',
+        },
+        {
+          status: 400,
+        },
+      )
+    }
+
+    const status =
+      String(
+        body.status ?? '',
+      ).trim()
+
+    const validStatuses = [
+      'open',
+      'upcoming',
+      'ongoing',
+      'ended',
+    ]
+
+    if (
+      !validStatuses.includes(
+        status,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            '活动状态无效',
+        },
+        {
+          status: 400,
+        },
+      )
+    }
+
+    const supabase =
+      createAdminClient()
+
+    const {
+      data: currentEvent,
+      error:
+        currentEventError,
+    } =
+      await supabase
+        .from(
+          'community_events',
+        )
+        .select(
+          'id, status, deleted_at',
+        )
+        .eq(
+          'id',
+          id,
+        )
+        .maybeSingle()
+
+    if (
+      currentEventError
+    ) {
+      console.error(
+        'Failed to load event before status update:',
+        currentEventError,
+      )
+
+      return NextResponse.json(
+        {
+          error:
+            '读取活动失败',
+        },
+        {
+          status: 500,
+        },
+      )
+    }
+
+    if (
+      !currentEvent ||
+      currentEvent.deleted_at
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            '活动不存在或已删除',
+        },
+        {
+          status: 404,
+        },
+      )
+    }
+
+    const now =
+      new Date().toISOString()
+
+    const {
+      data: updatedEvent,
+      error:
+        updateError,
+    } =
+      await supabase
+        .from(
+          'community_events',
+        )
+        .update({
+          status,
+          updated_at:
+            now,
+        })
+        .eq(
+          'id',
+          id,
+        )
+        .select(
+          'id, status, updated_at',
+        )
+        .single()
+
+    if (
+      updateError ||
+      !updatedEvent
+    ) {
+      console.error(
+        'Failed to update event status:',
+        updateError,
+      )
+
+      return NextResponse.json(
+        {
+          error:
+            '更新活动状态失败',
+        },
+        {
+          status: 500,
+        },
+      )
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        event:
+          updatedEvent,
+      },
+      {
+        headers: {
+          'Cache-Control':
+            'no-store, max-age=0',
+        },
+      },
+    )
+  } catch (error) {
+    console.error(
+      'Admin event PUT error:',
+      error,
+    )
+
+    return NextResponse.json(
+      {
+        error:
+          '更新活动状态失败',
+      },
+      {
+        status: 500,
+      },
+    )
+  }
+}
