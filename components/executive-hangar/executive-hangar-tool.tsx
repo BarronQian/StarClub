@@ -23,16 +23,17 @@ const DEFAULT_ANCHOR =
 function formatClock(
   value: number,
 ) {
-  return new Date(
-    value,
-  ).toLocaleTimeString(
+  return new Intl.DateTimeFormat(
     'zh-CN',
     {
-      hour12: false,
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
+      hour12: false,
+      timeZone: 'UTC',
     },
+  ).format(
+    new Date(value),
   )
 }
 
