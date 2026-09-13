@@ -38,7 +38,7 @@ export default async function GalleryPage() {
         />
 
         {/* 原来的标题区域，位置不变 */}
-        <div className="relative z-20 mx-auto max-w-7xl px-5 pt-16 pb-24 lg:px-10 lg:pt-24 lg:pb-40">
+        <div className="relative z-20 mx-auto max-w-7xl px-5 pt-16 pb-28 lg:px-10 lg:pt-24 lg:pb-48">
           <ArchiveBreadcrumb
             items={[
               {
@@ -83,7 +83,7 @@ export default async function GalleryPage() {
           shots={shots}
         />
       </section>
-      
+
       <PageCompanion companion="shanora" />
 
     </div>
