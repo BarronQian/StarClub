@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 import Link from 'next/link'
@@ -226,6 +227,12 @@ export default function CommunityPage() {
   emojiOpen,
   setEmojiOpen,
 ] = useState(false)
+
+  const textareaRef =
+  useRef<HTMLTextAreaElement | null>(null)
+
+  const emojiPickerRef =
+  useRef<HTMLDivElement | null>(null)
 
   const [
     publishing,
@@ -894,6 +901,50 @@ export default function CommunityPage() {
   ])
 
   useEffect(() => {
+  if (!emojiOpen) {
+    return
+  }
+
+  const handlePointerDown = (
+    event: MouseEvent | TouchEvent,
+  ) => {
+    const target =
+      event.target as Node
+
+    if (
+      emojiPickerRef.current &&
+      !emojiPickerRef.current.contains(
+        target,
+      )
+    ) {
+      setEmojiOpen(false)
+    }
+  }
+
+  document.addEventListener(
+    'mousedown',
+    handlePointerDown,
+  )
+
+  document.addEventListener(
+    'touchstart',
+    handlePointerDown,
+  )
+
+  return () => {
+    document.removeEventListener(
+      'mousedown',
+      handlePointerDown,
+    )
+
+    document.removeEventListener(
+      'touchstart',
+      handlePointerDown,
+    )
+  }
+}, [emojiOpen])
+
+  useEffect(() => {
     void loadNews()
   }, [loadNews])
 
@@ -1487,6 +1538,7 @@ export default function CommunityPage() {
                     <div className="min-w-0 flex-1">
 
                       <textarea
+                      ref={textareaRef}
                         value={
                           content
                         }
@@ -1522,7 +1574,10 @@ export default function CommunityPage() {
 
                         <div className="flex items-center gap-3">
 
-                          <div className="relative">
+                          <div
+                                ref={emojiPickerRef}
+                                className="relative"
+                              >
                             <button
                               type="button"
                               onClick={() => {
@@ -1542,24 +1597,48 @@ export default function CommunityPage() {
                               <div className="absolute bottom-12 left-0 z-50">
                                 <EmojiPicker
                                   theme={Theme.LIGHT}
-                                  onEmojiClick={(
-                                    emojiData: EmojiClickData,
-                                  ) => {
-                                    setContent(
-                                      (current) => {
+                                      onEmojiClick={(
+                                        emojiData: EmojiClickData,
+                                      ) => {
+                                        const textarea =
+                                          textareaRef.current
+
+                                        if (!textarea) {
+                                          return
+                                        }
+
+                                        const start =
+                                          textarea.selectionStart
+
+                                        const end =
+                                          textarea.selectionEnd
+
                                         const next =
-                                          current +
-                                          emojiData.emoji
+                                          content.slice(0, start) +
+                                          emojiData.emoji +
+                                          content.slice(end)
 
-                                        return next.slice(
-                                          0,
-                                          1000,
-                                        )
-                                      },
-                                    )
+                                        if (next.length > 1000) {
+                                          return
+                                        }
 
-                                    setEmojiOpen(false)
-                                  }}
+                                        setContent(next)
+
+                                        requestAnimationFrame(() => {
+                                          const position =
+                                            start +
+                                            emojiData.emoji.length
+
+                                          textarea.focus()
+
+                                          textarea.setSelectionRange(
+                                            position,
+                                            position,
+                                          )
+                                        })
+
+                                        setEmojiOpen(false)
+                                      }}
                                   lazyLoadEmojis
                                   searchPlaceholder="搜索表情"
                                   previewConfig={{
