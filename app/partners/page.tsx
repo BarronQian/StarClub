@@ -79,41 +79,24 @@ export default function PartnersPage() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {PARTNERS.map((partner) => (
-            <a
-              key={partner.name}
-              href={partner.href}
-              target={
-                partner.href !== '#'
-                  ? '_blank'
-                  : undefined
-              }
-              rel={
-                partner.href !== '#'
-                  ? 'noopener noreferrer'
-                  : undefined
-              }
-              className="group flex min-h-48 flex-col items-center justify-center border border-border bg-background px-6 py-7 text-center transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_14px_40px_rgba(0,0,0,0.06)]"
-            >
-              <div className="flex h-20 w-full items-center justify-center">
+          <div className="flex flex-wrap items-center gap-12 lg:gap-16">
+            {PARTNERS.map((partner) => (
+              <a
+                key={partner.name}
+                href={partner.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={partner.name}
+                className="group relative flex items-center justify-center"
+              >
                 <img
                   src={partner.logo}
                   alt={partner.name}
-                  className="max-h-16 max-w-45 object-contain transition-transform duration-300 group-hover:scale-105"
+                  className="h-auto max-h-24 w-auto max-w-60 object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.10)] transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:scale-105 group-hover:drop-shadow-[0_16px_28px_rgba(0,0,0,0.16)]"
                 />
-              </div>
-
-              <h3 className="mt-5 font-display text-sm font-medium">
-                {partner.name}
-              </h3>
-
-              <p className="mt-2 max-w-55 text-xs leading-5 text-muted-foreground">
-                {partner.description}
-              </p>
-            </a>
-          ))}
-        </div>
+              </a>
+            ))}
+          </div>
       </div>
     </div>
   </Reveal>
