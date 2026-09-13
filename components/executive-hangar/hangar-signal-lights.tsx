@@ -205,10 +205,10 @@ export function HangarSignalLights({
 
           <p className="text-[9px] leading-4 text-muted-foreground">
             {phase === 'closed'
-              ? '红灯依次转绿，全部转绿后进入开放阶段'
+              ? '当前处于充能阶段，红灯将依次转绿'
               : phase === 'open'
-                ? '绿灯依次熄灭，全部熄灭后进入重置阶段'
-                : '全部信号灯熄灭，系统正在执行重置'}
+                ? '当前行政机库已开放，绿灯将依次熄灭'
+                : '当前处于黑区重置阶段，全部信号灯已熄灭'}
           </p>
 
           <span className="shrink-0 font-mono text-[9px] tabular-nums text-neutral-700">

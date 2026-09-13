@@ -53,6 +53,37 @@ function formatUtcClock(
   )
 }
 
+function formatUtcDateTime(
+  value: number,
+) {
+  const date =
+    new Date(value)
+
+  const datePart =
+    new Intl.DateTimeFormat(
+      'zh-CN',
+      {
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'UTC',
+      },
+    ).format(date)
+
+  const timePart =
+    new Intl.DateTimeFormat(
+      'zh-CN',
+      {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: 'UTC',
+      },
+    ).format(date)
+
+  return `${datePart} · ${timePart}`
+}
+
 export function ExecutiveHangarTool() {
   const [
     anchor,
@@ -130,24 +161,27 @@ export function ExecutiveHangarTool() {
     )
 
   const statusLabel =
-    state?.phase ===
-    'open'
+    state?.phase === 'open'
       ? '当前可进入'
-      : state
-        ? '等待开放'
-        : '正在同步'
+      : state?.phase === 'reset'
+        ? '正在重置'
+        : state
+          ? '等待开放'
+          : '正在同步'
 
   const statusTone =
-    state?.phase ===
-    'open'
+    state?.phase === 'open'
       ? 'text-emerald-700'
-      : 'text-[#a66700]'
+      : state?.phase === 'reset'
+        ? 'text-yellow-700'
+        : 'text-[#a66700]'
 
   const statusDot =
-    state?.phase ===
-    'open'
+    state?.phase === 'open'
       ? 'bg-emerald-500 shadow-[0_0_14px_rgba(16,185,129,0.7)]'
-      : 'bg-amber-500 shadow-[0_0_14px_rgba(245,158,11,0.55)]'
+      : state?.phase === 'reset'
+        ? 'bg-yellow-400 shadow-[0_0_14px_rgba(250,204,21,0.65)]'
+        : 'bg-amber-500 shadow-[0_0_14px_rgba(245,158,11,0.55)]'
 
   return (
     <div className="flex flex-col gap-6">
@@ -202,12 +236,13 @@ export function ExecutiveHangarTool() {
                 </p>
 
                 <p className="mt-1 text-sm font-semibold text-neutral-900">
-                  {state?.phase ===
-                  'open'
+                  {state?.phase === 'open'
                     ? '开放阶段'
-                    : state
-                      ? '关闭阶段'
-                      : '同步中'}
+                    : state?.phase === 'reset'
+                      ? '重置阶段'
+                      : state
+                        ? '关闭阶段'
+                        : '同步中'}
                 </p>
               </div>
 
@@ -217,7 +252,7 @@ export function ExecutiveHangarTool() {
                 </p>
 
                 <p className="mt-1 font-mono text-sm font-semibold tabular-nums text-neutral-900">
-                  {formatUtcClock(
+                  {formatUtcDateTime(
                     anchor,
                   )}
                 </p>
@@ -243,34 +278,6 @@ export function ExecutiveHangarTool() {
                 <h3 className="mt-1 text-base font-semibold text-neutral-950">
                   周期主仪表
                 </h3>
-              </div>
-
-              <div className="flex items-center gap-2">
-
-                {[
-                  0,
-                  1,
-                  2,
-                  3,
-                  4,
-                ].map(
-                  (
-                    index,
-                  ) => (
-                    <span
-                      key={
-                        index
-                      }
-                      className={
-                        index ===
-                        0
-                          ? `size-3 rounded-full ${statusDot}`
-                          : 'size-3 rounded-full border border-neutral-300 bg-neutral-100'
-                      }
-                    />
-                  ),
-                )}
-
               </div>
 
             </div>

@@ -50,6 +50,13 @@ export function HangarInstrument({
         : state.nextOpen
       : null
 
+  const nextTransitionLabel =
+  phase === 'open'
+    ? '下一次关闭'
+    : phase === 'reset'
+      ? '重置结束 / 下一次开放'
+      : '下一次开放'
+
   return (
     <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-[#f5f5f2] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
 
@@ -209,9 +216,9 @@ export function HangarInstrument({
 
               <div className="rounded-xl border border-neutral-300 bg-[#ededE9] px-4 py-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]">
 
-                <p className="text-[9px] tracking-[0.16em] text-muted-foreground">
-                  下一状态时间
-                </p>
+              <p className="text-[9px] tracking-[0.16em] text-muted-foreground">
+                {nextTransitionLabel}
+              </p>
 
                 <p className="mt-1 font-mono text-sm font-semibold tabular-nums text-neutral-900">
                   {nextTransition
@@ -340,8 +347,10 @@ export function HangarInstrument({
                   : '--'}
               </dd>
 
-              <dd className="mt-1 text-[10px] text-muted-foreground">
-                开放窗口 {cfg.openMinutes} 分钟
+              <dd className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                可操作阶段 {cfg.openMinutes} 分钟
+                <br />
+                完整在线窗口 {cfg.openMinutes + cfg.resetMinutes} 分钟
               </dd>
 
             </div>

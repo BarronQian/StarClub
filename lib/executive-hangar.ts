@@ -147,7 +147,8 @@ export function computeHangarState(
 
   const closeMs =
     openStartMs +
-    OPEN_MS
+    OPEN_MS +
+    RESET_MS
 
   let phase: HangarPhase
 
@@ -206,8 +207,11 @@ export function computeHangarState(
       )
 
     signalRemaining =
-      step -
-      (elapsed % step)
+      Math.min(
+        phaseRemaining,
+        step -
+          (elapsed % step),
+      )
   }
 
   /*
@@ -261,8 +265,11 @@ export function computeHangarState(
       )
 
     signalRemaining =
-      step -
-      (into % step)
+      Math.min(
+        phaseRemaining,
+        step -
+          (into % step),
+      )
   }
 
   /*
@@ -315,7 +322,8 @@ export function computeHangarState(
 
   const nextCloseMs =
     nextOpenMs +
-    OPEN_MS
+    OPEN_MS +
+    RESET_MS
 
   return {
     phase,
@@ -403,7 +411,8 @@ export function listUpcomingWindows(
         close:
           new Date(
             open +
-              OPEN_MS,
+              OPEN_MS +
+              RESET_MS,
           ),
       }
     },
