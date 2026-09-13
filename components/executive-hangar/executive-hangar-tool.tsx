@@ -312,16 +312,10 @@ export function ExecutiveHangarTool() {
 
             {state ? (
               <NextOpen
-                nextOpen={
-                  state.nextOpen
-                }
-                untilNextOpen={
-                  state.untilNextOpen
-                }
-                isOpenNow={
-                  state.phase ===
-                  'open'
-                }
+                nextOpen={state.nextOpen}
+                untilNextOpen={state.untilNextOpen}
+                isOpenNow={state.phase === 'open'}
+                phase={state.phase}
               />
             ) : (
               <div className="rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted-foreground">

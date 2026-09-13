@@ -4,26 +4,36 @@ import {
   useEffect,
   useState,
 } from 'react'
+
 import {
-  Copy,
   Check,
   Clock3,
+  Copy,
 } from 'lucide-react'
+
 import {
   clockInZone,
   dateInZone,
   formatMinutesRough,
 } from '@/lib/executive-hangar'
 
+import type {
+  HangarPhase,
+} from '@/lib/executive-hangar-config'
+
+type NextOpenProps = {
+  nextOpen: Date
+  untilNextOpen: number
+  isOpenNow: boolean
+  phase: HangarPhase
+}
+
 export function NextOpen({
   nextOpen,
   untilNextOpen,
   isOpenNow,
-}: {
-  nextOpen: Date
-  untilNextOpen: number
-  isOpenNow: boolean
-}) {
+  phase,
+}: NextOpenProps) {
   const [
     copied,
     setCopied,
@@ -67,6 +77,18 @@ export function NextOpen({
       }
     }
 
+  const statusLabel =
+    isOpenNow
+      ? 'CURRENT WINDOW OPEN'
+      : phase === 'reset'
+        ? 'SYSTEM RESET'
+        : 'LIVE CALCULATION'
+
+  const countdownLabel =
+    phase === 'reset'
+      ? '重置结束后开放'
+      : '距离开放'
+
   return (
     <section className="overflow-hidden rounded-2xl border border-neutral-300 bg-[#efefeb] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
 
@@ -100,20 +122,19 @@ export function NextOpen({
             className={
               isOpenNow
                 ? 'size-2 rounded-full bg-emerald-500 shadow-[0_0_9px_rgba(16,185,129,0.65)]'
-                : 'size-2 rounded-full bg-amber-500 shadow-[0_0_9px_rgba(245,158,11,0.55)]'
+                : phase === 'reset'
+                  ? 'size-2 rounded-full bg-yellow-400 shadow-[0_0_9px_rgba(250,204,21,0.65)]'
+                  : 'size-2 rounded-full bg-amber-500 shadow-[0_0_9px_rgba(245,158,11,0.55)]'
             }
           />
 
           <span className="text-[8px] font-medium tracking-[0.12em] text-muted-foreground">
-            {isOpenNow
-              ? 'CURRENT WINDOW OPEN'
-              : 'LIVE CALCULATION'}
+            {statusLabel}
           </span>
 
         </div>
 
       </div>
-
 
       <div className="p-4">
 
@@ -146,7 +167,6 @@ export function NextOpen({
 
         </div>
 
-
         {/* 第二时区 + 倒计时 */}
         <div className="mt-3 grid grid-cols-2 gap-3">
 
@@ -169,11 +189,10 @@ export function NextOpen({
 
           </div>
 
-
           <div className="rounded-xl border border-neutral-300 bg-[#f8f8f5] p-4">
 
             <p className="text-[8px] font-semibold tracking-[0.16em] text-muted-foreground">
-              距离开放
+              {countdownLabel}
             </p>
 
             <p className="mt-2 text-xl font-semibold tracking-tight text-[#a66700]">
@@ -189,7 +208,6 @@ export function NextOpen({
           </div>
 
         </div>
-
 
         {/* 当前已开放提示 */}
         {isOpenNow && (
@@ -212,6 +230,26 @@ export function NextOpen({
           </div>
         )}
 
+        {/* 黑区重置提示 */}
+        {phase === 'reset' && (
+          <div className="mt-3 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3">
+
+            <div className="flex items-center gap-2">
+
+              <span className="size-2 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.55)]" />
+
+              <p className="text-xs font-medium text-yellow-800">
+                当前处于黑区重置阶段
+              </p>
+
+            </div>
+
+            <p className="mt-1.5 text-[10px] leading-4 text-yellow-800/70">
+              信号灯已全部熄灭，重置完成后将进入下一轮充能周期。
+            </p>
+
+          </div>
+        )}
 
         {/* Discord 时间戳 */}
         <div className="mt-4 border-t border-neutral-300 pt-4">
