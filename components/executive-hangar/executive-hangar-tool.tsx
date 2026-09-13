@@ -20,7 +20,23 @@ const DEFAULT_ANCHOR =
     cfg.anchorTime,
   ).getTime()
 
-function formatClock(
+function formatLocalClock(
+  value: number,
+) {
+  return new Intl.DateTimeFormat(
+    'zh-CN',
+    {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    },
+  ).format(
+    new Date(value),
+  )
+}
+
+function formatUtcClock(
   value: number,
 ) {
   return new Intl.DateTimeFormat(
@@ -172,11 +188,11 @@ export function ExecutiveHangarTool() {
                 </p>
 
                 <p className="mt-1 font-mono text-sm font-semibold tabular-nums text-neutral-900">
-                  {now !== null
-                    ? formatClock(
-                        now,
-                      )
-                    : '--:--:--'}
+                {now !== null
+                  ? formatLocalClock(
+                      now,
+                    )
+                  : '--:--:--'}
                 </p>
               </div>
 
@@ -197,11 +213,11 @@ export function ExecutiveHangarTool() {
 
               <div className="col-span-2 rounded-2xl border border-border bg-white px-4 py-3 sm:col-span-1">
                 <p className="text-[10px] font-medium tracking-[0.15em] text-muted-foreground">
-                  周期基准
+                  周期基准 UTC
                 </p>
 
                 <p className="mt-1 font-mono text-sm font-semibold tabular-nums text-neutral-900">
-                  {formatClock(
+                  {formatUtcClock(
                     anchor,
                   )}
                 </p>

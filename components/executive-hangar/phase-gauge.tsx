@@ -117,8 +117,8 @@ export function PhaseGauge({
         {/* 金属内圈 */}
         <div className="absolute inset-2 rounded-full border border-neutral-300 bg-[linear-gradient(145deg,#f7f7f3,#deded9)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]" />
 
-        {/* 黑色/深灰仪表盘 */}
-        <div className="absolute inset-4.25 rounded-full border border-neutral-500/50 bg-[radial-gradient(circle_at_50%_38%,#393936_0%,#252522_58%,#1d1d1b_100%)] shadow-[inset_0_0_30px_rgba(0,0,0,0.7)]" />
+        {/* 深灰仪表盘 */}
+        <div className="absolute inset-4.25 rounded-full border border-neutral-500/50 bg-[radial-gradient(circle_at_50%_35%,#50504c_0%,#373733_45%,#292926_75%,#232321_100%)] shadow-[inset_0_0_26px_rgba(0,0,0,0.48)]" />
 
 
         <svg
@@ -131,7 +131,7 @@ export function PhaseGauge({
           <path
             d={track}
             fill="none"
-            stroke="rgba(255,255,255,0.10)"
+            stroke="rgba(255,255,255,0.14)"
             strokeWidth={10}
             strokeLinecap="round"
           />
@@ -140,7 +140,7 @@ export function PhaseGauge({
           <path
             d={innerTrack}
             fill="none"
-            stroke="rgba(255,255,255,0.08)"
+            stroke="rgba(255,255,255,0.10)"
             strokeWidth={1}
           />
 
@@ -204,8 +204,8 @@ export function PhaseGauge({
                   y2={inner.y}
                   stroke={
                     major
-                      ? 'rgba(255,255,255,0.52)'
-                      : 'rgba(255,255,255,0.20)'
+                      ? 'rgba(255,255,255,0.58)'
+                      : 'rgba(255,255,255,0.24)'
                   }
                   strokeWidth={
                     major
@@ -267,7 +267,7 @@ export function PhaseGauge({
                   y={p.y}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fill="rgba(255,255,255,0.38)"
+                  fill="rgba(255,255,255,0.46)"
                   fontSize="8"
                   fontFamily="monospace"
                 >
@@ -288,7 +288,7 @@ export function PhaseGauge({
             }
             r={7}
             fill={color}
-            stroke="rgba(255,255,255,0.85)"
+            stroke="rgba(255,255,255,0.9)"
             strokeWidth={2}
             style={{
               filter:
@@ -311,19 +311,23 @@ export function PhaseGauge({
 
 
         {/* 中央数据显示 */}
-        <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 px-16 text-center text-white">
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-20 text-center">
 
-          {children}
+          <div className="flex origin-center scale-[0.78] flex-col items-center gap-2 text-[#ecece7]">
+
+            {children}
+
+          </div>
 
         </div>
 
 
         {/* 底部仪表标签 */}
-        <div className="pointer-events-none absolute bottom-10.5 left-1/2 z-20 -translate-x-1/2">
+        <div className="pointer-events-none absolute bottom-10 left-1/2 z-20 -translate-x-1/2">
 
-          <div className="rounded border border-white/10 bg-black/25 px-3 py-1 backdrop-blur-sm">
+          <div className="rounded border border-white/10 bg-black/20 px-3 py-1 backdrop-blur-sm">
 
-            <span className="font-mono text-[8px] tracking-[0.18em] text-white/35">
+            <span className="font-mono text-[8px] tracking-[0.18em] text-white/45">
               CYCLE POSITION
             </span>
 
