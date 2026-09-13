@@ -705,6 +705,7 @@ if (
         author_id,
         content,
         parent_comment_id,
+        reply_to_comment_id,
         created_at,
         updated_at,
         profiles!post_comments_author_fk (
