@@ -189,13 +189,13 @@ export function HangarInstrument({
               </div>
 
 
-              <span className="font-display text-[2.8rem] leading-none tabular-nums tracking-tight text-neutral-950 sm:text-[3.2rem]">
-                {state
-                  ? formatDuration(
-                      state.phaseRemaining,
-                    )
-                  : '--:--'}
-              </span>
+            <span className="font-mono text-[2.15rem] font-semibold leading-none tabular-nums tracking-tighter text-[#f1f1ec] drop-shadow-[0_0_8px_rgba(255,255,255,0.12)] sm:text-[2.45rem]">
+              {state
+                ? formatDuration(
+                    state.phaseRemaining,
+                  )
+                : '--:--'}
+            </span>
 
 
               <span className="text-[10px] tracking-[0.14em] text-muted-foreground">
