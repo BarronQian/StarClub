@@ -11,6 +11,16 @@ const nextConfig = {
         hostname: 'nngrkcavazaypdvwcdbb.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'cdn.discordapp.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'media.discordapp.net',
+        pathname: '/**',
+      },
     ],
   },
 
@@ -19,7 +29,10 @@ const nextConfig = {
       {
         source: '/:path*',
         headers: [
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
