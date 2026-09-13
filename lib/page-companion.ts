@@ -560,10 +560,10 @@ coolapplepie: {
   side: 'left',
   height: 430,
   offsetX: 24,
-  bubbleOffsetX: 58,
+  bubbleOffsetX: 88,
   bubbleOffsetY: 90,
   bubbleWidth: 330,
-  bubbleTailOffset: 40,
+  bubbleTailOffset: 14,
   title: '空战英豪の狗斗技巧',
   messages: [
     '狗斗不是一直把速度拉满，能量管理做得好，才能在需要的时候把速度换成位置优势。',
