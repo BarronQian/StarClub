@@ -256,7 +256,7 @@ export function CalibrationPanel({
                   onClick={
                     handleReset
                   }
-                  className="flex h-12 items-center justify-center gap-2 rounded-lg border border-neutral-400 bg-[#e5e5e0] px-4 text-[10px] font-semibold tracking-[0.1em] text-neutral-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition-colors hover:bg-[#d9d9d4]"
+                  className="flex h-12 items-center justify-center gap-2 rounded-lg border border-neutral-400 bg-[#e5e5e0] px-4 text-[10px] font-semibold tracking-widest text-neutral-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition-colors hover:bg-[#d9d9d4]"
                 >
                   <RotateCcw
                     className="size-3.5"
