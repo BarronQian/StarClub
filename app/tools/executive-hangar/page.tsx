@@ -4,6 +4,7 @@ import { ArchiveBreadcrumb } from '@/components/archive-breadcrumb'
 import { ExecutiveHangarTool } from '@/components/executive-hangar/executive-hangar-tool'
 import { CycleExplanation } from '@/components/executive-hangar/cycle-explanation'
 import { executiveHangarConfig as cfg } from '@/lib/executive-hangar-config'
+import { createAdminClient } from '@/lib/supabase-admin'
 
 export const metadata: Metadata = {
   title: '行政机库计时器 Executive Hangar Timer · 星际酒馆 StarClub',
@@ -13,7 +14,53 @@ export const metadata: Metadata = {
 
 const META = ['PYRO SYSTEM', 'LIVE SYNC', `${cfg.cycleMinutes} MIN CYCLE`]
 
-export default function ExecutiveHangarPage() {
+export const dynamic = 'force-dynamic'
+
+export default async function ExecutiveHangarPage() {
+  let globalAnchor =
+    cfg.anchorTime
+
+  try {
+    const supabase =
+      createAdminClient()
+
+    const {
+      data,
+      error,
+    } =
+      await supabase
+        .from(
+          'executive_hangar_config',
+        )
+        .select(
+          'anchor_time',
+        )
+        .eq(
+          'id',
+          1,
+        )
+        .maybeSingle()
+
+    if (
+      !error &&
+      data?.anchor_time
+    ) {
+      globalAnchor =
+        data.anchor_time
+    }
+
+    if (error) {
+      console.error(
+        'Failed to load executive hangar global anchor:',
+        error,
+      )
+    }
+  } catch (error) {
+    console.error(
+      'Executive hangar global anchor fallback:',
+      error,
+    )
+  }
   return (
     <div className="pb-24 lg:pb-32">
       <section className="pyro-atmosphere relative border-b border-border">
@@ -67,10 +114,14 @@ export default function ExecutiveHangarPage() {
       <section className="relative mx-auto max-w-7xl px-5 pt-10 lg:px-10 lg:pt-14">
         <div
           aria-hidden="true"
-          className="hud-grid pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] opacity-40"
+          className="hud-grid pointer-events-none absolute inset-x-0 top-0 -z-10 h-105 opacity-40"
         />
         <Reveal>
-          <ExecutiveHangarTool />
+        <ExecutiveHangarTool
+          globalAnchor={
+            globalAnchor
+          }
+        />
         </Reveal>
       </section>
 

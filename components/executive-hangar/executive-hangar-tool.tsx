@@ -7,18 +7,12 @@ import {
   CLOSED_MS,
 } from '@/lib/executive-hangar'
 import {
-  executiveHangarConfig as cfg,
   type HangarTimezoneId,
 } from '@/lib/executive-hangar-config'
 import { HangarInstrument } from './hangar-instrument'
 import { NextOpen } from './next-open'
 import { UpcomingWindows } from './upcoming-windows'
 import { CalibrationPanel } from './calibration-panel'
-
-const DEFAULT_ANCHOR =
-  new Date(
-    cfg.anchorTime,
-  ).getTime()
 
 function formatLocalClock(
   value: number,
@@ -84,14 +78,48 @@ function formatUtcDateTime(
   return `${datePart} · ${timePart}`
 }
 
-export function ExecutiveHangarTool() {
+export function ExecutiveHangarTool({
+  globalAnchor,
+}: {
+  globalAnchor: string
+}) {
+  const globalAnchorMs =
+    useMemo(
+      () => {
+        const value =
+          new Date(
+            globalAnchor,
+          ).getTime()
+
+        return Number.isFinite(
+          value,
+        )
+          ? value
+          : Date.now()
+      },
+      [
+        globalAnchor,
+      ],
+    )
+
   const [
     anchor,
     setAnchor,
   ] =
     useState(
-      DEFAULT_ANCHOR,
+      globalAnchorMs,
     )
+
+    useEffect(
+  () => {
+    setAnchor(
+      globalAnchorMs,
+    )
+  },
+  [
+    globalAnchorMs,
+  ],
+)
 
   const [
     timezone,
@@ -399,7 +427,7 @@ export function ExecutiveHangarTool() {
           }
           onReset={() =>
             setAnchor(
-              DEFAULT_ANCHOR,
+              globalAnchorMs,
             )
           }
         />
