@@ -129,7 +129,7 @@ export function HangarInstrument({
                 </span>
 
                 <span className="text-[0.5rem] tracking-[0.24em] text-muted-foreground">
-                  行政机库控制节点 · EXECUTIVE HANGAR
+                  行政机库控制节点
                 </span>
               </div>
             </div>
@@ -200,7 +200,7 @@ export function HangarInstrument({
             <span className="font-display text-[2.5rem] leading-none tabular-nums tracking-tight text-foreground sm:text-[3rem] lg:text-[3.5rem]">
               {state ? formatDuration(state.phaseRemaining) : '--:--'}
             </span>
-            <span className="text-[0.55rem] tracking-[0.26em] text-muted-foreground uppercase">
+            <span className="text-[0.55rem] tracking-[0.2em] text-muted-foreground">
               距离下一状态变化
             </span>
           </PhaseGauge>
@@ -216,9 +216,13 @@ export function HangarInstrument({
                   : '--:--'}
               </span>
             </span>
-            <span className="font-display text-[0.55rem] tracking-[0.22em]">
-              {meta.en}
-            </span>
+              <span className="font-display text-[0.55rem] tracking-[0.22em]">
+                {phase === 'open'
+                  ? '机库开启中'
+                  : phase === 'reset'
+                    ? '系统重置中'
+                    : '等待开启'}
+              </span>
           </div>
         </div>
 
@@ -257,7 +261,7 @@ export function HangarInstrument({
               <div className="mb-3 flex items-center justify-between gap-3">
                 <dt
                   className={cn(
-                    'text-[0.55rem] tracking-[0.26em] uppercase',
+                    'text-[0.55rem] tracking-[0.18em]',
                     phase === 'open'
                       ? 'text-muted-foreground'
                       : 'text-foreground',
@@ -328,7 +332,7 @@ export function HangarInstrument({
               <div className="mb-3 flex items-center justify-between gap-3">
                 <dt
                   className={cn(
-                    'text-[0.55rem] tracking-[0.26em] uppercase',
+                    'text-[0.55rem] tracking-[0.18em]',
                     phase === 'open'
                       ? 'text-foreground'
                       : 'text-muted-foreground',
@@ -374,7 +378,7 @@ export function HangarInstrument({
 
           <CycleRail progress={state?.cycleProgress ?? 0} />
 
-          <div className="flex flex-wrap items-center justify-between gap-3 text-[0.55rem] tracking-[0.22em] text-muted-foreground uppercase">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-[0.55rem] tracking-[0.16em] text-muted-foreground">
             <span>
               最后同步 ·{' '}
               <span className="tabular-nums">

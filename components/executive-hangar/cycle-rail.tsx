@@ -9,19 +9,19 @@ const SEGMENTS = [
   {
     key: 'closed' as const,
     minutes: cfg.closedMinutes,
-    label: 'CLOSED',
+    label: '关闭',
     color: HANGAR_PHASE_COLORS.closed,
   },
   {
     key: 'open' as const,
     minutes: cfg.openMinutes,
-    label: 'OPEN',
+    label: '开启',
     color: HANGAR_PHASE_COLORS.open,
   },
   {
     key: 'reset' as const,
     minutes: cfg.resetMinutes,
-    label: 'RESET',
+    label: '重置',
     color: HANGAR_PHASE_COLORS.reset,
   },
 ]
@@ -46,7 +46,7 @@ export function CycleRail({
     <div className="flex flex-col gap-4">
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-[0.62rem] tracking-[0.28em] text-muted-foreground uppercase">
-          Cycle Phase Rail
+          周期阶段轨道
         </span>
 
         <div className="flex items-center gap-2">
@@ -199,7 +199,7 @@ export function CycleRail({
                     color: s.color,
                   }}
                 >
-                  {s.minutes} MIN
+                  {s.minutes} 分钟
                 </span>
               </div>
 

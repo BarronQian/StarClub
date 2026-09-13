@@ -33,11 +33,31 @@ export const HANGAR_PHASE_COLORS = {
 export type HangarPhase = 'closed' | 'open' | 'reset'
 
 export const HANGAR_TIMEZONES = [
-  { id: 'local', label: 'LOCAL TIME', zone: undefined as string | undefined },
-  { id: 'beijing', label: 'BEIJING · UTC+8', zone: 'Asia/Shanghai' },
-  { id: 'pacific', label: 'PACIFIC TIME', zone: 'America/Los_Angeles' },
-  { id: 'eastern', label: 'EASTERN TIME', zone: 'America/New_York' },
-  { id: 'utc', label: 'UTC', zone: 'UTC' },
+  {
+    id: 'local',
+    label: '本地时间',
+    zone: undefined as string | undefined,
+  },
+  {
+    id: 'beijing',
+    label: '北京时间 · UTC+8',
+    zone: 'Asia/Shanghai',
+  },
+  {
+    id: 'pacific',
+    label: '美国太平洋时间',
+    zone: 'America/Los_Angeles',
+  },
+  {
+    id: 'eastern',
+    label: '美国东部时间',
+    zone: 'America/New_York',
+  },
+  {
+    id: 'utc',
+    label: 'UTC · 世界协调时间',
+    zone: 'UTC',
+  },
 ] as const
 
 export type HangarTimezoneId = (typeof HANGAR_TIMEZONES)[number]['id']

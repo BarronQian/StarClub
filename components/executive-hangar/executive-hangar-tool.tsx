@@ -10,59 +10,145 @@ import {
   executiveHangarConfig as cfg,
   type HangarTimezoneId,
 } from '@/lib/executive-hangar-config'
+
 import { HangarInstrument } from './hangar-instrument'
 import { NextOpen } from './next-open'
+import { CycleExplanation } from './cycle-explanation'
 import { UpcomingWindows } from './upcoming-windows'
 import { CalibrationPanel } from './calibration-panel'
 
-const DEFAULT_ANCHOR = new Date(cfg.anchorTime).getTime()
+const DEFAULT_ANCHOR =
+  new Date(cfg.anchorTime).getTime()
 
 export function ExecutiveHangarTool() {
-  const [anchor, setAnchor] = useState(DEFAULT_ANCHOR)
-  const [timezone, setTimezone] = useState<HangarTimezoneId>('local')
-  const [now, setNow] = useState<number | null>(null)
+  const [
+    anchor,
+    setAnchor,
+  ] = useState(DEFAULT_ANCHOR)
+
+  const [
+    timezone,
+    setTimezone,
+  ] =
+    useState<HangarTimezoneId>(
+      'local',
+    )
+
+  const [
+    now,
+    setNow,
+  ] =
+    useState<number | null>(
+      null,
+    )
 
   useEffect(() => {
     setNow(Date.now())
-    const id = window.setInterval(() => setNow(Date.now()), 1000)
-    return () => window.clearInterval(id)
+
+    const id =
+      window.setInterval(
+        () =>
+          setNow(
+            Date.now(),
+          ),
+        1000,
+      )
+
+    return () =>
+      window.clearInterval(
+        id,
+      )
   }, [])
 
-  const state = useMemo(
-    () => (now === null ? null : computeHangarState(now, anchor)),
-    [now, anchor],
-  )
+  const state =
+    useMemo(
+      () =>
+        now === null
+          ? null
+          : computeHangarState(
+              now,
+              anchor,
+            ),
+      [
+        now,
+        anchor,
+      ],
+    )
 
-  const windows = useMemo(
-    () => (state && now !== null ? listUpcomingWindows(state, now, 5) : []),
-    [state, now],
-  )
+  const windows =
+    useMemo(
+      () =>
+        state &&
+        now !== null
+          ? listUpcomingWindows(
+              state,
+              now,
+              5,
+            )
+          : [],
+      [
+        state,
+        now,
+      ],
+    )
 
   return (
-    <div className="flex flex-col gap-6">
-      <HangarInstrument state={state} anchor={anchor} now={now} />
+    <div className="flex flex-col gap-10">
+      <HangarInstrument
+        state={state}
+        anchor={anchor}
+        now={now}
+      />
 
       {state && (
         <NextOpen
-          nextOpen={state.nextOpen}
-          untilNextOpen={state.untilNextOpen}
-          isOpenNow={state.phase === 'open'}
+          nextOpen={
+            state.nextOpen
+          }
+          untilNextOpen={
+            state.untilNextOpen
+          }
+          isOpenNow={
+            state.phase ===
+            'open'
+          }
         />
       )}
 
-      {windows.length > 0 && now !== null && (
-        <UpcomingWindows
-          windows={windows}
-          now={now}
-          timezone={timezone}
-          onTimezoneChange={setTimezone}
-        />
-      )}
+      <CycleExplanation />
+
+      {windows.length >
+        0 &&
+        now !== null && (
+          <UpcomingWindows
+            windows={
+              windows
+            }
+            now={now}
+            timezone={
+              timezone
+            }
+            onTimezoneChange={
+              setTimezone
+            }
+          />
+        )}
 
       <CalibrationPanel
         anchor={anchor}
-        onCalibrate={(greenStart) => setAnchor(greenStart - CLOSED_MS)}
-        onReset={() => setAnchor(DEFAULT_ANCHOR)}
+        onCalibrate={(
+          greenStart,
+        ) =>
+          setAnchor(
+            greenStart -
+              CLOSED_MS,
+          )
+        }
+        onReset={() =>
+          setAnchor(
+            DEFAULT_ANCHOR,
+          )
+        }
       />
     </div>
   )

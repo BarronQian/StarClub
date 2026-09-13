@@ -24,7 +24,7 @@ export function HangarSignalLights({
     <div className="flex flex-col gap-4">
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-[0.62rem] tracking-[0.28em] text-muted-foreground uppercase">
-          Hangar Signal
+          行政机库信号灯
         </span>
 
         <div className="flex items-center gap-2">
@@ -37,7 +37,7 @@ export function HangarSignalLights({
           />
 
           <span className="font-display text-[0.62rem] tabular-nums tracking-[0.2em] text-muted-foreground">
-            {active} / 5 ACTIVE
+            {active} / 5 已激活
           </span>
         </div>
       </div>
@@ -136,8 +136,8 @@ export function HangarSignalLights({
 
         <p className="font-display text-[0.62rem] tracking-[0.12em] text-muted-foreground">
           {phase === 'reset'
-            ? `BLACKOUT · SYSTEM RESET IN ${nextChange}`
-            : `NEXT SIGNAL CHANGE IN ${nextChange}`}
+            ? `信号熄灭 · 系统将在 ${nextChange} 后重置`
+            : `距离下次信号变化 ${nextChange}`}
         </p>
       </div>
     </div>
