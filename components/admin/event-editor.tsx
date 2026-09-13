@@ -542,17 +542,61 @@ async function cleanupEventImage(
       if (
         !response.ok
       ) {
-      throw new Error(
-        data?.error ||
-          (mode === 'edit'
-            ? '保存活动失败'
-            : '创建活动失败'),
-      )
+        throw new Error(
+          data?.error ||
+            (mode === 'edit'
+              ? '保存活动失败'
+              : '创建活动失败'),
+        )
+      }
+
+      // 当前数据库最终保存的图片路径。
+      // 如果是外部 URL 或 /images/events/...，这里会得到 null。
+      const currentImagePath =
+        getEventStoragePathFromUrl(
+          imageUrl,
+        )
+
+      // 如果本次上传过图片，但最后保存的并不是这张图片，
+      // 说明它已经变成未使用的临时文件，清掉。
+      if (
+        uploadedImagePath &&
+        uploadedImagePath !==
+          currentImagePath
+      ) {
+        await cleanupEventImage(
+          uploadedImagePath,
+        )
+      }
+
+      // 编辑已有活动时，如果原来的封面也是
+      // gallery/events/ 下的上传图片，并且现在已经换掉，
+      // 保存成功后删除旧封面。
+      if (
+        mode === 'edit' &&
+        initialData
+      ) {
+        const oldImagePath =
+          getEventStoragePathFromUrl(
+            initialData.image,
+          )
+
+        if (
+          oldImagePath &&
+          oldImagePath !==
+            currentImagePath
+        ) {
+          await cleanupEventImage(
+            oldImagePath,
+          )
+        }
       }
 
       router.push(
         '/admin/events',
       )
+
+      router.refresh()
 
       router.refresh()
     } catch (error) {
