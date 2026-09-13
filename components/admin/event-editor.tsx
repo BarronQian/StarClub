@@ -21,8 +21,53 @@ import type {
   EventSandboxType,
 } from '@/lib/events'
 
+type EventEditorInitialData = {
+  id: string
+
+  slug: string
+  tag: string
+  title: string
+  subtitle?: string | null
+
+  date: string
+  timezone?: string | null
+  startTimes?: string[]
+
+  location: string
+
+  category: EventCategory
+  subcategory?: EventSubcategory | null
+  series?: EventSeries | null
+  sandboxType?: EventSandboxType | null
+
+  customTags?: string[]
+  tags?: string[]
+
+  status: EventStatus
+
+  image: string
+  alt?: string | null
+
+  description: string
+  details?: string | null
+
+  rules?: string[]
+  rewards?: string[]
+
+  slots?: string | null
+
+  discordUrl?: string | null
+  archiveHref?: string | null
+
+  featuredOnHome: boolean
+  isPublished: boolean
+
+  sortOrder: number
+}
+
 type EventEditorProps = {
-  mode?: 'create'
+  mode?: 'create' | 'edit'
+  initialData?: EventEditorInitialData
 }
 
 const inputClass =
@@ -39,7 +84,9 @@ const hintClass =
 
 export function EventEditor({
   mode = 'create',
+  initialData,
 }: EventEditorProps) {
+
   const router =
     useRouter()
 
@@ -56,55 +103,67 @@ export function EventEditor({
       null,
     )
 
-  const [
-    category,
-    setCategory,
-  ] =
-    useState<EventCategory>(
-      'activity',
-    )
+const [
+  category,
+  setCategory,
+] = useState<EventCategory>(
+  initialData?.category ??
+    'activity',
+)
 
-  const [
-    subcategory,
-    setSubcategory,
-  ] =
-    useState<
-      EventSubcategory | ''
-    >('')
+const [
+  subcategory,
+  setSubcategory,
+] = useState<
+  EventSubcategory | ''
+>(
+  initialData?.subcategory ??
+    '',
+)
 
-  const [
-    status,
-    setStatus,
-  ] =
-    useState<EventStatus>(
-      'upcoming',
-    )
+const [
+  status,
+  setStatus,
+] = useState<EventStatus>(
+  initialData?.status ??
+    'upcoming',
+)
 
-  const [
-    series,
-    setSeries,
-  ] =
-    useState<
-      EventSeries | ''
-    >('')
+const [
+  series,
+  setSeries,
+] = useState<
+  EventSeries | ''
+>(
+  initialData?.series ??
+    '',
+)
 
-  const [
-    sandboxType,
-    setSandboxType,
-  ] =
-    useState<
-      EventSandboxType | ''
-    >('')
+const [
+  sandboxType,
+  setSandboxType,
+] = useState<
+  EventSandboxType | ''
+>(
+  initialData?.sandboxType ??
+    '',
+)
 
-  const [
-    featuredOnHome,
-    setFeaturedOnHome,
-  ] = useState(false)
+const [
+  featuredOnHome,
+  setFeaturedOnHome,
+] = useState(
+  initialData?.featuredOnHome ??
+    false,
+)
 
-  const [
-    isPublished,
-    setIsPublished,
-  ] = useState(true)
+const [
+  isPublished,
+  setIsPublished,
+] = useState(
+  initialData?.isPublished ??
+    true,
+)
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -277,12 +336,20 @@ export function EventEditor({
     }
 
     try {
+      const endpoint =
+        mode === 'edit' &&
+        initialData
+          ? `/api/admin/events/${initialData.id}`
+          : '/api/admin/events'
+
       const response =
         await fetch(
-          '/api/admin/events',
+          endpoint,
           {
             method:
-              'POST',
+              mode === 'edit'
+                ? 'PATCH'
+                : 'POST',
 
             headers: {
               'Content-Type':
@@ -302,10 +369,12 @@ export function EventEditor({
       if (
         !response.ok
       ) {
-        throw new Error(
-          data?.error ||
-            '创建活动失败',
-        )
+      throw new Error(
+        data?.error ||
+          (mode === 'edit'
+            ? '保存活动失败'
+            : '创建活动失败'),
+      )
       }
 
       router.push(
@@ -317,6 +386,8 @@ export function EventEditor({
       setError(
         error instanceof Error
           ? error.message
+        : mode === 'edit'
+          ? '保存活动失败'
           : '创建活动失败',
       )
     } finally {
@@ -359,6 +430,10 @@ export function EventEditor({
               id="title"
               name="title"
               required
+              defaultValue={
+                      initialData?.title ??
+                      ''
+                    }
               className={
                 inputClass
               }
@@ -379,6 +454,10 @@ export function EventEditor({
             <input
               id="subtitle"
               name="subtitle"
+                defaultValue={
+                  initialData?.subtitle ??
+                  ''
+                }
               className={
                 inputClass
               }
@@ -400,6 +479,10 @@ export function EventEditor({
               id="slug"
               name="slug"
               required
+                defaultValue={
+                    initialData?.slug ??
+                    ''
+                  }
               className={
                 inputClass
               }
@@ -427,6 +510,10 @@ export function EventEditor({
               id="tag"
               name="tag"
               required
+              defaultValue={
+                    initialData?.tag ??
+                    ''
+                  }
               className={
                 inputClass
               }
@@ -782,6 +869,10 @@ export function EventEditor({
               id="date"
               name="date"
               required
+              defaultValue={
+                    initialData?.date ??
+                    ''
+                  }
               className={
                 inputClass
               }
@@ -802,6 +893,10 @@ export function EventEditor({
             <input
               id="timezone"
               name="timezone"
+              defaultValue={
+                    initialData?.timezone ??
+                    ''
+                  }
               className={
                 inputClass
               }
@@ -822,6 +917,11 @@ export function EventEditor({
             <textarea
               id="startTimes"
               name="startTimes"
+              defaultValue={
+                  initialData?.startTimes?.join(
+                    '\n',
+                  ) ?? ''
+                }
               className={
                 textareaClass
               }
@@ -849,6 +949,10 @@ export function EventEditor({
               id="location"
               name="location"
               required
+              defaultValue={
+                    initialData?.location ??
+                    ''
+                  }
               className={
                 inputClass
               }
@@ -880,6 +984,10 @@ export function EventEditor({
               id="image"
               name="image"
               required
+              defaultValue={
+                  initialData?.image ??
+                  ''
+                }
               className={
                 inputClass
               }
@@ -906,6 +1014,10 @@ export function EventEditor({
             <input
               id="alt"
               name="alt"
+              defaultValue={
+                  initialData?.alt ??
+                  ''
+                }
               className={
                 inputClass
               }
@@ -936,6 +1048,10 @@ export function EventEditor({
             <textarea
               id="description"
               name="description"
+              defaultValue={
+                  initialData?.description ??
+                  ''
+                }
               required
               className={
                 textareaClass
@@ -957,6 +1073,10 @@ export function EventEditor({
             <textarea
               id="details"
               name="details"
+              defaultValue={
+                  initialData?.details ??
+                  ''
+                }
               className={`${textareaClass} min-h-40`}
               placeholder="活动详情页正文..."
             />
@@ -975,6 +1095,11 @@ export function EventEditor({
             <textarea
               id="rules"
               name="rules"
+              defaultValue={
+                  initialData?.rules?.join(
+                    '\n',
+                  ) ?? ''
+                }
               className={
                 textareaClass
               }
@@ -995,6 +1120,11 @@ export function EventEditor({
             <textarea
               id="rewards"
               name="rewards"
+              defaultValue={
+                  initialData?.rewards?.join(
+                    '\n',
+                  ) ?? ''
+                }
               className={
                 textareaClass
               }
@@ -1025,6 +1155,10 @@ export function EventEditor({
             <input
               id="slots"
               name="slots"
+              defaultValue={
+                  initialData?.slots ??
+                  ''
+                }
               className={
                 inputClass
               }
