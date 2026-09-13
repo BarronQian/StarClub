@@ -8,6 +8,15 @@ export const metadata: Metadata = {
     '星际酒馆 StarClub 的社区合作伙伴与友好组织。',
 }
 
+const PARTNERS = [
+  {
+    name: 'Kitsune 泛星际报团队',
+    logo: '/images/partners/kitsune.png',
+    description: '星际公民中文社区攻略内容创作团队',
+    href: 'https://kitsuneint.com',
+  },
+]
+
 export default function PartnersPage() {
   return (
     <div className="pb-24 lg:pb-32">
@@ -53,7 +62,56 @@ export default function PartnersPage() {
       </section>
 
 <section className="site-container pt-16 lg:pt-24">
-  <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+    <Reveal>
+    <div className="border-b border-border pb-14 lg:pb-18">
+      <div className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr] lg:items-center">
+        <div>
+          <span className="font-display text-[0.65rem] tracking-[0.3em] text-primary">
+            COOPERATIVE ORGANIZATIONS
+          </span>
+
+          <h2 className="mt-3 font-display text-2xl tracking-tight sm:text-3xl">
+            合作组织
+          </h2>
+
+          <p className="mt-5 max-w-md text-sm leading-7 text-muted-foreground">
+            与星际酒馆保持长期交流、内容合作与社区互动的伙伴。
+          </p>
+        </div>
+
+          <div className="flex flex-wrap items-center gap-12 lg:gap-16">
+            {PARTNERS.map((partner) => (
+              <a
+                key={partner.name}
+                href={partner.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={partner.name}
+                className="group relative flex min-h-45 items-center justify-center px-10"
+              >
+                <img
+                  src={partner.logo}
+                  alt={partner.name}
+                  className="h-auto max-h-36 w-auto max-w-90 object-contain
+                    drop-shadow-[0_10px_10px_rgba(255,255,255,0.9)]
+                    transition-all duration-300 ease-out
+                    group-hover:-translate-y-1.5
+                    group-hover:scale-110
+                    group-hover:drop-shadow-[0_24px_38px_rgba(76,29,149,0.24)]"
+                />
+
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-24 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-linear-to-r from-indigo-400/10 via-purple-400/10 to-red-400/10 blur-3xl transition-all duration-300 group-hover:h-28 group-hover:w-64 group-hover:opacity-100"
+                />
+              </a>
+            ))}
+          </div>
+      </div>
+    </div>
+  </Reveal>
+  
+    <div className="mt-16 grid gap-12 lg:mt-20 lg:grid-cols-[0.8fr_1.2fr]">
     <div>
       <span className="font-display text-[0.65rem] tracking-[0.3em] text-primary">
         WORK WITH STARCLUB
