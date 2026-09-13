@@ -3,6 +3,9 @@ import { Reveal } from '@/components/reveal'
 import { SectionHeading } from '@/components/section-heading'
 import { SponsorTicker } from '@/components/sponsor-ticker'
 import { formatSponsorTotal, getSponsorCount, getSponsorTotal } from '@/lib/sponsors'
+import {
+  getSponsorsFromDb,
+} from '@/lib/sponsors-db'
 
 const ENTRIES = [
   {
@@ -51,7 +54,9 @@ function SupportEntry({ entry }: { entry: (typeof ENTRIES)[number] }) {
   )
 }
 
-export function CommunitySupport() {
+export async function CommunitySupport() {
+  const sponsors =
+    await getSponsorsFromDb()
   const total = getSponsorTotal()
   const sponsorCount = getSponsorCount()
   const HONORS = [
@@ -95,7 +100,9 @@ export function CommunitySupport() {
         </div>
 
         <Reveal delay={200} className="mt-14 lg:mt-20">
-          <SponsorTicker />
+         <SponsorTicker
+  sponsors={sponsors}
+/>
         </Reveal>
 
         <div className="mt-14 grid gap-10 border-t border-border pt-12 sm:grid-cols-2 sm:gap-0 sm:divide-x sm:divide-border lg:mt-20 lg:pt-14">

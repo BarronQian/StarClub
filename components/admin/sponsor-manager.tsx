@@ -1095,7 +1095,7 @@ export function SponsorManager({
                 verticalListSortingStrategy
               }
             >
-              <table className="w-full min-w-[900px] text-sm">
+              <table className="w-full min-w-225 text-sm">
                 <thead className="border-b border-border bg-muted/30 text-xs text-muted-foreground">
                   <tr>
                     <th className="w-12 px-3 py-3" />
