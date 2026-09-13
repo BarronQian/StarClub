@@ -79,6 +79,7 @@ const ROUTE_PREFIX_KEYS = [
   'tools',
   'events',
   'guides',
+  'market',
 ] as const
 
 /** Section ids observed for scroll-based active state on the homepage. */

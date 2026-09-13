@@ -751,45 +751,12 @@ export default function MarketPage() {
                           ),
                         )}
                       </div>
-
-                      {(listingType !==
-                        'all' ||
-                        category !==
-                          'all' ||
-                        search) && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setListingType(
-                              'all',
-                            )
-                            setCategory(
-                              'all',
-                            )
-                            setSubcategory(
-                              'all',
-                            )
-                            setArmorPart(
-                              'all',
-                            )
-                            setArmorWeight(
-                              'all',
-                            )
-                            setSearchInput('')
-                            setSearch('')
-                            setPage(1)
-                          }}
-                          className="h-9 rounded-lg px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        >
-                          重置筛选
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="border-t border-border/40 px-4 pt-4 md:px-5">
-                  <div className="flex gap-5 overflow-x-auto pb-0">
+                  <div className="flex gap-5 overflow-x-auto px-1 pb-0">
                     <button
                       type="button"
                       onClick={() =>
