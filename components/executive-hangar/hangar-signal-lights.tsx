@@ -77,7 +77,7 @@ export function HangarSignalLights({
                 <div className="relative flex aspect-square w-full max-w-13 items-center justify-center rounded-full border border-neutral-400 bg-[#d9d9d4] shadow-[inset_0_2px_4px_rgba(0,0,0,0.18),0_1px_0_rgba(255,255,255,0.8)]">
 
                   {/* 外圈金属环 */}
-                  <div className="absolute inset-[3px] rounded-full border border-neutral-300 bg-[linear-gradient(145deg,#f4f4f0,#bfbfba)]" />
+                  <div className="absolute inset-0.75 rounded-full border border-neutral-300 bg-[linear-gradient(145deg,#f4f4f0,#bfbfba)]" />
 
                   {/* 灯体 */}
                   <div
@@ -163,7 +163,7 @@ export function HangarSignalLights({
                   className="flex flex-col gap-1.5"
                 >
 
-                  <div className="rounded-[5px] border border-neutral-500/60 bg-[#bdbdb8] p-[3px] shadow-[inset_0_1px_3px_rgba(0,0,0,0.18)]">
+                  <div className="rounded-[5px] border border-neutral-500/60 bg-[#bdbdb8] p-0.75 shadow-[inset_0_1px_3px_rgba(0,0,0,0.18)]">
 
                     <div
                       className={cn(
