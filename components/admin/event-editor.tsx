@@ -165,6 +165,86 @@ const [
     true,
 )
 
+const [
+  imageUrl,
+  setImageUrl,
+] = useState(
+  initialData?.image ??
+    '',
+)
+
+const [
+  uploadingImage,
+  setUploadingImage,
+] = useState(false)
+
+const [
+  uploadError,
+  setUploadError,
+] = useState<
+  string | null
+>(null)
+
+  async function handleImageUpload(
+  file: File,
+) {
+  if (uploadingImage) {
+    return
+  }
+
+  setUploadingImage(true)
+  setUploadError(null)
+
+  try {
+    const formData =
+      new FormData()
+
+    formData.append(
+      'file',
+      file,
+    )
+
+    const response =
+      await fetch(
+        '/api/admin/events/upload',
+        {
+          method: 'POST',
+          body: formData,
+        },
+      )
+
+    const data =
+      await response
+        .json()
+        .catch(() => null)
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error ||
+          '活动封面上传失败',
+      )
+    }
+
+    if (!data?.url) {
+      throw new Error(
+        '上传成功，但没有返回图片地址',
+      )
+    }
+
+    setImageUrl(
+      data.url,
+    )
+  } catch (error) {
+    setUploadError(
+      error instanceof Error
+        ? error.message
+        : '活动封面上传失败',
+    )
+  } finally {
+    setUploadingImage(false)
+  }
+}
+
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
@@ -276,6 +356,7 @@ const [
       status,
 
       image:
+        imageUrl ||
         form.get(
           'image',
         ),
@@ -972,33 +1053,105 @@ const [
         <div className="grid gap-5">
           <div>
             <label
-              htmlFor="image"
+              htmlFor="imageUpload"
               className={
                 labelClass
               }
             >
-              图片路径 *
+              活动封面 *
             </label>
 
-            <input
-              id="image"
-              name="image"
-              required
-              defaultValue={
-                  initialData?.image ??
-                  ''
+            <div className="flex flex-col gap-3">
+              <input
+                id="imageUpload"
+                type="file"
+                accept="image/*"
+                disabled={
+                  uploadingImage
                 }
-              className={
-                inputClass
-              }
-              placeholder="/images/events/example.jpg"
-            />
+                onChange={(
+                  event,
+                ) => {
+                  const file =
+                    event.target
+                      .files?.[0]
 
-            <p className={
-              hintClass
-            }>
-              下一步会给这里增加直接上传图片功能。
-            </p>
+                  if (!file) {
+                    return
+                  }
+
+                  void handleImageUpload(
+                    file,
+                  )
+
+                  event.target.value =
+                    ''
+                }}
+                className="block w-full text-sm text-foreground file:mr-4 file:rounded-md file:border file:border-border file:bg-background file:px-4 file:py-2 file:text-xs file:font-medium file:text-foreground hover:file:bg-muted disabled:opacity-50"
+              />
+
+              {uploadingImage ? (
+                <p className="text-xs text-muted-foreground">
+                  正在上传活动封面...
+                </p>
+              ) : null}
+
+              {uploadError ? (
+                <p className="text-xs text-destructive">
+                  {uploadError}
+                </p>
+              ) : null}
+
+              {imageUrl ? (
+                <div className="overflow-hidden rounded-lg border border-border bg-muted">
+                  <img
+                    src={imageUrl}
+                    alt={
+                      initialData?.alt ||
+                      '活动封面预览'
+                    }
+                    className="aspect-video w-full object-cover"
+                  />
+                </div>
+              ) : null}
+
+              <div>
+                <label
+                  htmlFor="image"
+                  className={
+                    labelClass
+                  }
+                >
+                  图片地址
+                </label>
+
+                <input
+                  id="image"
+                  name="image"
+                  required
+                  value={
+                    imageUrl
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setImageUrl(
+                      event.target.value,
+                    )
+                  }
+                  className={
+                    inputClass
+                  }
+                  placeholder="/images/events/example.jpg 或 Supabase 图片 URL"
+                />
+
+                <p className={
+                  hintClass
+                }>
+                  上传图片后地址会自动填写；也可以手动输入图片地址。
+                </p>
+              </div>
+            </div>
           </div>
 
           <div>
