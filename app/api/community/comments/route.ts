@@ -76,6 +76,36 @@ export async function GET(
     const supabase =
       getAdminSupabase()
 
+    const authorization =
+      request.headers.get(
+        'authorization',
+      )
+
+    let currentUserId:
+      string | null =
+      null
+
+    if (
+      authorization?.startsWith(
+        'Bearer ',
+      )
+    ) {
+      const accessToken =
+        authorization.slice(7)
+
+      const {
+        data: {
+          user,
+        },
+      } =
+        await supabase.auth.getUser(
+          accessToken,
+        )
+
+      currentUserId =
+        user?.id ?? null
+    }
+
     let query =
       supabase
         .from(
@@ -157,13 +187,101 @@ export async function GET(
       rows.length >
       COMMENTS_PAGE_SIZE
 
-    const comments =
+    const visibleComments =
       hasMore
         ? rows.slice(
             0,
             COMMENTS_PAGE_SIZE,
           )
         : rows
+    
+    const commentIds =
+        visibleComments.map(
+          (comment) =>
+            comment.id,
+        )
+
+      const likeCountMap =
+        new Map<
+          string,
+          number
+        >()
+
+      const likedByMeSet =
+        new Set<string>()
+
+      if (
+        commentIds.length >
+        0
+      ) {
+        const {
+          data: likes,
+          error:
+            likesError,
+        } =
+          await supabase
+            .from(
+              'comment_likes',
+            )
+            .select(`
+              comment_id,
+              user_id
+            `)
+            .in(
+              'comment_id',
+              commentIds,
+            )
+
+        if (
+          likesError
+        ) {
+          console.error(
+            'Failed to load comment likes:',
+            likesError,
+          )
+        } else {
+          for (
+            const like of
+            likes ?? []
+          ) {
+            likeCountMap.set(
+              like.comment_id,
+              (
+                likeCountMap.get(
+                  like.comment_id,
+                ) ?? 0
+              ) + 1,
+            )
+
+            if (
+              currentUserId &&
+              like.user_id ===
+                currentUserId
+            ) {
+              likedByMeSet.add(
+                like.comment_id,
+              )
+            }
+          }
+        }
+      }
+
+    const comments =
+        visibleComments.map(
+          (comment) => ({
+            ...comment,
+
+            like_count:
+              likeCountMap.get(
+                comment.id,
+              ) ?? 0,
+
+            liked_by_me:
+              likedByMeSet.has(
+                comment.id,
+              ),
+          }),
+        )
 
     const lastComment =
       comments[
@@ -980,6 +1098,30 @@ export async function DELETE(
         'Failed to delete comment:',
         deleteError,
       )
+      
+      // 清理与这条评论直接相关的通知
+        const {
+          error:
+            notificationCleanupError,
+        } =
+          await supabase
+            .from(
+              'community_notifications',
+            )
+            .delete()
+            .eq(
+              'comment_id',
+              commentId,
+            )
+
+        if (
+          notificationCleanupError
+        ) {
+          console.error(
+            'Failed to clean up comment notifications:',
+            notificationCleanupError,
+          )
+        }
 
       return NextResponse.json(
         {

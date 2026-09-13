@@ -468,41 +468,40 @@ const [
               10000,
             )
 
-              let accessToken:
-                string | null = null
+            let accessToken:
+              string | null = null
 
-              if (
-                mode === 'following'
-              ) {
-                const supabase =
-                  getSupabaseBrowser()
+            const supabase =
+              getSupabaseBrowser()
 
-                const {
-                  data: {
-                    session,
-                  },
-                } =
-                  await supabase.auth.getSession()
+            const {
+              data: {
+                session,
+              },
+            } =
+              await supabase.auth.getSession()
 
-                accessToken =
-                  session?.access_token ??
-                  null
+            accessToken =
+              session?.access_token ??
+              null
 
-                if (!accessToken) {
-                  window.clearTimeout(
-                    timeout,
-                  )
+            if (
+              mode === 'following' &&
+              !accessToken
+            ) {
+              window.clearTimeout(
+                timeout,
+              )
 
-                  setPosts([])
-                  setHasMore(false)
-                  setNextCursor(null)
-                  setError(
-                    '请先登录后查看关注动态',
-                  )
+              setPosts([])
+              setHasMore(false)
+              setNextCursor(null)
+              setError(
+                '请先登录后查看关注动态',
+              )
 
-                  return
-                }
-              }
+              return
+            }
 
               const response =
                 await fetch(

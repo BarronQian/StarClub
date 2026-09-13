@@ -1050,6 +1050,30 @@ export async function DELETE(
       )
     }
 
+    // 清理这条动态相关的全部通知
+      const {
+        error:
+          notificationCleanupError,
+      } =
+        await supabase
+          .from(
+            'community_notifications',
+          )
+          .delete()
+          .eq(
+            'post_id',
+            postId,
+          )
+
+      if (
+        notificationCleanupError
+      ) {
+        console.error(
+          'Failed to clean up post notifications:',
+          notificationCleanupError,
+        )
+      }
+
     return NextResponse.json({
       ok: true,
       postId,
