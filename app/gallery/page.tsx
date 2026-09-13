@@ -5,6 +5,7 @@ import { Reveal } from '@/components/reveal'
 import { GalleryPageGrid } from '@/components/gallery-page-grid'
 import { GalleryFilmBackground } from '@/components/gallery-film-background'
 import { getGalleryFromDb } from '@/lib/gallery-db'
+import { PageCompanion } from '@/components/page-companion'
 
 export const revalidate = 60
 
@@ -82,6 +83,9 @@ export default async function GalleryPage() {
           shots={shots}
         />
       </section>
+      
+      <PageCompanion companion="shanora" />
+
     </div>
   )
 }
