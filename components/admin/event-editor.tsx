@@ -61,8 +61,6 @@ type EventEditorInitialData = {
 
   featuredOnHome: boolean
   isPublished: boolean
-
-  sortOrder: number
 }
 
 type EventEditorProps = {
@@ -497,13 +495,6 @@ async function cleanupEventImage(
           'archiveHref',
         ),
 
-      sortOrder:
-        Number(
-          form.get(
-            'sortOrder',
-          ) ?? 0,
-        ),
-
       featuredOnHome,
       isPublished,
     }
@@ -595,8 +586,6 @@ async function cleanupEventImage(
       router.push(
         '/admin/events',
       )
-
-      router.refresh()
 
       router.refresh()
     } catch (error) {
@@ -1454,37 +1443,7 @@ async function cleanupEventImage(
               placeholder="0 / 32 席位"
             />
           </div>
-
-          <div>
-            <label
-              htmlFor="sortOrder"
-              className={
-                labelClass
-              }
-            >
-              排序权重
-            </label>
-
-            <input
-              id="sortOrder"
-              name="sortOrder"
-              type="number"
-              defaultValue={
-                initialData?.sortOrder ??
-                0
-              }
-              className={
-                inputClass
-              }
-            />
-
-            <p className={
-              hintClass
-            }>
-              数值越高越靠前。
-            </p>
-          </div>
-
+            
           <div className="md:col-span-2">
             <label
               htmlFor="discordUrl"

@@ -299,17 +299,6 @@ export async function POST(
             body.isPublished,
           )
 
-    const sortOrder =
-      Number.isFinite(
-        Number(
-          body.sortOrder,
-        ),
-      )
-        ? Number(
-            body.sortOrder,
-          )
-        : 0
-
     if (!slug) {
       return NextResponse.json(
         {
@@ -589,6 +578,51 @@ export async function POST(
         },
       )
     }
+
+    const {
+  data: topEvent,
+  error: topEventError,
+} =
+  await supabase
+    .from(
+      'community_events',
+    )
+    .select(
+      'sort_order',
+    )
+    .is(
+      'deleted_at',
+      null,
+    )
+    .order(
+      'sort_order',
+      {
+        ascending: false,
+      },
+    )
+    .limit(1)
+    .maybeSingle()
+
+if (topEventError) {
+  console.error(
+    'Failed to get highest event sort order:',
+    topEventError,
+  )
+
+  return NextResponse.json(
+    {
+      error:
+        '获取活动排序失败',
+    },
+    {
+      status: 500,
+    },
+  )
+}
+
+const sortOrder =
+  (topEvent?.sort_order ??
+    0) + 1
 
     const now =
       new Date().toISOString()

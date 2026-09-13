@@ -305,17 +305,6 @@ export async function PATCH(
         body.isPublished,
       )
 
-    const sortOrder =
-      Number.isFinite(
-        Number(
-          body.sortOrder,
-        ),
-      )
-        ? Number(
-            body.sortOrder,
-          )
-        : 0
-
     if (
       !slug ||
       !tag ||
@@ -650,9 +639,6 @@ export async function PATCH(
 
           is_published:
             isPublished,
-
-          sort_order:
-            sortOrder,
 
           updated_at:
             now,
