@@ -439,26 +439,28 @@ export default async function AdminEventsPage() {
                             )}
                           </TableCell>
 
-                          <TableCell>
-                            {event.featured_on_home ? (
-                              <Badge
-                                variant="outline"
-                                className="border-primary/30 text-primary"
-                              >
-                                推荐
-                              </Badge>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">
-                                —
-                              </span>
-                            )}
-                          <TableCell className="text-right">
-                            <EventActions
-                              id={event.id}
-                              slug={event.slug}
-                              status={event.status}
-                            />
-                          </TableCell>
+                              <TableCell>
+                                {event.featured_on_home ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-primary/30 text-primary"
+                                  >
+                                    推荐
+                                  </Badge>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    —
+                                  </span>
+                                )}
+                              </TableCell>
+
+                              <TableCell className="text-right">
+                                <EventActions
+                                  id={event.id}
+                                  slug={event.slug}
+                                  status={event.status}
+                                />
+                              </TableCell>
                         </TableRow>
                       ),
                     )
