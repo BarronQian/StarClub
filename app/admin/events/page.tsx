@@ -37,6 +37,10 @@ import type {
   EventStatus,
 } from '@/lib/events'
 
+import {
+  EventActions,
+} from '@/components/admin/event-actions'
+
 export const metadata: Metadata = {
   title:
     '活动管理 | 星际酒馆 StarClub',
@@ -435,39 +439,28 @@ export default async function AdminEventsPage() {
                             )}
                           </TableCell>
 
-                          <TableCell>
-                            {event.featured_on_home ? (
-                              <Badge
-                                variant="outline"
-                                className="border-primary/30 text-primary"
-                              >
-                                推荐
-                              </Badge>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">
-                                —
-                              </span>
-                            )}
-                          </TableCell>
+                              <TableCell>
+                                {event.featured_on_home ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-primary/30 text-primary"
+                                  >
+                                    推荐
+                                  </Badge>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    —
+                                  </span>
+                                )}
+                              </TableCell>
 
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Link
-                                href={`/events/${event.slug}`}
-                                target="_blank"
-                                className="inline-flex h-8 items-center justify-center rounded-md border border-border bg-background px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-                              >
-                                查看
-                              </Link>
-
-                              <Link
-                                href={`/admin/events/${event.id}`}
-                                className="inline-flex h-8 items-center justify-center rounded-md border border-border bg-background px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-                              >
-                                编辑
-                              </Link>
-                            </div>
-                          </TableCell>
+                              <TableCell className="text-right">
+                                <EventActions
+                                  id={event.id}
+                                  slug={event.slug}
+                                  status={event.status}
+                                />
+                              </TableCell>
                         </TableRow>
                       ),
                     )
