@@ -1295,6 +1295,111 @@ const [
     }
   }
 
+  const openNotificationPost =
+  async (
+    notification: CommunityNotification,
+  ) => {
+    if (!notification.post_id) {
+      return
+    }
+
+    try {
+      await markNotificationRead(
+        notification.id,
+      )
+
+      const existingPost =
+        posts.find(
+          (post) =>
+            post.id ===
+            notification.post_id,
+        )
+
+      if (existingPost) {
+        setCommentPost(
+          existingPost,
+        )
+
+        return
+      }
+
+      const supabase =
+        getSupabaseBrowser()
+
+      const {
+        data: { session },
+      } =
+        await supabase.auth.getSession()
+
+      const params =
+        new URLSearchParams({
+          postId:
+            notification.post_id,
+        })
+
+      const response =
+        await fetch(
+          `/api/community/posts?${params.toString()}`,
+          {
+            cache: 'no-store',
+
+            ...(session
+              ?.access_token
+              ? {
+                  headers: {
+                    Authorization:
+                      `Bearer ${session.access_token}`,
+                  },
+                }
+              : {}),
+          },
+        )
+
+      const data =
+        await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            '读取动态失败',
+        )
+      }
+
+      const post:
+        CommunityPost | null =
+        data.post ??
+        (
+          Array.isArray(
+            data.posts,
+          )
+            ? data.posts[0] ??
+              null
+            : null
+        )
+
+      if (!post) {
+        setError(
+          '这条动态已不存在',
+        )
+
+        return
+      }
+
+      setCommentPost(post)
+    } catch (error) {
+      console.error(
+        'Failed to open notification post:',
+        error,
+      )
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : '打开动态失败',
+      )
+    }
+  }
+
   const loadMorePosts =
     async () => {
       if (
@@ -2528,11 +2633,11 @@ const pageDescription =
                                       notification.id
                                     }
                                     type="button"
-                                    onClick={() => {
-                                      void markNotificationRead(
-                                        notification.id,
-                                      )
-                                    }}
+                                        onClick={() => {
+                                          void openNotificationPost(
+                                            notification,
+                                          )
+                                        }}
                                     className={
                                       unread
                                         ? 'group relative flex w-full items-start gap-4 border-b border-border bg-[#fffaf2] px-5 py-5 text-left transition-colors last:border-b-0 hover:bg-[#fff7e8]'
