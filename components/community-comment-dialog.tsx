@@ -11,12 +11,18 @@ import {
 import {
   Loader2,
   MessageCircle,
+  Smile,
   X,
 } from 'lucide-react'
 
 import {
   getSupabaseBrowser,
 } from '@/lib/supabase-browser'
+
+import EmojiPicker, {
+  EmojiClickData,
+  Theme,
+} from 'emoji-picker-react'
 
 type PostAuthor = {
   username?: string | null
@@ -155,6 +161,11 @@ export function CommunityCommentDialog({
   ] = useState('')
 
   const [
+  emojiOpen,
+  setEmojiOpen,
+] = useState(false)
+
+  const [
     errorMessage,
     setErrorMessage,
   ] = useState('')
@@ -189,6 +200,11 @@ export function CommunityCommentDialog({
 
   const textareaRef =
   useRef<HTMLTextAreaElement | null>(
+    null,
+  )
+
+  const emojiPickerRef =
+  useRef<HTMLDivElement | null>(
     null,
   )
 
@@ -1161,13 +1177,100 @@ export function CommunityCommentDialog({
                   </p>
                 )}
 
-                <div className="mt-2 flex items-center justify-between">
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div
+                        ref={emojiPickerRef}
+                        className="relative"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEmojiOpen(
+                              (current) =>
+                                !current,
+                            )
+                          }}
+                          aria-label="添加表情"
+                          title="添加表情"
+                          className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                          <Smile
+                            className="size-4"
+                            strokeWidth={1.7}
+                          />
+                        </button>
 
-                  <span className="text-xs text-muted-foreground">
-                    {content.length}/500
-                  </span>
+                        {emojiOpen && (
+                          <div className="absolute bottom-10 left-0 z-50">
+                            <EmojiPicker
+                              theme={Theme.LIGHT}
+                              lazyLoadEmojis
+                              searchPlaceholder="搜索表情"
+                              previewConfig={{
+                                showPreview: false,
+                              }}
+                              onEmojiClick={(
+                                emojiData: EmojiClickData,
+                              ) => {
+                                const textarea =
+                                  textareaRef.current
 
-                  <button
+                                if (!textarea) {
+                                  return
+                                }
+
+                                const start =
+                                  textarea.selectionStart
+
+                                const end =
+                                  textarea.selectionEnd
+
+                                const next =
+                                  content.slice(
+                                    0,
+                                    start,
+                                  ) +
+                                  emojiData.emoji +
+                                  content.slice(end)
+
+                                if (
+                                  next.length >
+                                  500
+                                ) {
+                                  return
+                                }
+
+                                setContent(next)
+
+                                requestAnimationFrame(
+                                  () => {
+                                    const position =
+                                      start +
+                                      emojiData.emoji.length
+
+                                    textarea.focus()
+
+                                    textarea.setSelectionRange(
+                                      position,
+                                      position,
+                                    )
+                                  },
+                                )
+
+                                setEmojiOpen(false)
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <span className="text-xs text-muted-foreground">
+                        {content.length}/500
+                      </span>
+                    </div>
+
+                    <button
                     type="button"
                     disabled={
                       submitting ||
