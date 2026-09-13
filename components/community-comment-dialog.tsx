@@ -11,8 +11,13 @@ import {
 import {
   Loader2,
   MessageCircle,
+  Smile,
   X,
 } from 'lucide-react'
+
+import EmojiPicker, {
+  type EmojiClickData,
+} from 'emoji-picker-react'
 
 import {
   getSupabaseBrowser,
@@ -49,6 +54,7 @@ type CommunityComment = {
   author_id: string
   content: string
   parent_comment_id: string | null
+  reply_to_comment_id: string | null
   created_at: string
   updated_at: string
   profiles?: CommentAuthor | null
@@ -192,6 +198,16 @@ export function CommunityCommentDialog({
     null,
   )
 
+  const emojiPickerRef =
+  useRef<HTMLDivElement | null>(
+    null,
+  )
+
+  const [
+    emojiOpen,
+    setEmojiOpen,
+  ] = useState(false)
+
   const topLevelComments =
     useMemo(
       () =>
@@ -319,6 +335,42 @@ export function CommunityCommentDialog({
     post?.id,
   ])
 
+  useEffect(
+  () => {
+    if (!emojiOpen) {
+      return
+    }
+
+    const handlePointerDown = (
+      event: MouseEvent,
+    ) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(
+          event.target as Node,
+        )
+      ) {
+        setEmojiOpen(false)
+      }
+    }
+
+    document.addEventListener(
+      'mousedown',
+      handlePointerDown,
+    )
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handlePointerDown,
+      )
+    }
+  },
+  [
+    emojiOpen,
+  ],
+)
+
   useEffect(() => {
     if (!open) {
       return
@@ -387,6 +439,7 @@ export function CommunityCommentDialog({
       setContent('')
       setErrorMessage('')
       setReplyingTo(null)
+      setEmojiOpen(false)
       setDeletingCommentId(
         null,
       )
@@ -518,6 +571,57 @@ export function CommunityCommentDialog({
         setLoadingMore(false)
       }
     }
+
+  const insertEmoji = (
+  emojiData: EmojiClickData,
+) => {
+  const textarea =
+    textareaRef.current
+
+  if (!textarea) {
+    return
+  }
+
+  const start =
+    textarea.selectionStart
+
+  const end =
+    textarea.selectionEnd
+
+  const next =
+    content.slice(
+      0,
+      start,
+    ) +
+    emojiData.emoji +
+    content.slice(end)
+
+  if (
+    next.length >
+    500
+  ) {
+    return
+  }
+
+  setContent(next)
+
+  requestAnimationFrame(
+    () => {
+      const position =
+        start +
+        emojiData.emoji.length
+
+      textarea.focus()
+
+      textarea.setSelectionRange(
+        position,
+        position,
+      )
+    },
+  )
+
+  setEmojiOpen(false)
+}
 
   const submitComment =
     async () => {
@@ -892,17 +996,48 @@ export function CommunityCommentDialog({
               </div>
 
               <p className="mt-1.5 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-foreground/85">
-                {comment.parent_comment_id &&
-                  (() => {
-                    const parentComment =
-                      comments.find(
-                        (item) =>
-                          item.id ===
-                          comment.parent_comment_id,
-                      )
+                  {comment.reply_to_comment_id &&
+                    (() => {
+                      const repliedComment =
+                        comments.find(
+                          (item) =>
+                            item.id ===
+                            comment.reply_to_comment_id,
+                        )
 
-                    const parentAuthor =
-                      parentComment?.profiles
+                      const repliedAuthor =
+                        repliedComment?.profiles
+
+                      return (
+                        <>
+                          <span className="mr-1 text-muted-foreground">
+                            回复
+                          </span>
+
+                          {repliedAuthor?.profile_slug ? (
+                            <Link
+                              href={`/profile/${repliedAuthor.profile_slug}`}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                              }}
+                              className="mr-1 font-medium text-[#a66700] hover:underline"
+                            >
+                              @
+                              {getDisplayName(
+                                repliedAuthor,
+                              )}
+                            </Link>
+                          ) : repliedAuthor ? (
+                            <span className="mr-1 font-medium text-[#a66700]">
+                              @
+                              {getDisplayName(
+                                repliedAuthor,
+                              )}
+                            </span>
+                          ) : null}
+                        </>
+                      )
+                    })()}
 
                     return (
                       <>
@@ -1159,34 +1294,73 @@ export function CommunityCommentDialog({
                   </p>
                 )}
 
-                <div className="mt-2 flex items-center justify-between">
+                  <div className="mt-2 flex items-center justify-between">
 
-                  <span className="text-xs text-muted-foreground">
-                    {content.length}/500
-                  </span>
+                    <div className="flex items-center gap-2">
 
-                  <button
-                    type="button"
-                    disabled={
-                      submitting ||
-                      !content.trim()
-                    }
-                    onClick={() => {
-                      void submitComment()
-                    }}
-                    className="inline-flex h-9 items-center justify-center rounded-full bg-[#a66700] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
-                  >
-                    {submitting ? (
-                      <>
-                        <Loader2 className="mr-2 size-4 animate-spin" />
-                        回复中
-                      </>
-                    ) : (
-                      '回复'
-                    )}
-                  </button>
+                      <div
+                        ref={emojiPickerRef}
+                        className="relative"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEmojiOpen(
+                              (current) =>
+                                !current,
+                            )
+                          }}
+                          className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          aria-label="添加表情"
+                        >
+                          <Smile
+                            className="size-4"
+                            strokeWidth={1.7}
+                          />
+                        </button>
 
-                </div>
+                        {emojiOpen && (
+                          <div className="absolute bottom-10 left-0 z-50">
+                            <EmojiPicker
+                              onEmojiClick={
+                                insertEmoji
+                              }
+                              width={320}
+                              height={400}
+                              lazyLoadEmojis
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <span className="text-xs text-muted-foreground">
+                        {content.length}/500
+                      </span>
+
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={
+                        submitting ||
+                        !content.trim()
+                      }
+                      onClick={() => {
+                        void submitComment()
+                      }}
+                      className="inline-flex h-9 items-center justify-center rounded-full bg-[#a66700] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                          回复中
+                        </>
+                      ) : (
+                        '回复'
+                      )}
+                    </button>
+
+                  </div>
               </div>
             </div>
           </div>
