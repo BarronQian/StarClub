@@ -19,11 +19,17 @@ export default async function GalleryPage() {
   const shots =
     await getGalleryFromDb()
 
+    const heroShots =
+  shots.filter(
+    (shot) =>
+      shot.heroFeatured,
+  )
+
   return (
     <div className="pb-24 lg:pb-32">
       <section className="relative overflow-hidden ">
         {/* 最底层：三行滚动摄影作品 */}
-        <GalleryFilmBackground shots={shots} />
+        <GalleryFilmBackground shots={heroShots} />
 
         {/* 原来的 HUD 网格 */}
         <div
