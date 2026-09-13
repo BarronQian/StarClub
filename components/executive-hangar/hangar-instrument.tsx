@@ -123,7 +123,7 @@ export function HangarInstrument({
 
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute left-1/2 top-1/2 size-[260px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-50 blur-3xl"
+            className="pointer-events-none absolute left-1/2 top-1/2 size-65 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-50 blur-3xl"
             style={{
               background: `radial-gradient(circle, color-mix(in oklab, ${color} 22%, transparent) 0%, transparent 70%)`,
             }}

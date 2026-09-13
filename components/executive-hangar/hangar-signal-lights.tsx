@@ -16,57 +16,213 @@ export function HangarSignalLights({
   nextChange: string
 }) {
   const color =
-    phase === 'open' ? HANGAR_PHASE_COLORS.open : HANGAR_PHASE_COLORS.closed
+    phase === 'open'
+      ? HANGAR_PHASE_COLORS.open
+      : HANGAR_PHASE_COLORS.closed
+
+  const signalLabels = [
+    '01',
+    '02',
+    '03',
+    '04',
+    '05',
+  ]
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[0.62rem] tracking-[0.28em] text-muted-foreground uppercase">
-          Hangar Signal
-        </span>
-        <span className="font-display text-[0.62rem] tabular-nums tracking-[0.2em] text-muted-foreground">
-          {active} / 5 ACTIVE
-        </span>
+    <div className="flex flex-col gap-5">
+
+      {/* 顶部标题 */}
+      <div className="flex items-center justify-between gap-3">
+
+        <div>
+          <p className="text-[9px] font-semibold tracking-[0.2em] text-muted-foreground">
+            SIGNAL ARRAY
+          </p>
+
+          <p className="mt-1 text-xs font-medium text-neutral-800">
+            周期信号灯
+          </p>
+        </div>
+
+        <div className="text-right">
+          <p className="font-mono text-[10px] font-semibold tabular-nums text-neutral-800">
+            {active} / 5
+          </p>
+
+          <p className="mt-0.5 text-[8px] tracking-[0.14em] text-muted-foreground">
+            ACTIVE
+          </p>
+        </div>
+
       </div>
 
-      <div className="flex items-end gap-2">
-        {[1, 2, 3, 4, 5].map((n) => {
-          const on = n <= active
-          return (
-            <div key={n} className="flex flex-1 flex-col items-center gap-1.5">
-              <span
-                className={cn(
-                  'h-6 w-full rounded-[4px] border transition-all duration-300 ease-out',
-                  on ? 'border-transparent' : 'border-border bg-muted/60',
-                )}
-                style={
-                  on
-                    ? {
-                        background: `linear-gradient(180deg, color-mix(in oklab, ${color} 78%, white) 0%, ${color} 100%)`,
-                        boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${color} 55%, white)`,
-                      }
-                    : undefined
-                }
-                aria-hidden="true"
-              />
-              <span
-                className={cn(
-                  'font-display text-[0.55rem] tabular-nums tracking-[0.18em] transition-colors duration-300',
-                  on ? 'text-foreground' : 'text-muted-foreground/60',
-                )}
+
+      {/* 五个圆形工业指示灯 */}
+      <div className="grid grid-cols-5 gap-3">
+
+        {signalLabels.map(
+          (
+            label,
+            index,
+          ) => {
+            const on =
+              index < active
+
+            return (
+              <div
+                key={label}
+                className="flex flex-col items-center gap-2"
               >
-                0{n}
-              </span>
-            </div>
-          )
-        })}
+
+                <div className="relative flex aspect-square w-full max-w-13 items-center justify-center rounded-full border border-neutral-400 bg-[#d9d9d4] shadow-[inset_0_2px_4px_rgba(0,0,0,0.18),0_1px_0_rgba(255,255,255,0.8)]">
+
+                  {/* 外圈金属环 */}
+                  <div className="absolute inset-[3px] rounded-full border border-neutral-300 bg-[linear-gradient(145deg,#f4f4f0,#bfbfba)]" />
+
+                  {/* 灯体 */}
+                  <div
+                    className={cn(
+                      'relative size-[58%] rounded-full border transition-all duration-300',
+                      on
+                        ? 'border-white/70'
+                        : 'border-neutral-400 bg-[#777773]',
+                    )}
+                    style={
+                      on
+                        ? {
+                            background: `radial-gradient(circle at 35% 30%, white 0%, color-mix(in oklab, ${color} 72%, white) 20%, ${color} 58%, color-mix(in oklab, ${color} 65%, black) 100%)`,
+                            boxShadow: `
+                              0 0 10px color-mix(in oklab, ${color} 75%, transparent),
+                              0 0 20px color-mix(in oklab, ${color} 40%, transparent),
+                              inset 0 0 5px rgba(255,255,255,0.8)
+                            `,
+                          }
+                        : {
+                            boxShadow:
+                              'inset 0 2px 4px rgba(0,0,0,0.35)',
+                          }
+                    }
+                  />
+
+                </div>
+
+                <span
+                  className={cn(
+                    'font-mono text-[9px] tabular-nums tracking-[0.12em]',
+                    on
+                      ? 'text-neutral-800'
+                      : 'text-muted-foreground',
+                  )}
+                >
+                  {label}
+                </span>
+
+              </div>
+            )
+          },
+        )}
+
       </div>
 
-      <p className="text-[0.68rem] tracking-[0.06em] text-muted-foreground">
-        {phase === 'reset'
-          ? `Blackout · system reset in ${nextChange}`
-          : `Next signal change in ${nextChange}`}
-      </p>
+
+      {/* 卡槽灯区域 */}
+      <div className="rounded-xl border border-neutral-400/70 bg-[#d9d9d4] p-3 shadow-[inset_0_2px_5px_rgba(0,0,0,0.08)]">
+
+        <div className="mb-3 flex items-center justify-between">
+
+          <div>
+            <p className="text-[8px] font-semibold tracking-[0.18em] text-muted-foreground">
+              ACCESS SLOTS
+            </p>
+
+            <p className="mt-0.5 text-[10px] font-medium text-neutral-700">
+              行政机库卡槽状态
+            </p>
+          </div>
+
+          <span className="text-[8px] tracking-[0.12em] text-muted-foreground">
+            STATUS ARRAY
+          </span>
+
+        </div>
+
+
+        <div className="grid grid-cols-5 gap-2">
+
+          {signalLabels.map(
+            (
+              label,
+              index,
+            ) => {
+              const on =
+                index < active
+
+              return (
+                <div
+                  key={label}
+                  className="flex flex-col gap-1.5"
+                >
+
+                  <div className="rounded-[5px] border border-neutral-500/60 bg-[#bdbdb8] p-[3px] shadow-[inset_0_1px_3px_rgba(0,0,0,0.18)]">
+
+                    <div
+                      className={cn(
+                        'h-5 rounded-[2px] transition-all duration-300',
+                        on
+                          ? ''
+                          : 'bg-[#6f6f6b]',
+                      )}
+                      style={
+                        on
+                          ? {
+                              background: `linear-gradient(
+                                180deg,
+                                color-mix(in oklab, ${color} 65%, white) 0%,
+                                ${color} 58%,
+                                color-mix(in oklab, ${color} 72%, black) 100%
+                              )`,
+                              boxShadow: `
+                                0 0 6px color-mix(in oklab, ${color} 55%, transparent),
+                                inset 0 1px 1px rgba(255,255,255,0.55)
+                              `,
+                            }
+                          : undefined
+                      }
+                    />
+
+                  </div>
+
+                  <span className="text-center font-mono text-[8px] text-muted-foreground">
+                    SLOT {label}
+                  </span>
+
+                </div>
+              )
+            },
+          )}
+
+        </div>
+
+      </div>
+
+
+      {/* 底部状态文字 */}
+      <div className="flex items-center justify-between gap-3 border-t border-neutral-300 pt-3">
+
+        <p className="text-[9px] leading-4 text-muted-foreground">
+          {phase === 'reset'
+            ? '系统正在执行重置程序'
+            : phase === 'open'
+              ? '当前行政机库处于开放周期'
+              : '当前行政机库处于关闭周期'}
+        </p>
+
+        <span className="shrink-0 font-mono text-[9px] tabular-nums text-neutral-700">
+          {nextChange}
+        </span>
+
+      </div>
+
     </div>
   )
 }
