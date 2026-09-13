@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 import type { GalleryDbShot } from '@/lib/gallery-db'
 
 function FilmRow({
@@ -34,16 +36,19 @@ function FilmRow({
       >
         {repeated.map(
           (shot, index) => (
-            <div
-              key={`${shot.id}-${index}`}
-              className="gallery-film-frame"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={shot.src}
-                alt=""
-                draggable={false}
-              />
+              <div
+                key={`${shot.id}-${index}`}
+                className="gallery-film-frame relative"
+              >
+                <Image
+                  src={shot.src}
+                  alt=""
+                  fill
+                  sizes="320px"
+                  quality={50}
+                  draggable={false}
+                  className="object-cover"
+                />
             </div>
           ),
         )}

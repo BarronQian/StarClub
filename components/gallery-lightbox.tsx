@@ -301,8 +301,7 @@ export function GalleryLightbox({
   useEffect(() => {
     if (
       !shot ||
-      shot.id ===
-        undefined
+      shot.id === undefined
     ) {
       setLikeState({
         liked: false,
@@ -312,6 +311,9 @@ export function GalleryLightbox({
 
       return
     }
+
+    const galleryId =
+      shot.id
 
     let cancelled =
       false
@@ -349,7 +351,7 @@ export function GalleryLightbox({
 
         const response =
           await fetch(
-            `/api/gallery/${shot.id}/like`,
+            `/api/gallery/${galleryId}/like`,
             {
               method:
                 'GET',
@@ -404,8 +406,7 @@ export function GalleryLightbox({
          * 同样广播出去。
          */
         broadcastLikeChange({
-          galleryId:
-            shot.id,
+          galleryId,
 
           liked:
             nextState.liked,
