@@ -935,6 +935,68 @@ const [
     [],
   )
 
+  const markNotificationsSeen =
+  useCallback(
+    async () => {
+      try {
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          !session?.access_token
+        ) {
+          return
+        }
+
+        const response =
+          await fetch(
+            '/api/community/notifications',
+            {
+              method: 'PATCH',
+
+              headers: {
+                'Content-Type':
+                  'application/json',
+
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+
+              body:
+                JSON.stringify({
+                  action: 'seen',
+                }),
+            },
+          )
+
+        if (!response.ok) {
+          const data =
+            await response.json()
+
+          throw new Error(
+            data.error ||
+              '更新消息状态失败',
+          )
+        }
+
+        setUnseenNotificationCount(
+          0,
+        )
+      } catch (error) {
+        console.error(
+          'Failed to mark notifications seen:',
+          error,
+        )
+      }
+    },
+    [],
+  )
+
   const loadMorePosts =
     async () => {
       if (
@@ -1155,6 +1217,20 @@ const [
   useEffect(() => {
     void loadNews()
   }, [loadNews])
+
+  useEffect(() => {
+  if (
+    feedMode !==
+    'notifications'
+  ) {
+    return
+  }
+
+  void markNotificationsSeen()
+}, [
+  feedMode,
+  markNotificationsSeen,
+])
 
   const switchFeed =
     (
@@ -1602,26 +1678,32 @@ const [
     }
   }
 
-  const pageTitle =
-    feedMode === 'mine'
-      ? '我的帖子'
+const pageTitle =
+  feedMode === 'mine'
+    ? '我的帖子'
+    : feedMode ===
+        'comments'
+      ? '我的评论'
       : feedMode ===
-          'comments'
-        ? '我的评论'
+          'following'
+        ? '我的关注'
         : feedMode ===
-            'following'
-          ? '我的关注'
+            'notifications'
+          ? '我的消息'
           : '社区动态'
 
-  const pageDescription =
-    feedMode === 'mine'
-      ? '查看和管理你在 StarClub 社区发布的动态。'
+const pageDescription =
+  feedMode === 'mine'
+    ? '查看和管理你在 StarClub 社区发布的动态。'
+    : feedMode ===
+        'comments'
+      ? '查看你在 StarClub 社区参与过的讨论。'
       : feedMode ===
-          'comments'
-        ? '查看你在 StarClub 社区参与过的讨论。'
+          'following'
+        ? '查看你关注的酒友最新发布的动态。'
         : feedMode ===
-            'following'
-          ? '查看你关注的酒友最新发布的动态。'
+            'notifications'
+          ? '查看与你相关的点赞、评论和回复。'
           : '分享你在星际公民宇宙中的故事、截图和见闻。'
 
   return (
@@ -1632,85 +1714,171 @@ const [
           <div className="grid h-full grid-cols-1 xl:grid-cols-[240px_minmax(0,780px)_360px] xl:justify-center">
 
             <aside className="hidden h-full px-5 pb-6 pt-14 xl:block">
-              <nav className="sticky top-14 space-y-2">
+                <nav className="sticky top-14 space-y-2">
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    switchFeed(
-                      'community',
-                    )
-                  }}
-                  className={
-                    feedMode ===
-                    'community'
-                      ? 'flex h-11 w-full items-center rounded-xl bg-neutral-100 px-4 text-left text-sm font-medium text-foreground'
-                      : 'flex h-11 w-full items-center rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
-                  }
-                >
-                  社区主页
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      switchFeed(
+                        'community',
+                      )
+                    }}
+                    className={
+                      feedMode ===
+                      'community'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                    }
+                  >
+                    <House
+                      className="size-5"
+                      strokeWidth={1.8}
+                      fill={
+                        feedMode ===
+                        'community'
+                          ? 'currentColor'
+                          : 'none'
+                      }
+                    />
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    switchFeed(
-                      'following',
-                    )
-                  }}
-                  className={
-                    feedMode ===
-                    'following'
-                      ? 'flex h-11 w-full items-center rounded-xl bg-neutral-100 px-4 text-left text-sm font-medium text-foreground'
-                      : 'flex h-11 w-full items-center rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
-                  }
-                >
-                  关注
-                </button>
+                    <span>
+                      社区主页
+                    </span>
+                  </button>
 
-                <button
-                  type="button"
-                  disabled
-                  className="flex h-11 w-full cursor-not-allowed items-center rounded-xl px-4 text-left text-sm text-muted-foreground opacity-60"
-                >
-                  收藏
-                </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    switchFeed(
-                      'mine',
-                    )
-                  }}
-                  className={
-                    feedMode ===
-                    'mine'
-                      ? 'flex h-11 w-full items-center rounded-xl bg-neutral-100 px-4 text-left text-sm font-medium text-foreground'
-                      : 'flex h-11 w-full items-center rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
-                  }
-                >
-                  我的帖子
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      switchFeed(
+                        'following',
+                      )
+                    }}
+                    className={
+                      feedMode ===
+                      'following'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                    }
+                  >
+                    <Users
+                      className="size-5"
+                      strokeWidth={1.8}
+                      fill={
+                        feedMode ===
+                        'following'
+                          ? 'currentColor'
+                          : 'none'
+                      }
+                    />
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    switchFeed(
-                      'comments',
-                    )
-                  }}
-                  className={
-                    feedMode ===
-                    'comments'
-                      ? 'flex h-11 w-full items-center rounded-xl bg-neutral-100 px-4 text-left text-sm font-medium text-foreground'
-                      : 'flex h-11 w-full items-center rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
-                  }
-                >
-                  我的评论
-                </button>
+                    <span>
+                      关注
+                    </span>
+                  </button>
 
-              </nav>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      switchFeed(
+                        'notifications',
+                      )
+                    }}
+                    className={
+                      feedMode ===
+                      'notifications'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                    }
+                  >
+                    <Bell
+                      className="size-5"
+                      strokeWidth={1.8}
+                      fill={
+                        feedMode ===
+                        'notifications'
+                          ? 'currentColor'
+                          : 'none'
+                      }
+                    />
+
+                    <span>
+                      我的消息
+                    </span>
+
+                    {unseenNotificationCount >
+                      0 && (
+                      <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                        {unseenNotificationCount >
+                        99
+                          ? '99+'
+                          : unseenNotificationCount}
+                      </span>
+                    )}
+                  </button>
+
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      switchFeed(
+                        'mine',
+                      )
+                    }}
+                    className={
+                      feedMode === 'mine'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                    }
+                  >
+                    <FileText
+                      className="size-5"
+                      strokeWidth={1.8}
+                      fill={
+                        feedMode === 'mine'
+                          ? 'currentColor'
+                          : 'none'
+                      }
+                    />
+
+                    <span>
+                      我的帖子
+                    </span>
+                  </button>
+
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      switchFeed(
+                        'comments',
+                      )
+                    }}
+                    className={
+                      feedMode ===
+                      'comments'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                    }
+                  >
+                    <MessageCircle
+                      className="size-5"
+                      strokeWidth={1.8}
+                      fill={
+                        feedMode ===
+                        'comments'
+                          ? 'currentColor'
+                          : 'none'
+                      }
+                    />
+
+                    <span>
+                      我的评论
+                    </span>
+                  </button>
+
+                </nav>
             </aside>
 
             <div className="h-full overflow-y-auto border-x border-border bg-[#f7f7f5] px-5 pb-6 pt-14 lg:px-6">
@@ -1727,8 +1895,10 @@ const [
 
               </div>
 
-              {feedMode !== 'comments' &&
-                feedMode !== 'following' && (
+                {feedMode !== 'comments' &&
+                  feedMode !== 'following' &&
+                  feedMode !==
+                    'notifications' && (
                 <section className="rounded-2xl border border-border bg-white p-5 shadow-[0_8px_28px_rgba(0,0,0,0.04)]">
 
                 {loggedIn ? (
