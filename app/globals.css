@@ -351,79 +351,110 @@ body {
 }
 
 /* =========================================
-   Sponsor #1 - Liquid Flow Border
+   Sponsor #1 - Liquid Border
+   true perimeter motion
    ========================================= */
 
 .sponsor-liquid-border {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+
+  /* 第一名本身保持和其他卡片一样平 */
   border: 1px solid rgba(170, 0, 255, 0.16);
+
+  /* 不要 hidden，不然外侧辉光会被切掉 */
+  overflow: visible;
 }
 
+/* 沿边框移动的液体光带 */
 .sponsor-liquid-border::before {
   content: "";
   position: absolute;
-  z-index: -2;
 
-  left: 50%;
-  top: 50%;
+  z-index: 5;
+  pointer-events: none;
 
-  width: 180%;
-  aspect-ratio: 1;
+  width: 46px;
+  height: 2px;
 
-  transform:
-    translate(-50%, -50%)
-    rotate(0deg);
+  border-radius: 999px;
 
   background:
-    conic-gradient(
-      from 0deg,
-
-      transparent 0deg,
-      transparent 205deg,
-
-      rgba(170, 0, 255, 0) 220deg,
-      #aa00ff 248deg,
-
-      #d0008f 270deg,
-
-      #b50101 300deg,
-      rgba(181, 1, 1, 0) 330deg,
-
-      transparent 360deg
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(170, 0, 255, 0.15) 12%,
+      #aa00ff 34%,
+      #d0008f 56%,
+      #b50101 78%,
+      rgba(181, 1, 1, 0.12) 90%,
+      transparent 100%
     );
 
+  box-shadow:
+    0 0 4px rgba(170, 0, 255, 0.65),
+    0 0 9px rgba(170, 0, 255, 0.28),
+    0 0 5px rgba(181, 1, 1, 0.35);
+
+  /*
+   * 直接沿着卡片真实矩形边框移动，
+   * 不再旋转一个 conic-gradient 圆盘。
+   */
+  offset-path:
+    inset(
+      0px
+      round
+      12px
+    );
+
+  offset-distance: 0%;
+  offset-rotate: auto;
+  offset-anchor: center;
+
   animation:
-    sponsor-liquid-flow
-    3.4s
+    sponsor-liquid-run
+    6s
     linear
     infinite;
+
+  will-change:
+    offset-distance;
 }
 
+/* 很淡的静态底边，只负责让第一名轮廓完整 */
 .sponsor-liquid-border::after {
   content: "";
   position: absolute;
-  z-index: -1;
 
-  inset: 1.5px;
+  inset: -1px;
 
-  border-radius:
-    calc(0.75rem - 1.5px);
+  z-index: 4;
+  pointer-events: none;
 
-  background: white;
+  border-radius: inherit;
+
+  border: 1px solid
+    rgba(
+      170,
+      0,
+      255,
+      0.08
+    );
 }
 
-@keyframes sponsor-liquid-flow {
+@keyframes sponsor-liquid-run {
   from {
-    transform:
-      translate(-50%, -50%)
-      rotate(0deg);
+    offset-distance: 0%;
   }
 
   to {
-    transform:
-      translate(-50%, -50%)
-      rotate(360deg);
+    offset-distance: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sponsor-liquid-border::before {
+    animation: none;
+    display: none;
   }
 }
