@@ -165,6 +165,178 @@ const [
     true,
 )
 
+const [
+  imageUrl,
+  setImageUrl,
+] = useState(
+  initialData?.image ??
+    '',
+)
+
+const [
+  uploadedImagePath,
+  setUploadedImagePath,
+] = useState<
+  string | null
+>(null)
+
+const [
+  uploadingImage,
+  setUploadingImage,
+] = useState(false)
+
+const [
+  uploadError,
+  setUploadError,
+] = useState<
+  string | null
+>(null)
+
+  function getEventStoragePathFromUrl(
+  url: string | null | undefined,
+) {
+  if (!url) {
+    return null
+  }
+
+  const marker =
+    '/storage/v1/object/public/gallery/'
+
+  const index =
+    url.indexOf(marker)
+
+  if (index === -1) {
+    return null
+  }
+
+  const path =
+    decodeURIComponent(
+      url.slice(
+        index +
+          marker.length,
+      ),
+    )
+
+  if (
+    !path.startsWith(
+      'events/',
+    )
+  ) {
+    return null
+  }
+
+  return path
+}
+
+async function cleanupEventImage(
+  path: string | null,
+) {
+  if (!path) {
+    return
+  }
+
+  try {
+    await fetch(
+      '/api/admin/events/upload/cleanup',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+        body: JSON.stringify({
+          path,
+        }),
+      },
+    )
+  } catch (error) {
+    console.error(
+      'Event image cleanup failed:',
+      error,
+    )
+  }
+}
+
+  async function handleImageUpload(
+  file: File,
+) {
+  if (uploadingImage) {
+    return
+  }
+
+  setUploadingImage(true)
+  setUploadError(null)
+
+  try {
+    const formData =
+      new FormData()
+
+    formData.append(
+      'file',
+      file,
+    )
+
+    const response =
+      await fetch(
+        '/api/admin/events/upload',
+        {
+          method: 'POST',
+          body: formData,
+        },
+      )
+
+    const data =
+      await response
+        .json()
+        .catch(() => null)
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error ||
+          '活动封面上传失败',
+      )
+    }
+
+    if (!data?.url) {
+      throw new Error(
+        '上传成功，但没有返回图片地址',
+      )
+    }
+
+    const previousUploadedPath =
+      uploadedImagePath
+
+    setImageUrl(
+      data.url,
+    )
+
+    setUploadedImagePath(
+      data.path ??
+        null,
+    )
+
+    // 如果本次编辑过程中已经上传过一张临时封面，
+    // 现在又换了一张，则删除上一张未保存的图片。
+    if (
+      previousUploadedPath &&
+      previousUploadedPath !==
+        data.path
+    ) {
+      void cleanupEventImage(
+        previousUploadedPath,
+      )
+    }
+  } catch (error) {
+    setUploadError(
+      error instanceof Error
+        ? error.message
+        : '活动封面上传失败',
+    )
+  } finally {
+    setUploadingImage(false)
+  }
+}
+
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
@@ -276,6 +448,7 @@ const [
       status,
 
       image:
+        imageUrl ||
         form.get(
           'image',
         ),
@@ -369,17 +542,61 @@ const [
       if (
         !response.ok
       ) {
-      throw new Error(
-        data?.error ||
-          (mode === 'edit'
-            ? '保存活动失败'
-            : '创建活动失败'),
-      )
+        throw new Error(
+          data?.error ||
+            (mode === 'edit'
+              ? '保存活动失败'
+              : '创建活动失败'),
+        )
+      }
+
+      // 当前数据库最终保存的图片路径。
+      // 如果是外部 URL 或 /images/events/...，这里会得到 null。
+      const currentImagePath =
+        getEventStoragePathFromUrl(
+          imageUrl,
+        )
+
+      // 如果本次上传过图片，但最后保存的并不是这张图片，
+      // 说明它已经变成未使用的临时文件，清掉。
+      if (
+        uploadedImagePath &&
+        uploadedImagePath !==
+          currentImagePath
+      ) {
+        await cleanupEventImage(
+          uploadedImagePath,
+        )
+      }
+
+      // 编辑已有活动时，如果原来的封面也是
+      // gallery/events/ 下的上传图片，并且现在已经换掉，
+      // 保存成功后删除旧封面。
+      if (
+        mode === 'edit' &&
+        initialData
+      ) {
+        const oldImagePath =
+          getEventStoragePathFromUrl(
+            initialData.image,
+          )
+
+        if (
+          oldImagePath &&
+          oldImagePath !==
+            currentImagePath
+        ) {
+          await cleanupEventImage(
+            oldImagePath,
+          )
+        }
       }
 
       router.push(
         '/admin/events',
       )
+
+      router.refresh()
 
       router.refresh()
     } catch (error) {
@@ -972,33 +1189,105 @@ const [
         <div className="grid gap-5">
           <div>
             <label
-              htmlFor="image"
+              htmlFor="imageUpload"
               className={
                 labelClass
               }
             >
-              图片路径 *
+              活动封面 *
             </label>
 
-            <input
-              id="image"
-              name="image"
-              required
-              defaultValue={
-                  initialData?.image ??
-                  ''
+            <div className="flex flex-col gap-3">
+              <input
+                id="imageUpload"
+                type="file"
+                accept="image/*"
+                disabled={
+                  uploadingImage
                 }
-              className={
-                inputClass
-              }
-              placeholder="/images/events/example.jpg"
-            />
+                onChange={(
+                  event,
+                ) => {
+                  const file =
+                    event.target
+                      .files?.[0]
 
-            <p className={
-              hintClass
-            }>
-              下一步会给这里增加直接上传图片功能。
-            </p>
+                  if (!file) {
+                    return
+                  }
+
+                  void handleImageUpload(
+                    file,
+                  )
+
+                  event.target.value =
+                    ''
+                }}
+                className="block w-full text-sm text-foreground file:mr-4 file:rounded-md file:border file:border-border file:bg-background file:px-4 file:py-2 file:text-xs file:font-medium file:text-foreground hover:file:bg-muted disabled:opacity-50"
+              />
+
+              {uploadingImage ? (
+                <p className="text-xs text-muted-foreground">
+                  正在上传活动封面...
+                </p>
+              ) : null}
+
+              {uploadError ? (
+                <p className="text-xs text-destructive">
+                  {uploadError}
+                </p>
+              ) : null}
+
+              {imageUrl ? (
+                <div className="overflow-hidden rounded-lg border border-border bg-muted">
+                  <img
+                    src={imageUrl}
+                    alt={
+                      initialData?.alt ||
+                      '活动封面预览'
+                    }
+                    className="aspect-video w-full object-cover"
+                  />
+                </div>
+              ) : null}
+
+              <div>
+                <label
+                  htmlFor="image"
+                  className={
+                    labelClass
+                  }
+                >
+                  图片地址
+                </label>
+
+                <input
+                  id="image"
+                  name="image"
+                  required
+                  value={
+                    imageUrl
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setImageUrl(
+                      event.target.value,
+                    )
+                  }
+                  className={
+                    inputClass
+                  }
+                  placeholder="/images/events/example.jpg 或 Supabase 图片 URL"
+                />
+
+                <p className={
+                  hintClass
+                }>
+                  上传图片后地址会自动填写；也可以手动输入图片地址。
+                </p>
+              </div>
+            </div>
           </div>
 
           <div>
