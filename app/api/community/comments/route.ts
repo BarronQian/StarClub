@@ -434,7 +434,10 @@ export async function POST(
       .from(
         'posts',
       )
-      .select('id')
+      .select(`
+        id,
+        author_id
+      `)
       .eq(
         'id',
         postId,
@@ -517,6 +520,8 @@ export async function POST(
       }
     }
 
+    let replyRecipientId: string | null = null
+
     if (replyToCommentId) {
       const {
         data: replyToComment,
@@ -526,6 +531,7 @@ export async function POST(
         .select(`
           id,
           post_id,
+          author_id,
           deleted_at
         `)
         .eq(
@@ -564,6 +570,9 @@ export async function POST(
           },
         )
       }
+
+      replyRecipientId =
+  replyToComment.author_id
     }
 
     const {
@@ -601,24 +610,80 @@ export async function POST(
       `)
       .single()
 
-    if (
-      insertError
-    ) {
-      console.error(
-        'Failed to create comment:',
-        insertError,
-      )
+if (
+  insertError ||
+  !insertedComment
+) {
+  console.error(
+    'Failed to create comment:',
+    insertError,
+  )
 
-      return NextResponse.json(
-        {
-          error:
-            '发表评论失败',
-        },
-        {
-          status: 500,
-        },
-      )
-    }
+  return NextResponse.json(
+    {
+      error:
+        '发表评论失败',
+    },
+    {
+      status: 500,
+    },
+  )
+}
+
+//
+// 创建社区通知
+//
+// 回复某条评论：通知被回复的人
+// 普通评论：通知动态作者
+//
+// 自己回复自己 / 评论自己的动态时
+// 不创建通知
+//
+const notificationRecipientId =
+  replyToCommentId
+    ? replyRecipientId
+    : post.author_id
+
+const notificationType =
+  replyToCommentId
+    ? 'comment_reply'
+    : 'post_comment'
+
+if (
+  notificationRecipientId &&
+  notificationRecipientId !==
+    profile.id
+) {
+  const {
+    error: notificationError,
+  } = await supabase
+    .from(
+      'community_notifications',
+    )
+    .insert({
+      recipient_id:
+        notificationRecipientId,
+
+      actor_id:
+        profile.id,
+
+      type:
+        notificationType,
+
+      post_id:
+        postId,
+
+      comment_id:
+        insertedComment.id,
+    })
+
+  if (notificationError) {
+    console.error(
+      'Failed to create community notification:',
+      notificationError,
+    )
+  }
+}
     
         const {
       data: comment,
