@@ -586,13 +586,18 @@ export function CommunityCommentDialog({
                     content:
                       trimmed,
 
-                parentCommentId:
-                  replyingTo
-                    ? (
-                        replyingTo.parent_comment_id ??
-                        replyingTo.id
-                      )
-                    : null,
+                    parentCommentId:
+                      replyingTo
+                        ? (
+                            replyingTo.parent_comment_id ??
+                            replyingTo.id
+                          )
+                        : null,
+
+                    replyToCommentId:
+                      replyingTo
+                        ? replyingTo.id
+                        : null,
                   },
                 ),
             },
@@ -609,13 +614,6 @@ export function CommunityCommentDialog({
               '发表评论失败',
           )
         }
-
-        setContent('')
-        setReplyingTo(null)
-
-        onCommentCreated?.(
-          post.id,
-        )
 
         const newComment =
           data.comment as CommunityComment

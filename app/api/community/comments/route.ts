@@ -87,6 +87,7 @@ export async function GET(
           author_id,
           content,
           parent_comment_id,
+          reply_to_comment_id,
           created_at,
           updated_at,
           profiles!post_comments_author_fk (
@@ -380,6 +381,13 @@ export async function POST(
         ? body.parentCommentId.trim()
         : null
 
+    const replyToCommentId =
+      typeof body.replyToCommentId ===
+        'string' &&
+      body.replyToCommentId.trim()
+        ? body.replyToCommentId.trim()
+        : null
+
     if (!postId) {
       return NextResponse.json(
         {
@@ -426,7 +434,10 @@ export async function POST(
       .from(
         'posts',
       )
-      .select('id')
+      .select(`
+        id,
+        author_id
+      `)
       .eq(
         'id',
         postId,
@@ -508,6 +519,67 @@ export async function POST(
         )
       }
     }
+    
+    let replyRecipientId:
+  string | null =
+  null
+
+if (replyToCommentId) {
+  const {
+    data:
+      replyToComment,
+    error:
+      replyToCommentError,
+  } = await supabase
+    .from(
+      'post_comments',
+    )
+    .select(`
+      id,
+      post_id,
+      author_id,
+      deleted_at
+    `)
+    .eq(
+      'id',
+      replyToCommentId,
+    )
+    .maybeSingle()
+
+  if (
+    replyToCommentError ||
+    !replyToComment ||
+    replyToComment.deleted_at
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          '要回复的评论不存在',
+      },
+      {
+        status: 404,
+      },
+    )
+  }
+
+  if (
+    replyToComment.post_id !==
+    postId
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          '无法回复其他动态下的评论',
+      },
+      {
+        status: 400,
+      },
+    )
+  }
+
+  replyRecipientId =
+    replyToComment.author_id
+}
 
     const {
       data: insertedComment,
@@ -528,6 +600,9 @@ export async function POST(
 
         parent_comment_id:
           parentCommentId,
+
+        reply_to_comment_id:
+          replyToCommentId,
       })
       .select(`
         id,
@@ -535,6 +610,7 @@ export async function POST(
         author_id,
         content,
         parent_comment_id,
+        reply_to_comment_id,
         created_at,
         updated_at
       `)
@@ -559,6 +635,62 @@ export async function POST(
       )
     }
     
+    //
+// 创建社区通知
+//
+// 普通评论：通知动态作者
+// 回复评论：通知被直接回复的人
+//
+
+const notificationRecipientId =
+  replyToCommentId
+    ? replyRecipientId
+    : post.author_id
+
+const notificationType =
+  replyToCommentId
+    ? 'comment_reply'
+    : 'post_comment'
+
+if (
+  notificationRecipientId &&
+  notificationRecipientId !==
+    profile.id
+) {
+  const {
+    error:
+      notificationError,
+  } = await supabase
+    .from(
+      'community_notifications',
+    )
+    .insert({
+      recipient_id:
+        notificationRecipientId,
+
+      actor_id:
+        profile.id,
+
+      type:
+        notificationType,
+
+      post_id:
+        postId,
+
+      comment_id:
+        insertedComment.id,
+    })
+
+  if (
+    notificationError
+  ) {
+    console.error(
+      'Failed to create community notification:',
+      notificationError,
+    )
+  }
+}
+
         const {
       data: comment,
       error:
