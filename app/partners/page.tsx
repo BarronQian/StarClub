@@ -87,12 +87,22 @@ export default function PartnersPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 title={partner.name}
-                className="group relative flex items-center justify-center"
+                className="group relative flex min-h-45 items-center justify-center px-10"
               >
                 <img
                   src={partner.logo}
                   alt={partner.name}
-                  className="h-auto max-h-24 w-auto max-w-60 object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.10)] transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:scale-105 group-hover:drop-shadow-[0_16px_28px_rgba(0,0,0,0.16)]"
+                  className="h-auto max-h-36 w-auto max-w-90 object-contain
+                    drop-shadow-[0_10px_10px_rgba(255,255,255,0.9)]
+                    transition-all duration-300 ease-out
+                    group-hover:-translate-y-1.5
+                    group-hover:scale-110
+                    group-hover:drop-shadow-[0_24px_38px_rgba(76,29,149,0.24)]"
+                />
+
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-24 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-linear-to-r from-indigo-400/10 via-purple-400/10 to-red-400/10 blur-3xl transition-all duration-300 group-hover:h-28 group-hover:w-64 group-hover:opacity-100"
                 />
               </a>
             ))}
