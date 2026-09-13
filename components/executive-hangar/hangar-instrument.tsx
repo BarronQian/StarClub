@@ -273,9 +273,14 @@ export function HangarInstrument({
             <div className="rounded-2xl border border-neutral-300 bg-[#e9e9e5] p-4 shadow-[inset_0_2px_5px_rgba(0,0,0,0.06)]">
               <HangarSignalLights
                 phase={phase}
-                active={
-                  state?.activeSignals ??
-                  0
+                signalStates={
+                  state?.signalStates ?? [
+                    'red',
+                    'red',
+                    'red',
+                    'red',
+                    'red',
+                  ]
                 }
                 nextChange={
                   state
