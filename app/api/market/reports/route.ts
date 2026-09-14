@@ -359,12 +359,24 @@ export async function POST(
       `)
       .single()
 
-  if (
-    insertError ||
-    !report
-  ) {
+  if (insertError) {
+    if (
+      insertError.code ===
+      '23505'
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            '你已经举报过这条交易',
+        },
+        {
+          status: 409,
+        },
+      )
+    }
+
     console.error(
-      '[MARKET REPORT] Insert failed:',
+      '[MARKET REPORT] Failed to create report:',
       insertError,
     )
 
