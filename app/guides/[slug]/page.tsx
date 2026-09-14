@@ -9,6 +9,9 @@ import {
   GuideContentBlocks,
   type GuideContentBlock,
 } from '@/components/guide-content-blocks'
+import {
+  getVideoEmbedUrl,
+} from '@/lib/video-embed'
 
 function getSupabase() {
   const supabaseUrl =
@@ -182,24 +185,6 @@ function formatDate(
   )
 }
 
-function getBilibiliEmbedUrl(
-  videoUrl: string
-) {
-  const bvMatch =
-    videoUrl.match(
-      /\/video\/(BV[a-zA-Z0-9]+)/
-    )
-
-  if (!bvMatch) {
-    return null
-  }
-
-  const bvid =
-    bvMatch[1]
-
-  return `https://player.bilibili.com/player.html?bvid=${bvid}&page=1&high_quality=1&danmaku=0&autoplay=0`
-}
-
 type GuidePageProps = {
   params: Promise<{
     slug: string
@@ -302,21 +287,26 @@ export default async function GuidePage({
       guide.published_at
     )
 
+  const isArticle =
+    guide.type === 'article'
+
   const isVideo =
     guide.type === 'video'
 
-  const bilibiliEmbedUrl =
-    isVideo &&
-    guide.video_url
-      ? getBilibiliEmbedUrl(
-          guide.video_url
+  const isExternal =
+    guide.type === 'external'
+
+  const videoEmbed =
+    isVideo && guide.video_url
+      ? getVideoEmbedUrl(
+          guide.video_url,
         )
       : null
 
   const blocks =
-    !isVideo
+    isArticle
       ? await getGuideBlocks(
-          guide.id
+          guide.id,
         )
       : []
 
@@ -475,93 +465,118 @@ export default async function GuidePage({
         </div>
       </section>
 
-      <section className="site-container pt-12 lg:pt-16">
-        {isVideo &&
-        guide.video_url ? (
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
-            <div className="border-b border-border px-6 py-5 sm:px-8">
-              <span className="font-display text-[0.62rem] tracking-[0.3em] text-primary">
-                VIDEO GUIDE
-              </span>
+<section className="site-container pt-12 lg:pt-16">
+  {isVideo &&
+    guide.video_url && (
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="border-b border-border px-6 py-5 sm:px-8">
+          <span className="font-display text-[0.62rem] tracking-[0.3em] text-primary">
+            VIDEO GUIDE
+          </span>
 
-              <h2 className="mt-2 font-display text-2xl tracking-tight">
-                视频攻略
-              </h2>
-            </div>
+          <h2 className="mt-2 font-display text-2xl tracking-tight">
+            视频攻略
+          </h2>
+        </div>
 
-            <div className="p-6 sm:p-8">
-              {bilibiliEmbedUrl && (
-                <div className="overflow-hidden rounded-2xl bg-black">
-                  <div className="relative aspect-video">
-                    <iframe
-                      src={
-                        bilibiliEmbedUrl
-                      }
-                      title={
-                        guide.title
-                      }
-                      className="absolute inset-0 h-full w-full"
-                      allow="fullscreen"
-                      allowFullScreen
-                      scrolling="no"
-                      frameBorder="0"
-                      referrerPolicy="no-referrer-when-downgrade"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <span className="font-display text-[0.6rem] tracking-[0.25em] text-primary">
-                    ORIGINAL VIDEO
-                  </span>
-
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {guide.author && (
-                      <>
-                        作者：
-                        <span className="text-foreground">
-                          {
-                            guide.author
-                          }
-                        </span>
-                      </>
-                    )}
-
-                    {guide.creator && (
-                      <>
-                        {' · '}
-                        出品：
-                        <span className="text-foreground">
-                          {
-                            guide.creator
-                          }
-                        </span>
-                      </>
-                    )}
-                  </p>
-                </div>
-
-                <Link
-                  href={
-                    guide.video_url
+        <div className="p-6 sm:p-8">
+          {videoEmbed && (
+            <div className="overflow-hidden rounded-2xl bg-black">
+              <div className="relative aspect-video">
+                <iframe
+                  src={
+                    videoEmbed.embedUrl
                   }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center rounded-full border border-primary/30 px-5 py-2.5 text-sm text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
-                >
-                  前往 Bilibili ↗
-                </Link>
+                  title={
+                    guide.title
+                  }
+                  className="absolute inset-0 h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                  allowFullScreen
+                  frameBorder="0"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
               </div>
             </div>
+          )}
+
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <span className="font-display text-[0.6rem] tracking-[0.25em] text-primary">
+                ORIGINAL VIDEO
+              </span>
+
+              <p className="mt-2 text-sm text-muted-foreground">
+                {guide.author && (
+                  <>
+                    作者：
+                    <span className="text-foreground">
+                      {guide.author}
+                    </span>
+                  </>
+                )}
+
+                {guide.creator && (
+                  <>
+                    {' · '}
+                    出品：
+                    <span className="text-foreground">
+                      {guide.creator}
+                    </span>
+                  </>
+                )}
+              </p>
+            </div>
+
+            <Link
+              href={
+                guide.video_url
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-full border border-primary/30 px-5 py-2.5 text-sm text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+            >
+              前往原视频 ↗
+            </Link>
           </div>
-        ) : (
-          <GuideContentBlocks
-            blocks={blocks}
-          />
-        )}
-      </section>
+        </div>
+      </div>
+    )}
+
+  {isArticle && (
+    <GuideContentBlocks
+      blocks={blocks}
+    />
+  )}
+
+  {isExternal &&
+    guide.external_url && (
+      <div className="mx-auto max-w-4xl rounded-3xl border border-border bg-card p-6 sm:p-8">
+        <span className="font-display text-[0.62rem] tracking-[0.28em] text-primary">
+          EXTERNAL RESOURCE
+        </span>
+
+        <h2 className="mt-3 font-display text-2xl tracking-tight sm:text-3xl">
+          外部攻略
+        </h2>
+
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
+          本攻略内容托管在外部平台，点击下方按钮前往查看完整内容。
+        </p>
+
+        <a
+          href={
+            guide.external_url
+          }
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          前往查看外部攻略 ↗
+        </a>
+      </div>
+    )}
+</section>
     </div>
   )
 }
