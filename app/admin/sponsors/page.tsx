@@ -115,13 +115,17 @@ export default async function AdminSponsorsPage() {
         sponsor.is_visible,
     ).length
 
-  return (
-    <>
+return (
+  <div className="min-h-screen bg-background">
+    <main className="mx-auto flex max-w-6xl flex-col gap-10 px-6 pb-24 pt-20">
       <AdminHeader
+        adminEmail={
+          session.email
+        }
         active="sponsors"
       />
 
-      <main className="mx-auto max-w-7xl px-6 pb-24 pt-28 lg:px-8 lg:pt-32">
+      <div className="w-full">
         <div className="mb-10">
           <p className="font-display text-[0.65rem] tracking-[0.28em] text-primary">
             SPONSOR MANAGEMENT
@@ -190,7 +194,8 @@ export default async function AdminSponsorsPage() {
             sponsors
           }
         />
-      </main>
-    </>
-  )
+      </div>
+    </main>
+  </div>
+)
 }
