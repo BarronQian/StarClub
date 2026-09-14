@@ -383,6 +383,16 @@ export function AdminGuideForm({
     }
 
     if (
+        type === 'external' &&
+        !externalUrl.trim()
+      ) {
+        setError(
+          '外部攻略需要填写外部链接',
+        )
+        return
+      }
+
+    if (
       mode === 'edit' &&
       !initialData?.id
     ) {
