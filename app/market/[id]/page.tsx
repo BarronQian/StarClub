@@ -272,6 +272,46 @@ export default function MarketListingPage({
       setReportSuccess,
     ] = useState('')
 
+    const [
+      currentUserId,
+      setCurrentUserId,
+    ] = useState<string | null>(null)
+
+    useEffect(() => {
+      let active = true
+
+      async function loadCurrentUser() {
+        const {
+          getSupabaseBrowser,
+        } =
+          await import(
+            '@/lib/supabase-browser'
+          )
+
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase.auth.getSession()
+
+        if (active) {
+          setCurrentUserId(
+            session?.user.id ?? null,
+          )
+        }
+      }
+
+      void loadCurrentUser()
+
+      return () => {
+        active = false
+      }
+    }, [])
+
   useEffect(() => {
     async function loadListing() {
       setLoading(true)
@@ -1333,6 +1373,8 @@ async function submitReport() {
 
               <div className="mt-5 rounded-2xl border border-border bg-muted/30 p-5">
                   
+                {currentUserId !==
+                  listing.seller_id ? (
                   <div className="mt-4 flex justify-end">
                     <button
                       type="button"
@@ -1342,6 +1384,7 @@ async function submitReport() {
                       举报此交易
                     </button>
                   </div>
+                ) : null}
                 <div className="flex gap-3">
                   <RefreshCw className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 
