@@ -14,6 +14,7 @@ import {
   Send,
   User,
   X,
+  Flag,
 } from 'lucide-react'
 import {
   use,
@@ -256,6 +257,16 @@ export default function MarketListingPage({
       reportDetails,
       setReportDetails,
     ] = useState('')
+
+    const [
+      reportEvidenceUrl,
+      setReportEvidenceUrl,
+    ] = useState('')
+
+    const [
+      uploadingEvidence,
+      setUploadingEvidence,
+    ] = useState(false)
 
     const [
       submittingReport,
@@ -735,13 +746,123 @@ export default function MarketListingPage({
     }
   }
 
-  function openReportDialog() {
-  setReportReason('')
-  setReportDetails('')
-  setReportError('')
-  setReportSuccess('')
+    function openReportDialog() {
+      setReportReason('')
+      setReportDetails('')
+      setReportEvidenceUrl('')
+      setReportError('')
+      setReportSuccess('')
 
-  setReportDialogOpen(true)
+      setReportDialogOpen(true)
+    }
+
+    async function uploadReportEvidence(
+  file: File,
+) {
+  if (
+    ![
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ].includes(file.type)
+  ) {
+    setReportError(
+      '仅支持 JPG、PNG 或 WEBP 图片',
+    )
+    return
+  }
+
+  if (
+    file.size >
+    5 * 1024 * 1024
+  ) {
+    setReportError(
+      '图片不能超过 5MB',
+    )
+    return
+  }
+
+  setUploadingEvidence(true)
+  setReportError('')
+
+  try {
+    const {
+      getSupabaseBrowser,
+    } =
+      await import(
+        '@/lib/supabase-browser'
+      )
+
+    const supabase =
+      getSupabaseBrowser()
+
+    const {
+      data: {
+        session,
+      },
+    } =
+      await supabase.auth.getSession()
+
+    if (!session) {
+      throw new Error(
+        '请先登录后上传证据',
+      )
+    }
+
+    const formData =
+      new FormData()
+
+    formData.append(
+      'file',
+      file,
+    )
+
+    const response =
+      await fetch(
+        '/api/market/reports/upload',
+        {
+          method: 'POST',
+          headers: {
+            Authorization:
+              `Bearer ${session.access_token}`,
+          },
+          body: formData,
+        },
+      )
+
+    const data =
+      await readJsonSafely(
+        response,
+      )
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ??
+          '证据图片上传失败',
+      )
+    }
+
+    if (
+      typeof data.url !==
+      'string'
+    ) {
+      throw new Error(
+        '上传成功，但没有返回图片地址',
+      )
+    }
+
+    setReportEvidenceUrl(
+      data.url,
+    )
+  } catch (err) {
+    setReportError(
+      err instanceof Error
+        ? err.message
+        : '证据图片上传失败',
+    )
+  } finally {
+    setUploadingEvidence(false)
+  }
 }
 
 async function submitReport() {
@@ -816,17 +937,20 @@ async function submitReport() {
               `Bearer ${session.access_token}`,
           },
 
-          body:
-            JSON.stringify({
-              listingId:
-                listing.id,
+        body:
+          JSON.stringify({
+            listingId:
+              listing.id,
 
-              reason:
-                reportReason,
+            reason:
+              reportReason,
 
-              details:
-                reportDetails.trim(),
-            }),
+            details:
+              reportDetails.trim(),
+
+            evidenceUrl:
+              reportEvidenceUrl || null,
+          }),
         },
       )
 
@@ -854,6 +978,7 @@ async function submitReport() {
 
         setReportReason('')
         setReportDetails('')
+        setReportEvidenceUrl('')
         setReportSuccess('')
       },
       1200,
@@ -1376,13 +1501,26 @@ async function submitReport() {
                 {currentUserId !==
                   listing.seller_id ? (
                   <div className="mt-4 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={openReportDialog}
-                      className="text-xs text-muted-foreground transition-colors hover:text-red-500"
-                    >
-                      举报此交易
-                    </button>
+                      <button
+                        type="button"
+                        onClick={openReportDialog}
+                        className="
+                          inline-flex h-10 items-center justify-center gap-2
+                          rounded-full
+                          border border-red-200
+                          bg-red-50
+                          px-5
+                          text-sm font-medium text-red-600
+                          transition-all
+                          hover:border-red-300
+                          hover:bg-red-100
+                          hover:text-red-700
+                          active:scale-[0.98]
+                        "
+                      >
+                        <Flag className="h-4 w-4" />
+                        举报此交易
+                      </button>
                   </div>
                 ) : null}
                 <div className="flex gap-3">
@@ -1748,7 +1886,7 @@ async function submitReport() {
 
       {reportDialogOpen && (
         <div className="fixed inset-0 z-120 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-background shadow-2xl">
             <div className="flex items-center justify-between border-b border-border px-6 py-5">
               <div>
                 <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
@@ -1855,6 +1993,84 @@ async function submitReport() {
                 <div className="mt-1 text-right text-xs text-muted-foreground">
                   {reportDetails.length}/1500
                 </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium">
+                    截图证据
+
+                    <span className="ml-2 font-normal text-muted-foreground">
+                      可选 · 1 张
+                    </span>
+                  </label>
+
+                  {reportEvidenceUrl ? (
+                    <div className="relative overflow-hidden rounded-xl border border-border bg-muted/20">
+                      <img
+                        src={reportEvidenceUrl}
+                        alt="举报证据"
+                        className="max-h-56 w-full object-contain"
+                      />
+
+                      <button
+                        type="button"
+                        disabled={submittingReport}
+                        onClick={() =>
+                          setReportEvidenceUrl('')
+                        }
+                        className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-black disabled:opacity-50"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label
+                      className={`
+                        flex min-h-24 flex-col
+                        items-center justify-center gap-2
+                        rounded-xl border
+                        border-dashed border-border
+                        bg-muted/20 px-4 py-5
+                        text-center transition-colors
+                        ${
+                          uploadingEvidence
+                            ? 'cursor-not-allowed opacity-50'
+                            : 'cursor-pointer hover:bg-muted/40'
+                        }
+                      `}
+                    >
+                      <span className="text-sm font-medium">
+                        {uploadingEvidence
+                          ? '正在上传...'
+                          : '点击上传截图证据'}
+                      </span>
+
+                      <span className="text-xs text-muted-foreground">
+                        JPG / PNG / WEBP · 最大 5MB
+                      </span>
+
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        disabled={uploadingEvidence}
+                        onChange={(event) => {
+                          const file =
+                            event.target.files?.[0]
+
+                          if (file) {
+                            void uploadReportEvidence(
+                              file,
+                            )
+                          }
+
+                          event.currentTarget.value =
+                            ''
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+
               </div>
 
               {reportError && (
@@ -1884,7 +2100,10 @@ async function submitReport() {
 
               <button
                 type="button"
-                disabled={submittingReport}
+                disabled={
+                  submittingReport ||
+                  uploadingEvidence
+                }
                 onClick={submitReport}
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-red-500 px-5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
@@ -1892,6 +2111,11 @@ async function submitReport() {
                   <>
                     <Loader2 className="size-4 animate-spin" />
                     提交中...
+                  </>
+                ) : uploadingEvidence ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    图片上传中...
                   </>
                 ) : (
                   '提交举报'
