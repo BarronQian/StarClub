@@ -8,7 +8,7 @@ import {
 } from '@supabase/supabase-js'
 
 import {
-  isAdminUserId,
+  isAdminIdentity,
 } from '@/lib/admin-auth'
 
 type RouteContext = {
@@ -107,8 +107,9 @@ export async function DELETE(
     }
 
     if (
-      !isAdminUserId(
+      !isAdminIdentity(
         user.id,
+        user.email,
       )
     ) {
       return NextResponse.json(
