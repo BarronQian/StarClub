@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 
 import { ArchiveBreadcrumb } from '@/components/archive-breadcrumb'
@@ -111,6 +112,72 @@ type ArmorSectionPageProps = {
   params: Promise<{
     section: string
   }>
+}
+
+export async function generateMetadata({
+  params,
+}: ArmorSectionPageProps): Promise<Metadata> {
+  const { section } =
+    await params
+
+  const armor =
+    await getArmorSection(section)
+
+  if (!armor) {
+    return {
+      title: '护甲系列不存在',
+    }
+  }
+
+  const title =
+    armor.subtitle
+      ? `${armor.title}｜${armor.subtitle}`
+      : armor.title
+
+  const description =
+    armor.description?.trim() ||
+    `${armor.title}${armor.subtitle ? `（${armor.subtitle}）` : ''}护甲系列资料，包含外观、来源、获取方式与相关信息。`
+
+  const image =
+    armor.image ||
+    undefined
+
+  return {
+    title,
+    description,
+
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+
+      images:
+        image
+          ? [
+              {
+                url: image,
+                alt:
+                  armor.subtitle
+                    ? `${armor.title} ${armor.subtitle}`
+                    : armor.title,
+              },
+            ]
+          : undefined,
+    },
+
+    twitter: {
+      card:
+        'summary_large_image',
+
+      title,
+      description,
+
+      images:
+        image
+          ? [image]
+          : undefined,
+    },
+  }
 }
 
 export default async function ArmorSectionPage({
