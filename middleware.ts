@@ -6,13 +6,80 @@ import {
 const ADMIN_COOKIE =
   'admin_token'
 
+function normalizeEmail(
+  value: string,
+) {
+  return value
+    .trim()
+    .toLowerCase()
+}
+
+function getAllowedAdminEmails() {
+  const emails =
+    new Set<string>()
+
+  const ownerEmail =
+    process.env
+      .STARCLUB_OWNER_EMAIL
+
+  if (ownerEmail) {
+    emails.add(
+      normalizeEmail(
+        ownerEmail,
+      ),
+    )
+  }
+
+  const adminEmails =
+    process.env
+      .STARCLUB_ADMIN_EMAILS
+
+  if (adminEmails) {
+    adminEmails
+      .split(',')
+      .map(
+        normalizeEmail,
+      )
+      .filter(Boolean)
+      .forEach(
+        (email) =>
+          emails.add(
+            email,
+          ),
+      )
+  }
+
+  return emails
+}
+
+function redirectToLogin(
+  request: NextRequest,
+  clearCookie = false,
+) {
+  const response =
+    NextResponse.redirect(
+      new URL(
+        '/admin/login',
+        request.url,
+      ),
+    )
+
+  if (clearCookie) {
+    response.cookies.delete(
+      ADMIN_COOKIE,
+    )
+  }
+
+  return response
+}
+
 export async function middleware(
   request: NextRequest,
 ) {
   const pathname =
     request.nextUrl.pathname
 
-  // 登录页必须允许访问，否则会死循环
+  // 登录页必须公开，否则会无限重定向
   if (
     pathname ===
     '/admin/login'
@@ -26,14 +93,8 @@ export async function middleware(
     )?.value
 
   if (!token) {
-    const loginUrl =
-      new URL(
-        '/admin/login',
-        request.url,
-      )
-
-    return NextResponse.redirect(
-      loginUrl,
+    return redirectToLogin(
+      request,
     )
   }
 
@@ -54,11 +115,8 @@ export async function middleware(
       '[ADMIN MIDDLEWARE] Missing Supabase environment variables',
     )
 
-    return NextResponse.redirect(
-      new URL(
-        '/admin/login',
-        request.url,
-      ),
+    return redirectToLogin(
+      request,
     )
   }
 
@@ -74,27 +132,54 @@ export async function middleware(
             Authorization:
               `Bearer ${token}`,
           },
+
           cache:
             'no-store',
         },
       )
 
-    if (
-      !response.ok
-    ) {
-      const redirect =
-        NextResponse.redirect(
-          new URL(
-            '/admin/login',
-            request.url,
-          ),
-        )
+    if (!response.ok) {
+      return redirectToLogin(
+        request,
+        true,
+      )
+    }
 
-      redirect.cookies.delete(
-        ADMIN_COOKIE,
+    const user =
+      (await response.json()) as {
+        id?: string
+        email?: string
+      }
+
+    if (!user.email) {
+      return redirectToLogin(
+        request,
+        true,
+      )
+    }
+
+    const allowedEmails =
+      getAllowedAdminEmails()
+
+    const email =
+      normalizeEmail(
+        user.email,
       )
 
-      return redirect
+    if (
+      !allowedEmails.has(
+        email,
+      )
+    ) {
+      console.warn(
+        '[ADMIN MIDDLEWARE] Non-admin account blocked:',
+        email,
+      )
+
+      return redirectToLogin(
+        request,
+        true,
+      )
     }
 
     return NextResponse.next()
@@ -104,11 +189,8 @@ export async function middleware(
       error,
     )
 
-    return NextResponse.redirect(
-      new URL(
-        '/admin/login',
-        request.url,
-      ),
+    return redirectToLogin(
+      request,
     )
   }
 }
