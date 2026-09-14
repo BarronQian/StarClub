@@ -378,8 +378,7 @@ export function AdminGuideSectionsEditor({
                 .filter(Boolean),
 
             sort_order:
-              (index + 1) *
-              10,
+              section.sort_order,
           }),
         )
 
