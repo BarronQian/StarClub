@@ -666,13 +666,14 @@ export async function POST(
       .from(
         'profiles',
       )
-      .select(`
-        id,
-        star_citizen_handle,
-        rsi_verified,
-        muted_until,
-        banned_at
-      `)
+        .select(`
+          id,
+          star_citizen_handle,
+          rsi_verified,
+          muted_until,
+          community_banned_at,
+          banned_at
+        `)
       .eq(
         'id',
         user.id,
@@ -694,14 +695,17 @@ export async function POST(
       )
     }
 
-    // 已封禁用户不能发布动态
+    // 全站封禁 / 社区封禁用户不能发布动态
     if (
-      profile.banned_at
+      profile.banned_at ||
+      profile.community_banned_at
     ) {
       return NextResponse.json(
         {
           error:
-            '该账号已被封禁，无法发布动态',
+            profile.banned_at
+              ? '该账号已被全站封禁，无法发布动态'
+              : '该账号已被社区封禁，无法发布动态',
         },
         {
           status: 403,

@@ -8,6 +8,8 @@ import {
 
 import type { GuideCategory } from '@/lib/guides'
 
+export const dynamic = 'force-dynamic'
+
 function getSupabase() {
   const supabaseUrl =
     process.env.SUPABASE_URL
@@ -132,18 +134,8 @@ async function getGuides() {
       published_at
     `)
     .eq('published', true)
-    .order(
-      'sort_order',
-      {
-        ascending: true,
-      }
-    )
-    .order(
-      'published_at',
-      {
-        ascending: false,
-      }
-    )
+    .order('sort_order', { ascending: true })
+    .order('published_at', { ascending: false })
 
   if (error) {
     console.error(

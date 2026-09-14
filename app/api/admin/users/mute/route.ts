@@ -232,6 +232,7 @@ export async function POST(
     .select(`
       id,
       muted_until,
+      community_banned_at,
       banned_at
     `)
     .eq(
@@ -266,17 +267,25 @@ export async function POST(
    * 已封禁用户不能再通过禁言 API
    * 修改处罚信息，防止清除封禁原因。
    */
-  if (profile.banned_at) {
-    return NextResponse.json(
-      {
-        error:
-          '该用户当前已被封禁，请先解除封禁',
-      },
-      {
-        status: 409,
-      },
-    )
-  }
+    if (
+      duration !== 'remove' &&
+      (
+        profile.banned_at ||
+        profile.community_banned_at
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            profile.banned_at
+              ? '该用户当前已被全站封禁'
+              : '该用户当前已被社区封禁',
+        },
+        {
+          status: 409,
+        },
+      )
+    }
 
   const mutedUntil =
     getMutedUntil(

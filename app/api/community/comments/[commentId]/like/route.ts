@@ -131,6 +131,7 @@ export async function POST(
         )
         .select(`
           id,
+          community_banned_at,
           banned_at
         `)
         .eq(
@@ -150,20 +151,6 @@ export async function POST(
         },
         {
           status: 404,
-        },
-      )
-    }
-
-    if (
-      profile.banned_at
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            '该账号已被封禁，无法进行点赞操作',
-        },
-        {
-          status: 403,
         },
       )
     }
@@ -238,6 +225,33 @@ export async function POST(
       likeError
     ) {
       throw likeError
+    }
+
+    /*
+    * 社区封禁 / 全站封禁：
+    * 不允许新增点赞，
+    * 但允许取消自己之前的点赞。
+    *
+    * 社区禁言不影响点赞。
+    */
+    if (
+      !existingLike &&
+      (
+        profile.banned_at ||
+        profile.community_banned_at
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            profile.banned_at
+              ? '该账号已被全站封禁，无法点赞'
+              : '该账号已被社区封禁，无法点赞',
+        },
+        {
+          status: 403,
+        },
+      )
     }
 
     let liked = false

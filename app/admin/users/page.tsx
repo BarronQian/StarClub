@@ -49,8 +49,18 @@ export default async function AdminUsersPage() {
       member_number,
       profile_slug,
       created_at,
+
       muted_until,
+
+      community_banned_at,
+      community_ban_reason,
+
+      market_banned_at,
+      market_ban_reason,
+
       banned_at,
+      ban_reason,
+
       moderation_reason,
       moderated_by
     `)
@@ -125,7 +135,7 @@ export default async function AdminUsersPage() {
             </h2>
 
             <p className="mt-2 text-xs text-muted-foreground">
-              搜索用户并管理社区禁言与封禁状态。
+              搜索用户并管理社区禁言、社区封禁、市场封禁与全站封禁状态。
             </p>
           </div>
 

@@ -208,6 +208,56 @@ export async function PATCH(
       )
     }
 
+    const supabase =
+    getAdminSupabase()
+
+  const {
+    data: profile,
+    error: profileError,
+  } =
+    await supabase
+      .from('profiles')
+      .select(`
+        id,
+        banned_at,
+        market_banned_at
+      `)
+      .eq(
+        'id',
+        user.id,
+      )
+      .maybeSingle()
+
+  if (
+    profileError ||
+    !profile
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          '读取用户资料失败',
+      },
+      {
+        status: 500,
+      },
+    )
+  }
+
+  if (
+    profile.banned_at ||
+    profile.market_banned_at
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          '当前账号已被限制使用市场功能',
+      },
+      {
+        status: 403,
+      },
+    )
+  }
+
     const { id } =
       await context.params
 
@@ -247,9 +297,6 @@ export async function PATCH(
         },
       )
     }
-
-    const supabase =
-      getAdminSupabase()
 
     const {
       data: listing,
