@@ -1,5 +1,8 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import {
+  notFound,
+  redirect,
+} from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 
 import {
@@ -19,6 +22,14 @@ import {
 import {
   AdminGuideSectionsEditor,
 } from '@/components/admin-guide-sections-editor'
+
+import {
+  AdminHeader,
+} from '@/components/admin/admin-header'
+
+import {
+  getAdminSession,
+} from '@/lib/admin-auth'
 
 function getSupabase() {
   const supabaseUrl =
@@ -260,6 +271,13 @@ type EditGuidePageProps = {
 export default async function EditGuidePage({
   params,
 }: EditGuidePageProps) {
+    const session =
+    await getAdminSession()
+
+  if (!session) {
+    redirect('/admin/login')
+  }
+
   const {
     id,
   } = await params
@@ -407,9 +425,17 @@ export default async function EditGuidePage({
     }),
   )
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="site-container max-w-5xl py-10 lg:py-14">
+return (
+  <div className="min-h-screen bg-background">
+    <main className="mx-auto flex max-w-6xl flex-col gap-10 px-6 pb-10 pt-20">
+      <AdminHeader
+        adminEmail={
+          session.email
+        }
+        active="guides"
+      />
+
+      <div className="mx-auto w-full max-w-5xl">
         <div className="flex flex-col gap-5 border-b border-border pb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <span className="font-display text-[0.65rem] tracking-[0.32em] text-primary">
@@ -473,6 +499,7 @@ export default async function EditGuidePage({
           </div>
         )}
       </div>
-    </div>
-  )
+    </main>
+  </div>
+)
 }
