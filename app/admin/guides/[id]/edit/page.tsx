@@ -16,6 +16,10 @@ import {
   AdminGuideDeleteButton,
 } from '@/components/admin-guide-delete-button'
 
+import {
+  AdminGuideSectionsEditor,
+} from '@/components/admin-guide-sections-editor'
+
 function getSupabase() {
   const supabaseUrl =
     process.env.SUPABASE_URL
@@ -84,6 +88,17 @@ type BlockRow = {
   >
 }
 
+type SectionRow = {
+  id: string
+  slug: string
+  title: string
+  subtitle: string | null
+  description: string | null
+  image: string | null
+  tags: string[] | null
+  published: boolean
+  sort_order: number
+}
 async function getGuide(
   id: string,
 ) {
@@ -183,6 +198,59 @@ async function getGuideBlocks(
   ) as BlockRow[]
 }
 
+async function getGuideSections(
+  guideId: string,
+) {
+  const supabase =
+    getSupabase()
+
+  if (!supabase) {
+    return []
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from(
+      'guide_sections',
+    )
+    .select(`
+      id,
+      slug,
+      title,
+      subtitle,
+      description,
+      image,
+      tags,
+      published,
+      sort_order
+    `)
+    .eq(
+      'guide_id',
+      guideId,
+    )
+    .order(
+      'sort_order',
+      {
+        ascending: true,
+      },
+    )
+
+  if (error) {
+    console.error(
+      '[ADMIN GUIDE SECTIONS] Load failed:',
+      error,
+    )
+
+    return []
+  }
+
+  return (
+    data ?? []
+  ) as SectionRow[]
+}
+
 type EditGuidePageProps = {
   params: Promise<{
     id: string
@@ -210,6 +278,14 @@ export default async function EditGuidePage({
           guide.id,
         )
       : []
+
+  const sections =
+  guide.slug ===
+  'armor-codex'
+    ? await getGuideSections(
+        guide.id,
+      )
+    : []
 
   const initialData: AdminGuideFormData =
     {
@@ -294,6 +370,42 @@ export default async function EditGuidePage({
           {},
       }),
     )
+
+  const initialSections =
+  sections.map(
+    (section) => ({
+      id:
+        section.id,
+
+      slug:
+        section.slug,
+
+      title:
+        section.title,
+
+      subtitle:
+        section.subtitle ??
+        '',
+
+      description:
+        section.description ??
+        '',
+
+      image:
+        section.image ??
+        '',
+
+      tags:
+        section.tags ??
+        [],
+
+      published:
+        section.published,
+
+      sort_order:
+        section.sort_order,
+    }),
+  )
 
   return (
     <div className="min-h-screen bg-background">
