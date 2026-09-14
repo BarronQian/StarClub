@@ -308,7 +308,7 @@ export function AdminGuideForm({
     setIsUploadingImage(false)
   }
 }
-
+   
   async function handleSubmit(
     nextPublished: boolean,
   ) {
