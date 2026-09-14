@@ -211,13 +211,9 @@ export async function POST(
       : 0
 
   const publishedAt =
-    typeof body.published_at ===
-      'string' &&
-    body.published_at.trim()
-      ? body.published_at
-      : published
-        ? new Date().toISOString()
-        : null
+    published
+      ? new Date().toISOString()
+      : null
 
   if (!title) {
     return NextResponse.json(
