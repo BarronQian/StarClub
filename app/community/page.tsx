@@ -268,6 +268,16 @@ export default function CommunityPage() {
   >(null)
 
   const [
+    moderationReason,
+    setModerationReason,
+  ] = useState('')
+
+  const [
+    moderationSubmitting,
+    setModerationSubmitting,
+  ] = useState(false)
+
+  const [
     deletingPostId,
     setDeletingPostId,
   ] = useState<
@@ -2017,6 +2027,122 @@ useEffect(() => {
         )
       }
     }
+  
+  const submitMute =
+  async (
+    duration:
+      | '1h'
+      | '24h'
+      | '7d'
+      | 'permanent',
+  ) => {
+    if (
+      !moderationTargetPost ||
+      moderationSubmitting
+    ) {
+      return
+    }
+
+    const reason =
+      moderationReason.trim()
+
+    if (!reason) {
+      setError(
+        '请填写禁言原因',
+      )
+      return
+    }
+
+    try {
+      setError(null)
+      setModerationSubmitting(
+        true,
+      )
+
+      const supabase =
+        getSupabaseBrowser()
+
+      const {
+        data: {
+          session,
+        },
+      } =
+        await supabase.auth.getSession()
+
+      if (
+        !session?.access_token
+      ) {
+        setError(
+          '登录状态已失效',
+        )
+        return
+      }
+
+      const response =
+        await fetch(
+          '/api/community/admin/users/mute',
+          {
+            method: 'POST',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+
+            body:
+              JSON.stringify({
+                userId:
+                  moderationTargetPost.author_id,
+
+                duration,
+
+                reason,
+              }),
+          },
+        )
+
+      const data =
+        await response
+          .json()
+          .catch(() => ({}))
+
+      if (!response.ok) {
+        setError(
+          data.error ||
+            '禁言用户失败',
+        )
+        return
+      }
+
+      setModerationTargetPost(
+        null,
+      )
+
+      setModerationAction(
+        null,
+      )
+
+      setModerationReason(
+        '',
+      )
+    } catch (error) {
+      console.error(
+        'Failed to mute user:',
+        error,
+      )
+
+      setError(
+        '禁言用户失败',
+      )
+    } finally {
+      setModerationSubmitting(
+        false,
+      )
+    }
+  }
 
   const deletePost =
     async () => {
@@ -3245,17 +3371,25 @@ const pageDescription =
                             )
                           }}
 
-                          onMuteUser={(
-                            targetPost,
-                          ) => {
-                            setModerationTargetPost(
+                            onMuteUser={(
                               targetPost,
-                            )
+                            ) => {
+                              setModerationReason(
+                                '',
+                              )
 
-                            setModerationAction(
-                              'mute',
-                            )
-                          }}
+                              setError(
+                                null,
+                              )
+
+                              setModerationTargetPost(
+                                targetPost,
+                              )
+
+                              setModerationAction(
+                                'mute',
+                              )
+                            }}
 
                           onCommunityBan={(
                             targetPost,
@@ -3577,11 +3711,24 @@ const pageDescription =
     <div
       className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 px-4 backdrop-blur-[1px]"
       onMouseDown={() => {
+        if (
+          moderationSubmitting
+        ) {
+          return
+        }
+
         setModerationTargetPost(
           null,
         )
 
         setModerationAction(
+          null,
+        )
+
+        setModerationReason(
+          '',
+        )
+        setError(
           null,
         )
       }}
@@ -3601,59 +3748,117 @@ const pageDescription =
         </h2>
 
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          请选择禁言时长。
+          禁言后，该用户暂时无法发布动态、评论等社区内容。
         </p>
 
-        <div className="mt-5 grid grid-cols-2 gap-2">
+        <div className="mt-5">
+          <label className="text-xs font-medium text-neutral-700">
+            处罚原因
+          </label>
 
-          {[
-            {
-              label: '1 小时',
-              duration:
-                '1h',
-            },
-            {
-              label: '6 小时',
-              duration:
-                '6h',
-            },
-            {
-              label: '24 小时',
-              duration:
-                '24h',
-            },
-            {
-              label: '7 天',
-              duration:
-                '7d',
-            },
-          ].map(
-            (option) => (
-              <button
-                key={
-                  option.duration
-                }
-                type="button"
-                onClick={() => {
-                  console.log(
-                    'mute duration',
-                    option.duration,
-                  )
-                }}
-                className="rounded-xl border border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
-              >
-                {
-                  option.label
-                }
-              </button>
-            ),
-          )}
+          <textarea
+            value={
+              moderationReason
+            }
+            onChange={(
+              event,
+            ) => {
+              setModerationReason(
+                event.target.value,
+              )
+            }}
+            maxLength={500}
+            rows={3}
+            placeholder="例如：多次发布违规内容"
+            className="mt-2 w-full resize-none rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none transition focus:border-neutral-400"
+          />
 
+          <p className="mt-1 text-right text-[11px] text-muted-foreground">
+            {
+              moderationReason.length
+            }
+            /500
+          </p>
         </div>
+
+        <p className="mt-4 text-xs font-medium text-neutral-700">
+          选择禁言时长
+        </p>
+
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            disabled={
+              moderationSubmitting
+            }
+            onClick={() => {
+              void submitMute(
+                '1h',
+              )
+            }}
+            className="rounded-xl border border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            1 小时
+          </button>
+
+          <button
+            type="button"
+            disabled={
+              moderationSubmitting
+            }
+            onClick={() => {
+              void submitMute(
+                '24h',
+              )
+            }}
+            className="rounded-xl border border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            24 小时
+          </button>
+
+          <button
+            type="button"
+            disabled={
+              moderationSubmitting
+            }
+            onClick={() => {
+              void submitMute(
+                '7d',
+              )
+            }}
+            className="rounded-xl border border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            7 天
+          </button>
+
+          <button
+            type="button"
+            disabled={
+              moderationSubmitting
+            }
+            onClick={() => {
+              void submitMute(
+                'permanent',
+              )
+            }}
+            className="rounded-xl border border-red-200 px-4 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            永久禁言
+          </button>
+        </div>
+
+        {error && (
+          <p className="mt-4 text-xs text-red-600">
+            {error}
+          </p>
+        )}
 
         <div className="mt-6 flex justify-end">
           <button
             type="button"
+            disabled={
+              moderationSubmitting
+            }
             onClick={() => {
               setModerationTargetPost(
                 null,
@@ -3662,8 +3867,12 @@ const pageDescription =
               setModerationAction(
                 null,
               )
+
+              setModerationReason(
+                '',
+              )
             }}
-            className="inline-flex h-10 items-center justify-center rounded-full border border-border px-5 text-sm font-medium transition-colors hover:bg-muted"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-border px-5 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
             取消
           </button>
@@ -3671,7 +3880,7 @@ const pageDescription =
       </div>
     </div>
   )}
-  
+
 {deleteConfirmComment && (
   <div
     className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 px-4 backdrop-blur-[1px]"
