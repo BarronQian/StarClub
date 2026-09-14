@@ -219,13 +219,6 @@ export async function PATCH(
         )
       : 0
 
-  const requestedPublishedAt =
-    typeof body.published_at ===
-      'string' &&
-    body.published_at.trim()
-      ? body.published_at.trim()
-      : null
-
   if (!title) {
     return NextResponse.json(
       {
@@ -321,7 +314,9 @@ export async function PATCH(
     error: currentError,
   } = await supabase
     .from('guides')
-    .select('id, published_at')
+    .select(
+      'id, published, published_at',
+    )
     .eq('id', id)
     .maybeSingle()
 
@@ -341,13 +336,12 @@ export async function PATCH(
   }
 
   const publishedAt =
-  requestedPublishedAt ??
-  currentGuide.published_at ??
-  (
     published
-      ? new Date().toISOString()
+      ? currentGuide.published &&
+        currentGuide.published_at
+        ? currentGuide.published_at
+        : new Date().toISOString()
       : null
-  )
 
   const {
     data: duplicateSlug,
