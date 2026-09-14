@@ -291,23 +291,32 @@ export function GuidesPageContent({
                   : {})}
                 className="group grid gap-8 py-8 md:grid-cols-[400px_1fr_auto] md:items-center"
               >
-                {guide.image && (
-                  <div className="relative aspect-video overflow-hidden rounded-lg bg-muted">
-                    <Image
-                      src={guide.image}
-                      alt={guide.title}
-                      fill
-                      sizes="(min-width: 768px) 400px, 100vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    />
+              {guide.image && (
+                <div className="relative aspect-video overflow-hidden rounded-lg bg-muted">
+                  <Image
+                    src={guide.image}
+                    alt={guide.title}
+                    fill
+                    sizes="(min-width: 768px) 400px, 100vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  />
 
-                    {guide.original && (
-                      <span className="absolute right-0 top-0 z-10 rounded-bl-lg bg-primary px-3 py-1.5 font-display text-[0.58rem] tracking-[0.12em] text-primary-foreground shadow-sm">
-                        酒馆原创
-                      </span>
-                    )}
-                  </div>
-                )}
+                  {guide.original && (
+                    <span className="absolute right-0 top-0 z-10 rounded-bl-lg bg-primary px-3 py-1.5 font-display text-[0.58rem] tracking-[0.12em] text-primary-foreground shadow-sm">
+                      酒馆原创
+                    </span>
+                  )}
+
+                  {(guide.type === 'article' ||
+                    guide.type === 'video') && (
+                    <span className="absolute bottom-3 left-3 z-10 rounded-md border border-white/15 bg-black/70 px-2.5 py-1.5 font-display text-[0.58rem] tracking-[0.12em] text-white shadow-sm backdrop-blur-md">
+                      {guide.type === 'video'
+                        ? '视频攻略'
+                        : '图文攻略'}
+                    </span>
+                  )}
+                </div>
+              )}
 
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
