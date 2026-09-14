@@ -251,6 +251,23 @@ export default function CommunityPage() {
 ] = useState(false)
 
   const [
+    moderationTargetPost,
+    setModerationTargetPost,
+  ] = useState<
+    CommunityPost | null
+  >(null)
+
+  const [
+    moderationAction,
+    setModerationAction,
+  ] = useState<
+    'mute' |
+    'community-ban' |
+    'global-ban' |
+    null
+  >(null)
+
+  const [
     deletingPostId,
     setDeletingPostId,
   ] = useState<
@@ -3231,9 +3248,12 @@ const pageDescription =
                           onMuteUser={(
                             targetPost,
                           ) => {
-                            console.log(
-                              'mute user',
-                              targetPost.author_id,
+                            setModerationTargetPost(
+                              targetPost,
+                            )
+
+                            setModerationAction(
+                              'mute',
                             )
                           }}
 
@@ -3551,6 +3571,107 @@ const pageDescription =
         </div>
       )}
 
+{moderationTargetPost &&
+  moderationAction ===
+    'mute' && (
+    <div
+      className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 px-4 backdrop-blur-[1px]"
+      onMouseDown={() => {
+        setModerationTargetPost(
+          null,
+        )
+
+        setModerationAction(
+          null,
+        )
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        onMouseDown={(
+          event,
+        ) => {
+          event.stopPropagation()
+        }}
+        className="w-full max-w-sm rounded-2xl border border-border bg-white p-6 shadow-2xl"
+      >
+        <h2 className="text-lg font-semibold">
+          禁言用户
+        </h2>
+
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          请选择禁言时长。
+        </p>
+
+        <div className="mt-5 grid grid-cols-2 gap-2">
+
+          {[
+            {
+              label: '1 小时',
+              duration:
+                '1h',
+            },
+            {
+              label: '6 小时',
+              duration:
+                '6h',
+            },
+            {
+              label: '24 小时',
+              duration:
+                '24h',
+            },
+            {
+              label: '7 天',
+              duration:
+                '7d',
+            },
+          ].map(
+            (option) => (
+              <button
+                key={
+                  option.duration
+                }
+                type="button"
+                onClick={() => {
+                  console.log(
+                    'mute duration',
+                    option.duration,
+                  )
+                }}
+                className="rounded-xl border border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
+              >
+                {
+                  option.label
+                }
+              </button>
+            ),
+          )}
+
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <button
+            type="button"
+            onClick={() => {
+              setModerationTargetPost(
+                null,
+              )
+
+              setModerationAction(
+                null,
+              )
+            }}
+            className="inline-flex h-10 items-center justify-center rounded-full border border-border px-5 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+  
 {deleteConfirmComment && (
   <div
     className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 px-4 backdrop-blur-[1px]"
