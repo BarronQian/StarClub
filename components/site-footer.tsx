@@ -276,9 +276,11 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-14 flex flex-col gap-4 border-t border-border pt-6 text-[0.68rem] text-muted-foreground sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex flex-col gap-2">
-            <p>© 2026 StarClub 星际酒馆 · 非官方玩家社区</p>
+        <div className="mt-14 flex flex-col gap-5 border-t border-border pt-6 text-[0.72rem] leading-relaxed text-muted-foreground sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex shrink-0 flex-col gap-2">
+            <p>
+              © 2026 StarClub 星际酒馆 · 非官方玩家社区
+            </p>
 
             <div className="flex items-center gap-3">
               <a
@@ -299,9 +301,15 @@ export function SiteFooter() {
             </div>
           </div>
 
-          <p className="max-w-xl tracking-[0.2em] sm:text-right">
-            Star Citizen® and Cloud Imperium® are trademarks of Cloud Imperium Rights LLC.
-          </p>
+          <div className="max-w-2xl text-left sm:text-right">
+            <p className="tracking-[0.06em]">
+              Star Citizen® and Cloud Imperium® are trademarks of Cloud Imperium Rights LLC.
+            </p>
+
+            <p className="mt-1">
+              StarClub is an independent, unofficial fan community and is not affiliated with or endorsed by Cloud Imperium Games.
+            </p>
+          </div>
         </div>
       </div>
     </footer>
