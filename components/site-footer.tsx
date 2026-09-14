@@ -276,9 +276,30 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-14 flex flex-col gap-3 border-t border-border pt-6 text-[0.68rem] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 StarClub 星际酒馆 · 非官方玩家社区</p>
-          <p className="tracking-[0.2em]">
+        <div className="mt-14 flex flex-col gap-4 border-t border-border pt-6 text-[0.68rem] text-muted-foreground sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-2">
+            <p>© 2026 StarClub 星际酒馆 · 非官方玩家社区</p>
+
+            <div className="flex items-center gap-3">
+              <a
+                href="/privacy"
+                className="transition-colors hover:text-foreground"
+              >
+                Privacy Policy
+              </a>
+
+              <span className="text-border">•</span>
+
+              <a
+                href="/terms"
+                className="transition-colors hover:text-foreground"
+              >
+                Terms of Use
+              </a>
+            </div>
+          </div>
+
+          <p className="max-w-xl tracking-[0.2em] sm:text-right">
             Star Citizen® and Cloud Imperium® are trademarks of Cloud Imperium Rights LLC.
           </p>
         </div>
