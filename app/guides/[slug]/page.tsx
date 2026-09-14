@@ -134,7 +134,7 @@ function getBilibiliEmbedUrl(
   const bvid =
     bvMatch[1]
 
-  return `https://player.bilibili.com/player.html?bvid=${bvid}&page=1&high_quality=1&danmaku=0`
+  return `https://player.bilibili.com/player.html?bvid=${bvid}&page=1&high_quality=1&danmaku=0&autoplay=0`
 }
 
 type GuidePageProps = {
@@ -347,7 +347,7 @@ export default async function GuidePage({
                       allowFullScreen
                       scrolling="no"
                       frameBorder="0"
-                      allow="autoplay; fullscreen"
+                      allow="fullscreen"
                       referrerPolicy="no-referrer-when-downgrade"
                     />
                   </div>
