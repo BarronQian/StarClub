@@ -490,12 +490,14 @@ export function CommunityCommentDialog({
           } else {
             setIsAdmin(false)
           }
-        } catch (error) {
-          console.error(
-            'Failed to load current user:',
-            error,
-          )
-        }
+          } catch (error) {
+            console.error(
+              'Failed to load current user:',
+              error,
+            )
+
+            setIsAdmin(false)
+          }
       }
 
     void loadCurrentUser()
