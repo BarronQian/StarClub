@@ -5,6 +5,10 @@ import {
   useState,
 } from 'react'
 
+import {
+  getVideoEmbedUrl,
+} from '@/lib/video-embed'
+
 type BlockType =
   | 'heading'
   | 'paragraph'
@@ -1082,60 +1086,104 @@ if (
     )
   }
 
-  if (
-    block.block_type ===
-    'video'
-  ) {
-    return (
-      <div className="grid gap-4">
-        <div>
-          <label className="text-sm font-medium">
-            视频嵌入地址
-          </label>
+if (
+  block.block_type ===
+  'video'
+) {
+  const url =
+    typeof content.url ===
+    'string'
+      ? content.url
+      : ''
 
-          <input
-            value={
-              typeof content.url ===
-              'string'
-                ? content.url
-                : ''
-            }
-            onChange={(e) =>
-              updateBlockContent(
-                index,
-                'url',
-                e.target.value,
-              )
-            }
-            className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">
-            视频标题
-          </label>
-
-          <input
-            value={
-              typeof content.title ===
-              'string'
-                ? content.title
-                : ''
-            }
-            onChange={(e) =>
-              updateBlockContent(
-                index,
-                'title',
-                e.target.value,
-              )
-            }
-            className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
-          />
-        </div>
-      </div>
+  const video =
+    getVideoEmbedUrl(
+      url,
     )
-  }
+
+  return (
+    <div className="grid gap-4">
+      <div>
+        <label className="text-sm font-medium">
+          视频链接
+        </label>
+
+        <input
+          value={url}
+          onChange={(e) =>
+            updateBlockContent(
+              index,
+              'url',
+              e.target.value,
+            )
+          }
+          placeholder="直接粘贴 Bilibili 或 YouTube 视频链接"
+          className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+        />
+
+        <p className="mt-2 text-xs text-muted-foreground">
+          支持 Bilibili、
+          YouTube 和 youtu.be
+          普通分享链接，无需手动填写
+          iframe 地址。
+        </p>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium">
+          视频标题
+        </label>
+
+        <input
+          value={
+            typeof content.title ===
+            'string'
+              ? content.title
+              : ''
+          }
+          onChange={(e) =>
+            updateBlockContent(
+              index,
+              'title',
+              e.target.value,
+            )
+          }
+          className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+        />
+      </div>
+
+      {url && !video && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-600">
+          暂时无法识别这个视频链接。
+          请使用 Bilibili 或
+          YouTube 视频地址。
+        </div>
+      )}
+
+      {video && (
+        <div className="overflow-hidden rounded-2xl border border-border bg-black">
+          <div className="aspect-video">
+            <iframe
+              src={
+                video.embedUrl
+              }
+              title={
+                typeof content.title ===
+                'string' &&
+                content.title
+                  ? content.title
+                  : '视频预览'
+              }
+              className="h-full w-full"
+              allow="fullscreen"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
   if (
     block.block_type ===
