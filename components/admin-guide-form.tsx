@@ -21,7 +21,6 @@ const categories =
 type GuideType =
   | 'article'
   | 'video'
-  | 'discord'
   | 'external'
 
 export type AdminGuideFormData = {
@@ -36,6 +35,7 @@ export type AdminGuideFormData = {
   author: string
   creator: string
   video_url: string
+  external_url: string
   original: boolean
   published: boolean
   featured: boolean
@@ -167,7 +167,13 @@ export function AdminGuideForm({
     initialData?.video_url ??
       '',
   )
-
+  const [
+    externalUrl,
+    setExternalUrl,
+  ] = useState(
+    initialData?.external_url ??
+      '',
+  )
   const [
     original,
     setOriginal,
@@ -437,6 +443,9 @@ export function AdminGuideForm({
 
                 video_url:
                   videoUrl.trim(),
+                
+                  external_url:
+                  externalUrl.trim(),
 
                 original,
 
@@ -684,10 +693,6 @@ export function AdminGuideForm({
                 视频攻略
               </option>
 
-              <option value="discord">
-                Discord
-              </option>
-
               <option value="external">
                 外部链接
               </option>
@@ -802,6 +807,30 @@ export function AdminGuideForm({
               />
             </div>
           )}
+
+          {type ===
+              'external' && (
+              <div>
+                <label className="text-sm font-medium">
+                  外部链接 *
+                </label>
+
+                <input
+                  value={externalUrl}
+                  onChange={(e) =>
+                    setExternalUrl(
+                      e.target.value,
+                    )
+                  }
+                  className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+                  placeholder="https://..."
+                />
+
+                <p className="mt-2 text-xs text-muted-foreground">
+                  可填写 Discord、Spectrum、外部攻略网站或其他资源链接。
+                </p>
+              </div>
+            )}
         </div>
       </section>
 
@@ -1010,13 +1039,17 @@ export function AdminGuideForm({
 
         <button
           type="submit"
-          disabled={isSaving}
+          disabled={
+            isSaving ||
+            isUploadingImage
+          }
           className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isSaving
+        {isUploadingImage
+          ? '正在上传图片...'
+          : isSaving
             ? '正在保存...'
-            : mode ===
-                'create'
+            : mode === 'create'
               ? '创建攻略'
               : '保存修改'}
         </button>
