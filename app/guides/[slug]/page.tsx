@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 
 import { ArchiveBreadcrumb } from '@/components/archive-breadcrumb'
@@ -54,6 +55,8 @@ type GuideRow = {
   original: boolean
   published: boolean
   published_at: string | null
+  seo_title: string | null
+  seo_description: string | null
 }
 
 async function getGuide(
@@ -85,7 +88,9 @@ async function getGuide(
       video_url,
       original,
       published,
-      published_at
+      published_at,
+      seo_title,
+      seo_description
     `)
     .eq(
       'slug',
@@ -198,6 +203,77 @@ type GuidePageProps = {
   params: Promise<{
     slug: string
   }>
+}
+
+export async function generateMetadata({
+  params,
+}: GuidePageProps): Promise<Metadata> {
+  const { slug } =
+    await params
+
+  if (
+    slug ===
+    'armor-codex'
+  ) {
+    return {}
+  }
+
+  const guide =
+    await getGuide(slug)
+
+  if (!guide) {
+    return {
+      title: '攻略不存在',
+    }
+  }
+
+  const title =
+    guide.seo_title?.trim() ||
+    guide.title
+
+  const description =
+    guide.seo_description?.trim() ||
+    guide.description ||
+    undefined
+
+  const image =
+    guide.image ||
+    undefined
+
+  return {
+    title,
+    description,
+
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+
+      images:
+        image
+          ? [
+              {
+                url: image,
+                alt:
+                  guide.title,
+              },
+            ]
+          : undefined,
+    },
+
+    twitter: {
+      card:
+        'summary_large_image',
+
+      title,
+      description,
+
+      images:
+        image
+          ? [image]
+          : undefined,
+    },
+  }
 }
 
 export default async function GuidePage({
