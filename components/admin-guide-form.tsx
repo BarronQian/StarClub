@@ -425,12 +425,6 @@ export function AdminGuideForm({
                 sort_order:
                   sortOrder,
 
-                  published_at:
-                    nextPublished
-                      ? initialData?.published_at ||
-                        new Date().toISOString()
-                      : '',
-
                 seo_title:
                   seoTitle.trim(),
 
