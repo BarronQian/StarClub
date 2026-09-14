@@ -1,4 +1,7 @@
 import Image from 'next/image'
+import {
+  getVideoEmbedUrl,
+} from '@/lib/video-embed'
 
 export type GuideContentBlock = {
   id: string
@@ -225,31 +228,49 @@ export function GuideContentBlocks({
                   ? content.url
                   : ''
 
+              const title =
+                typeof content.title === 'string'
+                  ? content.title
+                  : ''
+
               if (!url) {
                 return null
               }
 
+              const video =
+                getVideoEmbedUrl(url)
+
+              if (!video) {
+                return null
+              }
+
               return (
-                <div
+                <figure
                   key={block.id}
-                  className="overflow-hidden rounded-2xl border border-border bg-black"
+                  className="space-y-3"
                 >
-                  <div className="relative aspect-video">
-                    <iframe
-                      src={url}
-                      title={
-                        typeof content.title ===
-                        'string'
-                          ? content.title
-                          : 'Guide video'
-                      }
-                      className="absolute inset-0 h-full w-full"
-                      allow="fullscreen"
-                      allowFullScreen
-                      frameBorder="0"
-                    />
+                  <div className="overflow-hidden rounded-2xl border border-border bg-black">
+                    <div className="relative aspect-video">
+                      <iframe
+                        src={video.embedUrl}
+                        title={
+                          title ||
+                          '攻略视频'
+                        }
+                        className="absolute inset-0 h-full w-full"
+                        allow="fullscreen"
+                        allowFullScreen
+                        frameBorder="0"
+                      />
+                    </div>
                   </div>
-                </div>
+
+                  {title && (
+                    <figcaption className="text-center text-xs leading-6 text-muted-foreground">
+                      {title}
+                    </figcaption>
+                  )}
+                </figure>
               )
             }
 
