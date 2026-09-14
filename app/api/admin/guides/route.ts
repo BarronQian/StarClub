@@ -40,6 +40,21 @@ function getAdminSupabase() {
   )
 }
 
+const ALLOWED_CATEGORIES = new Set([
+  '萌新入门',
+  'FPS单兵战斗',
+  '飞船空战',
+  '舰船武器组件',
+  '单兵武器装备',
+  '经济 / 赚钱',
+  '探索 / 旅游',
+  '沙盒活动',
+  '限时活动',
+  '维克洛商店',
+  '舰船升级CCU',
+  '其他',
+])
+
 function normalizeSlug(
   value: string,
 ) {
@@ -221,10 +236,15 @@ export async function POST(
     )
   }
 
-  if (!category) {
+  if (
+    !category ||
+    !ALLOWED_CATEGORIES.has(
+      category,
+    )
+  ) {
     return NextResponse.json(
       {
-        error: '请选择攻略分类',
+        error: '攻略分类无效',
       },
       {
         status: 400,

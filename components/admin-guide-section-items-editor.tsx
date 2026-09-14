@@ -504,8 +504,7 @@ export function AdminGuideSectionItemsEditor({
                 .filter(Boolean),
 
             sort_order:
-              (index + 1) *
-              10,
+              item.sort_order,
           }),
         )
 
