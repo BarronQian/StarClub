@@ -50,38 +50,6 @@ type AdminGuideFormProps = {
   initialData?: Partial<AdminGuideFormData>
 }
 
-function toDateTimeLocal(
-  value?: string | null,
-) {
-  if (!value) {
-    return ''
-  }
-
-  const date =
-    new Date(value)
-
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return ''
-  }
-
-  const offset =
-    date.getTimezoneOffset()
-
-  const localDate =
-    new Date(
-      date.getTime() -
-        offset * 60 * 1000,
-    )
-
-  return localDate
-    .toISOString()
-    .slice(0, 16)
-}
-
 export function AdminGuideForm({
   mode,
   initialData,
@@ -204,15 +172,6 @@ export function AdminGuideForm({
   ] = useState(
     initialData?.sort_order ??
       0,
-  )
-
-  const [
-    publishedAt,
-    setPublishedAt,
-  ] = useState(
-    toDateTimeLocal(
-      initialData?.published_at,
-    ),
   )
 
   const [
@@ -351,9 +310,8 @@ export function AdminGuideForm({
 }
 
   async function handleSubmit(
-    event: FormEvent,
+    nextPublished: boolean,
   ) {
-    event.preventDefault()
 
     setError(null)
     setSuccess(null)
@@ -459,19 +417,13 @@ export function AdminGuideForm({
 
                 original,
 
-                published,
+                published:
+                  nextPublished,
 
                 featured,
 
                 sort_order:
                   sortOrder,
-
-                published_at:
-                  publishedAt
-                    ? new Date(
-                        publishedAt,
-                      ).toISOString()
-                    : '',
 
                 seo_title:
                   seoTitle.trim(),
@@ -495,6 +447,9 @@ export function AdminGuideForm({
             '保存攻略失败',
         )
       }
+      setPublished(
+        nextPublished,
+      )
 
       if (
         mode ===
@@ -531,9 +486,9 @@ export function AdminGuideForm({
 
   return (
     <form
-      onSubmit={
-        handleSubmit
-      }
+      onSubmit={(event) => {
+        event.preventDefault()
+      }}
       className="space-y-8"
     >
       <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
@@ -915,20 +870,6 @@ export function AdminGuideForm({
           <label className="flex items-center gap-3 text-sm">
             <input
               type="checkbox"
-              checked={published}
-              onChange={(e) =>
-                setPublished(
-                  e.target.checked,
-                )
-              }
-            />
-
-            已发布
-          </label>
-
-          <label className="flex items-center gap-3 text-sm">
-            <input
-              type="checkbox"
               checked={featured}
               onChange={(e) =>
                 setFeatured(
@@ -939,6 +880,24 @@ export function AdminGuideForm({
 
             推荐攻略
           </label>
+          
+          <div className="rounded-xl border border-border bg-background px-4 py-3 text-sm">
+            <span className="text-muted-foreground">
+              当前状态：
+            </span>
+
+            <span
+              className={`ml-2 font-medium ${
+                published
+                  ? 'text-emerald-600'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              {published
+                ? '已发布'
+                : '草稿'}
+            </span>
+          </div>
 
           <div>
             <label className="text-sm font-medium">
@@ -959,24 +918,6 @@ export function AdminGuideForm({
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium">
-              发布时间
-            </label>
-
-            <input
-              type="datetime-local"
-              value={
-                publishedAt
-              }
-              onChange={(e) =>
-                setPublishedAt(
-                  e.target.value,
-                )
-              }
-              className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
-            />
-          </div>
         </div>
       </section>
 
@@ -1047,22 +988,61 @@ export function AdminGuideForm({
           取消
         </Link>
 
-        <button
-          type="submit"
-          disabled={
-            isSaving ||
-            isUploadingImage
-          }
-          className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-        {isUploadingImage
-          ? '正在上传图片...'
-          : isSaving
-            ? '正在保存...'
-            : mode === 'create'
-              ? '创建攻略'
-              : '保存修改'}
-        </button>
+          {published ? (
+            <button
+              type="button"
+              disabled={
+                isSaving ||
+                isUploadingImage
+              }
+              onClick={() =>
+                handleSubmit(true)
+              }
+              className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isUploadingImage
+                ? '正在上传图片...'
+                : isSaving
+                  ? '正在保存...'
+                  : '保存修改'}
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                disabled={
+                  isSaving ||
+                  isUploadingImage
+                }
+                onClick={() =>
+                  handleSubmit(false)
+                }
+                className="rounded-full border border-border px-6 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSaving
+                  ? '正在保存...'
+                  : '保存为草稿'}
+              </button>
+
+              <button
+                type="button"
+                disabled={
+                  isSaving ||
+                  isUploadingImage
+                }
+                onClick={() =>
+                  handleSubmit(true)
+                }
+                className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isUploadingImage
+                  ? '正在上传图片...'
+                  : isSaving
+                    ? '正在发布...'
+                    : '发布'}
+              </button>
+            </>
+          )}
       </div>
     </form>
   )
