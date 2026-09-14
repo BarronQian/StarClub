@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 
 import { AdminHeader } from '@/components/admin/admin-header'
 import { MarketForceCloseButton } from '@/components/admin/market-force-close-button'
+import { MarketReportActions } from '@/components/admin/market-report-actions'
 
 import { Badge } from '@/components/ui/badge'
 
@@ -44,6 +45,7 @@ type MarketListingRow = {
   created_at: string
   updated_at: string | null
   closed_at: string | null
+  deleted_at?: string | null
 }
 
 type ProfileRow = {
@@ -51,6 +53,28 @@ type ProfileRow = {
   username: string | null
   display_name: string | null
   star_citizen_handle: string | null
+  profile_slug?: string | null
+  market_banned_at?: string | null
+  banned_at?: string | null
+}
+
+type MarketReportStatus =
+  | 'pending'
+  | 'resolved'
+  | 'dismissed'
+
+type MarketReportRow = {
+  id: string
+  listing_id: string
+  reporter_id: string
+  reported_user_id: string
+  reason: string
+  details: string | null
+  status: MarketReportStatus
+  resolution_note: string | null
+  handled_at: string | null
+  created_at: string
+  updated_at: string
 }
 
 function getTypeLabel(
@@ -79,6 +103,77 @@ function getTypeBadgeClass(
   }
 
   return 'border-violet-500/30 text-violet-600 dark:text-violet-400'
+}
+
+function getReportReasonLabel(
+  reason: string,
+) {
+  if (reason === 'fraud') {
+    return '疑似诈骗'
+  }
+
+  if (reason === 'misleading') {
+    return '虚假 / 误导信息'
+  }
+
+  if (reason === 'rmt') {
+    return 'RMT / 现金交易'
+  }
+
+  if (reason === 'prohibited') {
+    return '违规商品或内容'
+  }
+
+  if (reason === 'spam') {
+    return '垃圾信息 / 恶意刷屏'
+  }
+
+  if (reason === 'other') {
+    return '其他'
+  }
+
+  return reason
+}
+
+function getReportStatusLabel(
+  status: MarketReportStatus,
+) {
+  if (status === 'pending') {
+    return '待处理'
+  }
+
+  if (status === 'resolved') {
+    return '已处理'
+  }
+
+  return '已驳回'
+}
+
+function getReportStatusClass(
+  status: MarketReportStatus,
+) {
+  if (status === 'pending') {
+    return 'border-amber-500/30 text-amber-600 dark:text-amber-400'
+  }
+
+  if (status === 'resolved') {
+    return 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+  }
+
+  return 'border-muted-foreground/30 text-muted-foreground'
+}
+
+function getProfileName(
+  profile:
+    | ProfileRow
+    | undefined,
+) {
+  return (
+    profile?.star_citizen_handle ||
+    profile?.display_name ||
+    profile?.username ||
+    '未知用户'
+  )
 }
 
 function formatDate(
@@ -111,6 +206,7 @@ export default async function AdminMarketPage() {
 
   const [
     listingsResult,
+    reportsResult,
     totalResult,
     activeResult,
     wtsResult,
@@ -133,6 +229,29 @@ export default async function AdminMarketPage() {
           created_at,
           updated_at,
           closed_at
+        `)
+        .order(
+          'created_at',
+          {
+            ascending: false,
+          },
+        )
+        .limit(100),
+
+      supabase
+        .from('market_reports')
+        .select(`
+          id,
+          listing_id,
+          reporter_id,
+          reported_user_id,
+          reason,
+          details,
+          status,
+          resolution_note,
+          handled_at,
+          created_at,
+          updated_at
         `)
         .order(
           'created_at',
@@ -231,27 +350,107 @@ export default async function AdminMarketPage() {
     )
   }
 
+  if (
+    reportsResult.error
+  ) {
+    throw new Error(
+      `Failed to load market reports: ${reportsResult.error.message}`,
+    )
+  }
+
   const listings =
     (
       listingsResult.data ??
       []
     ) as MarketListingRow[]
 
-  const sellerIds =
+  const reports =
+    (
+      reportsResult.data ??
+      []
+    ) as MarketReportRow[]
+
+  const reportListingIds =
     Array.from(
       new Set(
-        listings.map(
-          (listing) =>
-            listing.seller_id,
+        reports.map(
+          (report) =>
+            report.listing_id,
         ),
       ),
+    )
+
+  let reportListings: MarketListingRow[] =
+    []
+
+  if (
+    reportListingIds.length >
+    0
+  ) {
+    const reportListingsResult =
+      await supabase
+        .from('market_listings')
+        .select(`
+          id,
+          seller_id,
+          listing_type,
+          category,
+          title,
+          price_uec,
+          quantity,
+          status,
+          created_at,
+          updated_at,
+          closed_at,
+          deleted_at
+        `)
+        .in(
+          'id',
+          reportListingIds,
+        )
+
+    if (
+      reportListingsResult.error
+    ) {
+      throw new Error(
+        `Failed to load reported market listings: ${reportListingsResult.error.message}`,
+      )
+    }
+
+    reportListings =
+      (
+        reportListingsResult.data ??
+        []
+      ) as MarketListingRow[]
+  }
+
+  const sellerIds =
+    listings.map(
+      (listing) =>
+        listing.seller_id,
+    )
+
+  const reportUserIds =
+    reports.flatMap(
+      (report) => [
+        report.reporter_id,
+        report.reported_user_id,
+      ],
+    )
+
+  const profileIds =
+    Array.from(
+      new Set([
+        ...sellerIds,
+        ...reportUserIds,
+      ]),
     )
 
   let profiles: ProfileRow[] =
     []
 
   if (
-    sellerIds.length >
+    profileIds.length >
     0
   ) {
     const profilesResult =
@@ -261,11 +460,14 @@ export default async function AdminMarketPage() {
           id,
           username,
           display_name,
-          star_citizen_handle
+          star_citizen_handle,
+          profile_slug,
+          market_banned_at,
+          banned_at
         `)
         .in(
           'id',
-          sellerIds,
+          profileIds,
         )
 
     if (
@@ -293,6 +495,44 @@ export default async function AdminMarketPage() {
       ),
     )
 
+  const reportListingMap =
+    new Map(
+      reportListings.map(
+        (listing) => [
+          listing.id,
+          listing,
+        ],
+      ),
+    )
+
+  const sortedReports =
+    [...reports].sort(
+      (a, b) => {
+        if (
+          a.status === 'pending' &&
+          b.status !== 'pending'
+        ) {
+          return -1
+        }
+
+        if (
+          a.status !== 'pending' &&
+          b.status === 'pending'
+        ) {
+          return 1
+        }
+
+        return (
+          new Date(
+            b.created_at,
+          ).getTime() -
+          new Date(
+            a.created_at,
+          ).getTime()
+        )
+      },
+    )
+
   const totalCount =
     totalResult.count ?? 0
 
@@ -305,10 +545,10 @@ export default async function AdminMarketPage() {
         activeCount,
       0,
     )
-  
-    const pendingReportsCount =
-  pendingReportsResult.count ?? 0
-  
+
+  const pendingReportsCount =
+    pendingReportsResult.count ?? 0
+
   return (
     <div className="min-h-svh bg-background">
       <main className="mx-auto flex max-w-6xl flex-col gap-10 px-6 pb-10 pt-20">
@@ -326,7 +566,7 @@ export default async function AdminMarketPage() {
             </h2>
 
             <p className="mt-2 text-xs text-muted-foreground">
-              查看星际酒馆市场当前的商单与交易发布情况。
+              查看星际酒馆市场当前的商单、交易发布与举报处理情况。
             </p>
           </div>
 
@@ -412,6 +652,259 @@ export default async function AdminMarketPage() {
         <section>
           <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
             <div>
+              <div className="flex items-center gap-3">
+                <h2 className="font-display text-sm tracking-[0.15em] text-foreground">
+                  举报处理
+                </h2>
+
+                {pendingReportsCount > 0 ? (
+                  <Badge
+                    variant="outline"
+                    className="border-red-500/30 text-red-500"
+                  >
+                    待处理 {pendingReportsCount}
+                  </Badge>
+                ) : null}
+              </div>
+
+              <p className="mt-2 text-xs text-muted-foreground">
+                最近 100 条市场举报，待处理举报优先显示。
+              </p>
+            </div>
+          </div>
+
+          <div className="corner-cut overflow-hidden border border-border bg-card">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>
+                      状态
+                    </TableHead>
+
+                    <TableHead>
+                      被举报交易
+                    </TableHead>
+
+                    <TableHead>
+                      举报原因
+                    </TableHead>
+
+                    <TableHead>
+                      举报人
+                    </TableHead>
+
+                    <TableHead>
+                      被举报卖家
+                    </TableHead>
+
+                    <TableHead>
+                      举报时间
+                    </TableHead>
+
+                    <TableHead className="text-right">
+                      操作
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+
+                <TableBody>
+                  {sortedReports.length ===
+                  0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="py-12 text-center text-sm text-muted-foreground"
+                      >
+                        当前没有市场举报
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    sortedReports.map(
+                      (
+                        report,
+                      ) => {
+                        const listing =
+                          reportListingMap.get(
+                            report.listing_id,
+                          )
+
+                        const reporter =
+                          profileMap.get(
+                            report.reporter_id,
+                          )
+
+                        const seller =
+                          profileMap.get(
+                            report.reported_user_id,
+                          )
+
+                        const reporterName =
+                          getProfileName(
+                            reporter,
+                          )
+
+                        const sellerName =
+                          getProfileName(
+                            seller,
+                          )
+
+                        const listingClosed =
+                          Boolean(
+                            listing?.closed_at ||
+                              listing?.deleted_at,
+                          )
+
+                        const sellerMarketBanned =
+                          Boolean(
+                            seller?.market_banned_at ||
+                              seller?.banned_at,
+                          )
+
+                        return (
+                          <TableRow
+                            key={
+                              report.id
+                            }
+                          >
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  getReportStatusClass(
+                                    report.status,
+                                  )
+                                }
+                              >
+                                {getReportStatusLabel(
+                                  report.status,
+                                )}
+                              </Badge>
+                            </TableCell>
+
+                            <TableCell className="min-w-56 max-w-80">
+                              {listing ? (
+                                <>
+                                  <Link
+                                    href={`/market/${listing.id}`}
+                                    target="_blank"
+                                    className="block truncate font-medium text-foreground transition-colors hover:text-primary"
+                                  >
+                                    {listing.title}
+                                  </Link>
+
+                                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[0.68rem] text-muted-foreground">
+                                    <span>
+                                      {getTypeLabel(
+                                        listing.listing_type,
+                                      )}
+                                    </span>
+
+                                    {listingClosed ? (
+                                      <span>
+                                        已关闭
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">
+                                  交易已不存在
+                                </span>
+                              )}
+                            </TableCell>
+
+                            <TableCell className="min-w-48 max-w-72">
+                              <div className="text-sm font-medium text-foreground">
+                                {getReportReasonLabel(
+                                  report.reason,
+                                )}
+                              </div>
+
+                              {report.details ? (
+                                <div className="mt-1 line-clamp-3 text-xs leading-5 text-muted-foreground">
+                                  {report.details}
+                                </div>
+                              ) : null}
+
+                              {report.resolution_note ? (
+                                <div className="mt-2 rounded-md bg-muted/60 px-2.5 py-2 text-[0.7rem] leading-5 text-muted-foreground">
+                                  处理备注：{report.resolution_note}
+                                </div>
+                              ) : null}
+                            </TableCell>
+
+                            <TableCell>
+                              <div className="max-w-36 truncate text-sm">
+                                {reporterName}
+                              </div>
+                            </TableCell>
+
+                            <TableCell>
+                              <div className="max-w-36 truncate text-sm font-medium">
+                                {sellerName}
+                              </div>
+
+                              {seller?.banned_at ? (
+                                <div className="mt-1 text-[0.68rem] text-red-500">
+                                  全站封禁
+                                </div>
+                              ) : seller?.market_banned_at ? (
+                                <div className="mt-1 text-[0.68rem] text-red-500">
+                                  市场封禁
+                                </div>
+                              ) : null}
+                            </TableCell>
+
+                            <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                              {formatDate(
+                                report.created_at,
+                              )}
+                            </TableCell>
+
+                            <TableCell className="min-w-92 text-right">
+                              {report.status ===
+                              'pending' ? (
+                                <MarketReportActions
+                                  reportId={
+                                    report.id
+                                  }
+                                  listingTitle={
+                                    listing?.title ??
+                                    '已删除交易'
+                                  }
+                                  sellerName={
+                                    sellerName
+                                  }
+                                  listingClosed={
+                                    listingClosed
+                                  }
+                                  sellerMarketBanned={
+                                    sellerMarketBanned
+                                  }
+                                />
+                              ) : (
+                                <span className="text-xs text-muted-foreground">
+                                  {report.handled_at
+                                    ? `处理于 ${formatDate(report.handled_at)}`
+                                    : '已完成'}
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      },
+                    )
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
+            <div>
               <h2 className="font-display text-sm tracking-[0.15em] text-foreground">
                 商单管理
               </h2>
@@ -483,13 +976,9 @@ export default async function AdminMarketPage() {
                           )
 
                         const sellerName =
-                          profile
-                            ?.star_citizen_handle ||
-                          profile
-                            ?.display_name ||
-                          profile
-                            ?.username ||
-                          '未知用户'
+                          getProfileName(
+                            profile,
+                          )
 
                         const isClosed =
                           Boolean(
@@ -519,31 +1008,22 @@ export default async function AdminMarketPage() {
 
                             <TableCell className="max-w-70">
                               <div className="truncate font-medium text-foreground">
-                                {
-                                  listing.title
-                                }
+                                {listing.title}
                               </div>
 
                               <div className="mt-1 text-[0.68rem] text-muted-foreground">
-                                {
-                                  listing.category
-                                }
+                                {listing.category}
                               </div>
                             </TableCell>
 
                             <TableCell>
                               <div className="max-w-40 truncate text-sm">
-                                {
-                                  sellerName
-                                }
+                                {sellerName}
                               </div>
                             </TableCell>
 
                             <TableCell className="tabular-nums">
-                              ×
-                              {
-                                listing.quantity
-                              }
+                              ×{listing.quantity}
                             </TableCell>
 
                             <TableCell className="whitespace-nowrap">
