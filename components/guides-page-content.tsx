@@ -307,11 +307,14 @@ export function GuidesPageContent({
                     </span>
                   )}
 
-                  {(guide.type === 'article' ||
-                    guide.type === 'video') && (
+                    {(guide.type === 'article' ||
+                      guide.type === 'video' ||
+                      guide.type === 'external') && (
                     <span className="absolute bottom-3 left-3 z-10 rounded-md border border-white/15 bg-black/70 px-2.5 py-1.5 font-display text-[0.58rem] tracking-[0.12em] text-white shadow-sm backdrop-blur-md">
-                      {guide.type === 'video'
-                        ? '视频攻略'
+                    {guide.type === 'video'
+                      ? '视频攻略'
+                      : guide.type === 'external'
+                        ? '外部资源'
                         : '图文攻略'}
                     </span>
                   )}
@@ -327,7 +330,6 @@ export function GuidesPageContent({
                     <span className="text-[0.6rem] tracking-[0.12em] text-muted-foreground/60">
                       {guide.type === 'article' && '文章'}
                       {guide.type === 'video' && '视频'}
-                      {guide.type === 'discord' && 'Discord'}
                       {guide.type === 'external' && '外部链接'}
                     </span>
                   </div>
