@@ -78,7 +78,6 @@ type GuideRow = {
   published: boolean
   featured: boolean
   sort_order: number
-  published_at: string | null
   seo_title: string | null
   seo_description: string | null
 }
@@ -142,7 +141,6 @@ async function getGuide(
       published,
       featured,
       sort_order,
-      published_at,
       seo_title,
       seo_description
     `)
@@ -362,10 +360,6 @@ export default async function EditGuidePage({
 
       sort_order:
         guide.sort_order,
-
-      published_at:
-        guide.published_at ??
-        '',
 
       seo_title:
         guide.seo_title ??

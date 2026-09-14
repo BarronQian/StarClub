@@ -8,9 +8,8 @@ import { ArchiveBreadcrumb } from '@/components/archive-breadcrumb'
 import { Reveal } from '@/components/reveal'
 import { PageCompanion } from '@/components/page-companion'
 
-import {
-  GUIDE_TAGS,
-  type GuideCategory,
+import type {
+  GuideCategory,
 } from '@/lib/guides'
 
 export type GuideListItem = {
@@ -47,6 +46,26 @@ const categories: GuideCategory[] = [
   '其他',
 ]
 
+function getTagsForCategory(
+  guides: GuideListItem[],
+  category: GuideCategory,
+) {
+  return Array.from(
+    new Set(
+      guides
+        .filter(
+          (guide) =>
+            guide.category === category,
+        )
+        .flatMap(
+          (guide) =>
+            guide.tags ?? [],
+        )
+        .filter(Boolean),
+    ),
+  )
+}
+
 type GuidesPageContentProps = {
   guides: GuideListItem[]
 }
@@ -74,9 +93,15 @@ export function GuidesPageContent({
 
       setActiveCategory(category)
 
+      const categoryTags =
+        getTagsForCategory(
+          guides,
+          category,
+        )
+
       if (
         tagParam &&
-        GUIDE_TAGS[category]?.includes(tagParam)
+        categoryTags.includes(tagParam)
       ) {
         setActiveTag(tagParam)
       } else {
@@ -86,12 +111,15 @@ export function GuidesPageContent({
       setActiveCategory('全部攻略')
       setActiveTag('全部')
     }
-  }, [searchParams])
+  }, [searchParams, guides])
 
   const activeTags =
     activeCategory === '全部攻略'
       ? []
-      : GUIDE_TAGS[activeCategory]
+      : getTagsForCategory(
+          guides,
+          activeCategory,
+        )
 
   const filteredGuides = guides.filter((guide) => {
     const categoryMatch =

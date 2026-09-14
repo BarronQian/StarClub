@@ -2,7 +2,6 @@
 
 import {
   useState,
-  type FormEvent,
 } from 'react'
 
 import Link from 'next/link'
@@ -37,10 +36,7 @@ export type AdminGuideFormData = {
   video_url: string
   external_url: string
   original: boolean
-  published: boolean
   featured: boolean
-  sort_order: number
-  published_at: string
   seo_title: string
   seo_description: string
 }
@@ -91,6 +87,11 @@ export function AdminGuideForm({
       initialData?.tags ??
         [],
     )
+  
+  const [
+    customTag,
+    setCustomTag,
+  ] = useState('')
 
   const [type, setType] =
     useState<GuideType>(
@@ -151,27 +152,11 @@ export function AdminGuideForm({
   )
 
   const [
-    published,
-    setPublished,
-  ] = useState(
-    initialData?.published ??
-      false,
-  )
-
-  const [
     featured,
     setFeatured,
   ] = useState(
     initialData?.featured ??
       false,
-  )
-
-  const [
-    sortOrder,
-    setSortOrder,
-  ] = useState(
-    initialData?.sort_order ??
-      0,
   )
 
   const [
@@ -209,7 +194,14 @@ export function AdminGuideForm({
 
   const availableTags =
     GUIDE_TAGS[category] ??
-    []
+      []
+
+  const allPresetTags =
+    new Set(
+      Object.values(
+        GUIDE_TAGS,
+      ).flat(),
+    )
 
   function toggleTag(
     tag: string,
@@ -227,18 +219,53 @@ export function AdminGuideForm({
     )
   }
 
+  function removeTag(
+    tag: string,
+  ) {
+    setTags((current) =>
+      current.filter(
+        (item) =>
+          item !== tag,
+      ),
+    )
+  }
+
+  function addCustomTag() {
+    const value =
+      customTag.trim()
+
+    if (!value) {
+      return
+    }
+
+    setTags((current) =>
+      current.includes(value)
+        ? current
+        : [
+            ...current,
+            value,
+          ],
+    )
+
+    setCustomTag('')
+  }
+
   function handleCategoryChange(
     value: GuideCategory,
   ) {
     setCategory(value)
 
+    const nextPresetTags =
+      GUIDE_TAGS[value] ??
+      []
+
     setTags((current) =>
       current.filter(
         (tag) =>
-          (
-            GUIDE_TAGS[value] ??
-            []
-          ).includes(tag),
+          nextPresetTags.includes(
+            tag,
+          ) ||
+          !allPresetTags.has(tag),
       ),
     )
   }
@@ -309,9 +336,7 @@ export function AdminGuideForm({
   }
 }
    
-  async function handleSubmit(
-    nextPublished: boolean,
-  ) {
+async function handleSubmit() {
 
     setError(null)
     setSuccess(null)
@@ -417,13 +442,9 @@ export function AdminGuideForm({
 
                 original,
 
-                published:
-                  nextPublished,
+                published: true,
 
                 featured,
-
-                sort_order:
-                  sortOrder,
 
                 seo_title:
                   seoTitle.trim(),
@@ -447,9 +468,6 @@ export function AdminGuideForm({
             '保存攻略失败',
         )
       }
-      setPublished(
-        nextPublished,
-      )
 
       if (
         mode ===
@@ -605,35 +623,97 @@ export function AdminGuideForm({
               标签
             </label>
 
-            <div className="mt-3 flex flex-wrap gap-2">
-              {availableTags.map(
-                (tag) => {
-                  const active =
-                    tags.includes(
-                      tag,
-                    )
+            <p className="mt-2 text-xs leading-6 text-muted-foreground">
+              可选择当前分类的常用标签，也可以自行添加新的标签。
+              新标签发布后会自动成为攻略页面的二级筛选项。
+            </p>
 
-                  return (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() =>
-                        toggleTag(
-                          tag,
-                        )
-                      }
-                      className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                        active
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
-                      }`}
-                    >
-                      {tag}
-                    </button>
+            {availableTags.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {availableTags.map(
+                  (tag) => {
+                    const active =
+                      tags.includes(tag)
+
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() =>
+                          toggleTag(tag)
+                        }
+                        className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                          active
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    )
+                  },
+                )}
+              </div>
+            )}
+
+            <div className="mt-4 flex gap-2">
+              <input
+                value={customTag}
+                onChange={(e) =>
+                  setCustomTag(
+                    e.target.value,
                   )
-                },
-              )}
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addCustomTag()
+                  }
+                }}
+                className="min-w-0 flex-1 rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary"
+                placeholder="例如：奥里森救援"
+              />
+
+              <button
+                type="button"
+                onClick={addCustomTag}
+                className="shrink-0 rounded-xl border border-border px-5 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+              >
+                添加
+              </button>
             </div>
+
+            {tags.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-2 text-xs text-muted-foreground">
+                  当前已选标签
+                </p>
+
+                <div className="flex flex-wrap gap-2">
+                  {tags.map(
+                    (tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() =>
+                          removeTag(tag)
+                        }
+                        className="group inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        title="点击移除标签"
+                      >
+                        <span>
+                          {tag}
+                        </span>
+
+                        <span className="text-muted-foreground transition-colors group-hover:text-destructive">
+                          ×
+                        </span>
+                      </button>
+                    ),
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -880,43 +960,6 @@ export function AdminGuideForm({
 
             推荐攻略
           </label>
-          
-          <div className="rounded-xl border border-border bg-background px-4 py-3 text-sm">
-            <span className="text-muted-foreground">
-              当前状态：
-            </span>
-
-            <span
-              className={`ml-2 font-medium ${
-                published
-                  ? 'text-emerald-600'
-                  : 'text-muted-foreground'
-              }`}
-            >
-              {published
-                ? '已发布'
-                : '草稿'}
-            </span>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">
-              排序
-            </label>
-
-            <input
-              type="number"
-              value={sortOrder}
-              onChange={(e) =>
-                setSortOrder(
-                  Number(
-                    e.target.value,
-                  ),
-                )
-              }
-              className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
-            />
-          </div>
 
         </div>
       </section>
@@ -988,61 +1031,24 @@ export function AdminGuideForm({
           取消
         </Link>
 
-          {published ? (
-            <button
-              type="button"
-              disabled={
-                isSaving ||
-                isUploadingImage
-              }
-              onClick={() =>
-                handleSubmit(true)
-              }
-              className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isUploadingImage
-                ? '正在上传图片...'
-                : isSaving
-                  ? '正在保存...'
-                  : '保存修改'}
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                disabled={
-                  isSaving ||
-                  isUploadingImage
-                }
-                onClick={() =>
-                  handleSubmit(false)
-                }
-                className="rounded-full border border-border px-6 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSaving
-                  ? '正在保存...'
-                  : '保存为草稿'}
-              </button>
+        <button
+          type="button"
+          disabled={
+            isSaving ||
+            isUploadingImage
+          }
+          onClick={handleSubmit}
+          className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isUploadingImage
+            ? '正在上传图片...'
+            : isSaving
+              ? '正在保存...'
+              : mode === 'create'
+                ? '发布攻略'
+                : '保存修改'}
+        </button>
 
-              <button
-                type="button"
-                disabled={
-                  isSaving ||
-                  isUploadingImage
-                }
-                onClick={() =>
-                  handleSubmit(true)
-                }
-                className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isUploadingImage
-                  ? '正在上传图片...'
-                  : isSaving
-                    ? '正在发布...'
-                    : '发布'}
-              </button>
-            </>
-          )}
       </div>
     </form>
   )

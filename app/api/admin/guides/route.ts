@@ -193,27 +193,13 @@ export async function POST(
   const original =
     body.original === true
 
-  const published =
-    body.published === true
+  const published = true
 
   const featured =
     body.featured === true
 
-  const sortOrder =
-    Number.isFinite(
-      Number(
-        body.sort_order,
-      ),
-    )
-      ? Number(
-          body.sort_order,
-        )
-      : 0
-
   const publishedAt =
-    published
-      ? new Date().toISOString()
-      : null
+    new Date().toISOString()
 
   if (!title) {
     return NextResponse.json(
@@ -345,6 +331,44 @@ export async function POST(
       },
     )
   }
+
+  const {
+    data: firstGuide,
+    error: sortError,
+  } = await supabase
+    .from('guides')
+    .select('sort_order')
+    .order(
+      'sort_order',
+      {
+        ascending: true,
+      },
+    )
+    .limit(1)
+    .maybeSingle()
+
+  if (sortError) {
+    console.error(
+      '[ADMIN GUIDES] Failed to get guide order:',
+      sortError,
+    )
+
+    return NextResponse.json(
+      {
+        error:
+          '读取攻略排序时发生错误',
+      },
+      {
+        status: 500,
+      },
+    )
+  }
+
+  const sortOrder =
+    typeof firstGuide?.sort_order ===
+    'number'
+      ? firstGuide.sort_order - 10
+      : 0
 
   const {
     data,

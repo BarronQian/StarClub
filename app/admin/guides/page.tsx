@@ -5,6 +5,10 @@ import { createClient } from '@supabase/supabase-js'
 import { getAdminSession } from '@/lib/admin-auth'
 import { AdminHeader } from '@/components/admin/admin-header'
 
+import {
+  AdminGuideOrderManager,
+} from '@/components/admin-guide-order-manager'
+
 function getSupabase() {
   const supabaseUrl =
     process.env.SUPABASE_URL
@@ -182,10 +186,6 @@ export default async function AdminGuidesPage() {
                   </th>
 
                   <th className="px-5 py-4 font-medium">
-                    排序
-                  </th>
-
-                  <th className="px-5 py-4 font-medium">
                     更新
                   </th>
 
@@ -254,10 +254,6 @@ export default async function AdminGuidesPage() {
                         )}
                       </td>
 
-                      <td className="px-5 py-4 text-sm text-muted-foreground">
-                        {guide.sort_order}
-                      </td>
-
                       <td className="px-5 py-4 text-xs text-muted-foreground">
                         {formatDate(
                           guide.updated_at
@@ -290,7 +286,7 @@ export default async function AdminGuidesPage() {
                   0 && (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={7}
                       className="px-5 py-16 text-center text-sm text-muted-foreground"
                     >
                       暂无攻略
@@ -305,6 +301,11 @@ export default async function AdminGuidesPage() {
         <div className="mt-4 text-xs text-muted-foreground">
           共 {guides.length} 篇攻略
         </div>
+
+        <AdminGuideOrderManager
+            guides={guides}
+          />
+
       </div>
     </main>
   </div>

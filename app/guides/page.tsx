@@ -135,6 +135,12 @@ async function getGuides() {
     `)
     .eq('published', true)
     .order(
+      'featured',
+      {
+        ascending: false,
+      }
+    )
+    .order(
       'sort_order',
       {
         ascending: true,

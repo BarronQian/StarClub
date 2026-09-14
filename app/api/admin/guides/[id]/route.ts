@@ -202,22 +202,8 @@ export async function PATCH(
   const original =
     body.original === true
 
-  const published =
-    body.published === true
-
   const featured =
     body.featured === true
-
-  const sortOrder =
-    Number.isFinite(
-      Number(
-        body.sort_order,
-      ),
-    )
-      ? Number(
-          body.sort_order,
-        )
-      : 0
 
   if (!title) {
     return NextResponse.json(
@@ -315,7 +301,7 @@ export async function PATCH(
   } = await supabase
     .from('guides')
     .select(
-      'id, published, published_at',
+      'id, published_at',
     )
     .eq('id', id)
     .maybeSingle()
@@ -336,12 +322,8 @@ export async function PATCH(
   }
 
   const publishedAt =
-    published
-      ? currentGuide.published &&
-        currentGuide.published_at
-        ? currentGuide.published_at
-        : new Date().toISOString()
-      : null
+    currentGuide.published_at ??
+    new Date().toISOString()
 
   const {
     data: duplicateSlug,
@@ -349,7 +331,7 @@ export async function PATCH(
       duplicateSlugError,
   } = await supabase
     .from('guides')
-    .select('id, published_at')
+    .select('id')
     .eq('slug', slug)
     .neq('id', id)
     .maybeSingle()
@@ -407,10 +389,8 @@ export async function PATCH(
       external_url:
         externalUrl || null,
       original,
-      published,
+      published: true,
       featured,
-      sort_order:
-        sortOrder,
       published_at:
         publishedAt,
       seo_title:
