@@ -3162,6 +3162,9 @@ const pageDescription =
                           currentUserId={
                             currentUserId
                           }
+                            isAdmin={
+                              isAdmin
+                            }
                           onDelete={(
                             targetPost,
                           ) => {
@@ -3189,6 +3192,41 @@ const pageDescription =
                           ) => {
                             setCommentPost(
                               targetPost,
+                            )
+                          }}
+                            onAdminDelete={(
+                            targetPost,
+                          ) => {
+                            console.log(
+                              'admin delete',
+                              targetPost.id,
+                            )
+                          }}
+
+                          onMuteUser={(
+                            targetPost,
+                          ) => {
+                            console.log(
+                              'mute user',
+                              targetPost.author_id,
+                            )
+                          }}
+
+                          onCommunityBan={(
+                            targetPost,
+                          ) => {
+                            console.log(
+                              'community ban',
+                              targetPost.author_id,
+                            )
+                          }}
+
+                          onGlobalBan={(
+                            targetPost,
+                          ) => {
+                            console.log(
+                              'global ban',
+                              targetPost.author_id,
                             )
                           }}
                         />
