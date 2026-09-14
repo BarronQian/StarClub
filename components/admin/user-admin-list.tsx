@@ -612,7 +612,7 @@ export function UserAdminList({
 
       <div className="overflow-hidden rounded-2xl border bg-card">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-350 text-sm">
+          <table className="w-full min-w-262.5 text-sm">
             <thead className="border-b bg-muted/40">
               <tr>
                 <th className="px-5 py-4 text-left font-medium">
@@ -635,7 +635,7 @@ export function UserAdminList({
                   注册时间
                 </th>
 
-                <th className="px-5 py-4 text-right font-medium">
+                <th className="w-60 px-5 py-4 text-right font-medium">
                   操作
                 </th>
               </tr>
@@ -917,7 +917,7 @@ export function UserAdminList({
                           )}
                         </td>
 
-                        <td className="px-5 py-5">
+                        <td className="w-60 px-5 py-5">
                           {protectedFromModeration ? (
                             <div className="flex justify-end">
                               <span className="rounded-lg border px-3 py-2 text-xs text-muted-foreground">
@@ -927,11 +927,12 @@ export function UserAdminList({
                               </span>
                             </div>
                           ) : (
-                            <div className="flex max-w-132 flex-wrap justify-end gap-2">
+                            <div className="ml-auto grid w-52.5 grid-cols-2 gap-2">
                               {muted ? (
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  className="w-full whitespace-nowrap"
                                   disabled={
                                     processing
                                   }
@@ -949,6 +950,7 @@ export function UserAdminList({
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  className="w-full whitespace-nowrap"
                                   disabled={
                                     processing ||
                                     globalBanned ||
@@ -979,6 +981,7 @@ export function UserAdminList({
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  className="w-full whitespace-nowrap"
                                   disabled={
                                     processing
                                   }
@@ -995,6 +998,7 @@ export function UserAdminList({
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  className="w-full whitespace-nowrap"
                                   disabled={
                                     processing
                                   }
@@ -1013,6 +1017,7 @@ export function UserAdminList({
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  className="w-full whitespace-nowrap"
                                   disabled={
                                     processing
                                   }
@@ -1029,6 +1034,7 @@ export function UserAdminList({
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  className="w-full whitespace-nowrap"
                                   disabled={
                                     processing
                                   }
@@ -1047,6 +1053,7 @@ export function UserAdminList({
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  className="w-full whitespace-nowrap"
                                   disabled={
                                     processing
                                   }
@@ -1060,21 +1067,22 @@ export function UserAdminList({
                                   解除全站封禁
                                 </Button>
                               ) : (
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  disabled={
-                                    processing
-                                  }
-                                  onClick={() =>
-                                    openBanEditor(
-                                      user.id,
-                                      'global',
-                                    )
-                                  }
-                                >
-                                  全站封禁
-                                </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="w-full whitespace-nowrap"
+                                    disabled={
+                                      processing
+                                    }
+                                    onClick={() =>
+                                      openBanEditor(
+                                        user.id,
+                                        'global',
+                                      )
+                                    }
+                                  >
+                                    全站封禁
+                                  </Button>
                               )}
                             </div>
                           )}
