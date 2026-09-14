@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 
 import {
@@ -40,6 +41,50 @@ type GuideSectionRow = {
   tags: string[] | null
   published: boolean
   sort_order: number
+}
+
+async function getArmorCodexGuide() {
+  const supabase = getSupabase()
+
+  if (!supabase) {
+    return null
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from('guides')
+    .select(`
+      title,
+      description,
+      image,
+      seo_title,
+      seo_description
+    `)
+    .eq(
+      'slug',
+      'armor-codex'
+    )
+    .eq(
+      'published',
+      true
+    )
+    .single()
+
+  if (
+    error ||
+    !data
+  ) {
+    console.error(
+      '[ARMOR CODEX] Failed to load guide metadata:',
+      error
+    )
+
+    return null
+  }
+
+  return data
 }
 
 async function getArmorSeries() {
@@ -126,6 +171,59 @@ async function getArmorSeries() {
         (row.tags ?? []) as ArmorSeriesItem['sources'],
     })
   )
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const guide =
+    await getArmorCodexGuide()
+
+  const title =
+    guide?.seo_title?.trim() ||
+    guide?.title ||
+    '星际公民护甲图鉴'
+
+  const description =
+    guide?.seo_description?.trim() ||
+    guide?.description ||
+    '整理《星际公民》稀有护甲、获取方式与系列资料的中文护甲图鉴。'
+
+  const image =
+    guide?.image ||
+    undefined
+
+  return {
+    title,
+    description,
+
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+
+      images:
+        image
+          ? [
+              {
+                url: image,
+                alt: title,
+              },
+            ]
+          : undefined,
+    },
+
+    twitter: {
+      card:
+        'summary_large_image',
+
+      title,
+      description,
+
+      images:
+        image
+          ? [image]
+          : undefined,
+    },
+  }
 }
 
 export default async function ArmorCodexPage() {
