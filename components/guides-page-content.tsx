@@ -20,7 +20,10 @@ export type GuideListItem = {
   description: string
   category: GuideCategory
   tags?: string[]
-  type: 'article' | 'video' | 'discord' | 'external'
+  type:
+    | 'article'
+    | 'video'
+    | 'external'
   image?: string
   author?: string
   creator?: string
@@ -273,22 +276,12 @@ export function GuidesPageContent({
 
           {filteredGuides.map((guide) => {
             const href =
-              guide.type === 'external' ||
-              guide.type === 'discord'
-                ? guide.videoUrl || '#'
-                : `/guides/${guide.slug}`
+              `/guides/${guide.slug}`
 
             return (
               <a
                 key={guide.id}
                 href={href}
-                {...(guide.type === 'external' ||
-                guide.type === 'discord'
-                  ? {
-                      target: '_blank',
-                      rel: 'noopener noreferrer',
-                    }
-                  : {})}
                 className="group grid gap-8 py-8 md:grid-cols-[400px_1fr_auto] md:items-center"
               >
               {guide.image && (
