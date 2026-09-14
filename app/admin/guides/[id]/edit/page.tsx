@@ -498,6 +498,21 @@ return (
             />
           </div>
         )}
+
+        {guide.slug ===
+          'armor-codex' && (
+          <div className="mt-8">
+            <AdminGuideSectionsEditor
+              guideId={
+                guide.id
+              }
+              initialSections={
+                initialSections
+              }
+            />
+          </div>
+        )}
+
       </div>
     </main>
   </div>
