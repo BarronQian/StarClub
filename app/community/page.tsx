@@ -262,8 +262,6 @@ export default function CommunityPage() {
     setModerationAction,
   ] = useState<
     'mute' |
-    'community-ban' |
-    'global-ban' |
     null
   >(null)
 
@@ -3390,15 +3388,6 @@ const pageDescription =
                                 'mute',
                               )
                             }}
-
-                          onCommunityBan={(
-                            targetPost,
-                          ) => {
-                            console.log(
-                              'community ban',
-                              targetPost.author_id,
-                            )
-                          }}
 
                           onGlobalBan={(
                             targetPost,
