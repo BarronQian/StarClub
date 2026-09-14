@@ -296,13 +296,76 @@ export async function POST(
       .select(`
         id,
         rsi_verified,
-        star_citizen_handle
+        star_citizen_handle,
+        muted_until,
+        community_banned_at,
+        banned_at
       `)
       .eq('id', user.id)
       .maybeSingle()
 
     if (authorError) {
       throw authorError
+    }
+
+    if (!authorProfile) {
+  return NextResponse.json(
+    {
+      error:
+        '找不到个人资料。',
+    },
+    {
+      status: 404,
+    },
+  )
+}
+
+// 全站封禁 / 社区封禁不能发表留言
+if (
+  authorProfile.banned_at ||
+  authorProfile.community_banned_at
+) {
+  return NextResponse.json(
+    {
+      error:
+        authorProfile.banned_at
+          ? '该账号已被全站封禁，无法留言。'
+          : '该账号已被社区封禁，无法留言。',
+    },
+    {
+      status: 403,
+    },
+  )
+}
+
+    // 社区禁言期间不能发表留言
+    if (
+      authorProfile.muted_until
+    ) {
+      const mutedUntil =
+        new Date(
+          authorProfile.muted_until,
+        )
+
+      if (
+        !Number.isNaN(
+          mutedUntil.getTime(),
+        ) &&
+        mutedUntil.getTime() >
+          Date.now()
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              '该账号正在禁言中，暂时无法留言。',
+            muted_until:
+              authorProfile.muted_until,
+          },
+          {
+            status: 403,
+          },
+        )
+      }
     }
 
     if (
