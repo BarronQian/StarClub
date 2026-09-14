@@ -141,7 +141,6 @@ export type GuideCategory =
 export type GuideType =
   | 'article'
   | 'video'
-  | 'discord'
   | 'external'
 
 export type Guide = {
