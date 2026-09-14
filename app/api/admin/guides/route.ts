@@ -155,6 +155,11 @@ export async function POST(
     'string'
       ? body.video_url.trim()
       : ''
+  const externalUrl =
+  typeof body.external_url ===
+  'string'
+    ? body.external_url.trim()
+    : ''
 
   const seoTitle =
     typeof body.seo_title ===
@@ -255,7 +260,6 @@ export async function POST(
   const allowedTypes = [
     'article',
     'video',
-    'discord',
     'external',
   ]
 
@@ -288,6 +292,21 @@ export async function POST(
       },
     )
   }
+
+  if (
+  type === 'external' &&
+  !externalUrl
+) {
+  return NextResponse.json(
+    {
+      error:
+        '外部攻略需要填写外部链接',
+    },
+    {
+      status: 400,
+    },
+  )
+}
 
   const supabase =
     getAdminSupabase()
@@ -353,6 +372,9 @@ export async function POST(
         creator || null,
       video_url:
         videoUrl ||
+        null,
+      external_url:
+        externalUrl ||
         null,
       original,
       published,
