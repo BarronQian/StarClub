@@ -104,6 +104,7 @@ export async function POST(
     listingId?: unknown
     reason?: unknown
     details?: unknown
+    evidenceUrl?: unknown
   }
 
   try {
@@ -137,6 +138,12 @@ export async function POST(
     typeof body.details ===
     'string'
       ? body.details.trim()
+      : ''
+
+  const evidenceUrl =
+    typeof body.evidenceUrl ===
+    'string'
+      ? body.evidenceUrl.trim()
       : ''
 
   if (!listingId) {
@@ -181,6 +188,47 @@ export async function POST(
         status: 400,
       },
     )
+  }
+
+  if (
+    evidenceUrl.length >
+    2000
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          '证据图片地址无效',
+      },
+      {
+        status: 400,
+      },
+    )
+  }
+
+  if (evidenceUrl) {
+    try {
+      const url =
+        new URL(
+          evidenceUrl,
+        )
+
+      if (
+        url.protocol !==
+        'https:'
+      ) {
+        throw new Error()
+      }
+    } catch {
+      return NextResponse.json(
+        {
+          error:
+            '证据图片地址无效',
+        },
+        {
+          status: 400,
+        },
+      )
+    }
   }
 
   const {
@@ -349,12 +397,16 @@ export async function POST(
         details:
           details || null,
 
+        evidence_url:
+          evidenceUrl || null,
+
         status:
           'pending',
       })
       .select(`
         id,
         status,
+        evidence_url,
         created_at
       `)
       .single()
