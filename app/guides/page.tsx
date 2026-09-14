@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { Suspense } from 'react'
 
 import {
   GuidesPageContent,
@@ -163,8 +164,16 @@ export default async function GuidesPage() {
     await getGuides()
 
   return (
-    <GuidesPageContent
-      guides={guides}
-    />
+    <Suspense
+      fallback={
+        <div className="site-container py-24 text-sm text-muted-foreground">
+          正在加载攻略...
+        </div>
+      }
+    >
+      <GuidesPageContent
+        guides={guides}
+      />
+    </Suspense>
   )
 }
