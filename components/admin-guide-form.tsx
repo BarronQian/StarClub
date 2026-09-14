@@ -50,31 +50,6 @@ type AdminGuideFormProps = {
   initialData?: Partial<AdminGuideFormData>
 }
 
-  const date =
-    new Date(value)
-
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return ''
-  }
-
-  const offset =
-    date.getTimezoneOffset()
-
-  const localDate =
-    new Date(
-      date.getTime() -
-        offset * 60 * 1000,
-    )
-
-  return localDate
-    .toISOString()
-    .slice(0, 16)
-}
-
 export function AdminGuideForm({
   mode,
   initialData,
@@ -911,6 +886,24 @@ export function AdminGuideForm({
 
             推荐攻略
           </label>
+          
+          <div className="rounded-xl border border-border bg-background px-4 py-3 text-sm">
+            <span className="text-muted-foreground">
+              当前状态：
+            </span>
+
+            <span
+              className={`ml-2 font-medium ${
+                published
+                  ? 'text-emerald-600'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              {published
+                ? '已发布'
+                : '草稿'}
+            </span>
+          </div>
 
           <div>
             <label className="text-sm font-medium">
