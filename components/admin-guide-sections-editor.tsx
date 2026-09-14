@@ -53,6 +53,11 @@ export function AdminGuideSectionsEditor({
   const [error, setError] =
     useState<string | null>(null)
 
+  const [
+  uploadingSectionIndex,
+  setUploadingSectionIndex,
+] = useState<number | null>(null)
+
   const sortedSections =
     useMemo(
       () =>
@@ -274,6 +279,77 @@ export function AdminGuideSectionsEditor({
       },
     )
   }
+
+  async function uploadSectionImage(
+  file: File,
+  sectionIndex: number,
+) {
+  setError(null)
+  setUploadingSectionIndex(
+    sectionIndex,
+  )
+
+  try {
+    const formData =
+      new FormData()
+
+    formData.append(
+      'file',
+      file,
+    )
+
+    const response =
+      await fetch(
+        '/api/admin/guides/upload',
+        {
+          method: 'POST',
+          body: formData,
+        },
+      )
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}))
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ??
+          '上传图片失败',
+      )
+    }
+
+    if (
+      typeof data.url !==
+      'string'
+    ) {
+      throw new Error(
+        '上传成功，但没有返回图片地址',
+      )
+    }
+
+    updateSection(
+      sectionIndex,
+      'image',
+      data.url,
+    )
+  } catch (err) {
+    console.error(
+      '[ADMIN GUIDE SECTION IMAGE] Upload failed:',
+      err,
+    )
+
+    setError(
+      err instanceof Error
+        ? err.message
+        : '上传图片失败',
+    )
+  } finally {
+    setUploadingSectionIndex(
+      null,
+    )
+  }
+}
 
   async function saveSections() {
     setIsSaving(true)
@@ -693,41 +769,91 @@ export function AdminGuideSectionsEditor({
                   />
                 </div>
 
-                <div className="mt-5">
-                  <label className="text-sm font-medium">
-                    封面图片
-                  </label>
+                  <div className="mt-5">
+                    <label className="text-sm font-medium">
+                      封面图片
+                    </label>
 
-                  <input
-                    value={
-                      section.image
-                    }
-                    onChange={(e) =>
-                      updateSection(
-                        index,
-                        'image',
-                        e.target
-                          .value,
-                      )
-                    }
-                    className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
-                    placeholder="/images/... 或 Supabase 图片 URL"
-                  />
+                    <input
+                      value={
+                        section.image
+                      }
+                      onChange={(e) =>
+                        updateSection(
+                          index,
+                          'image',
+                          e.target
+                            .value,
+                        )
+                      }
+                      className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+                      placeholder="/images/... 或 Supabase 图片 URL"
+                    />
 
-                  {section.image && (
-                    <div className="mt-3 overflow-hidden rounded-xl border border-border bg-muted">
-                      <img
-                        src={
-                          section.image
-                        }
-                        alt={
-                          section.title
-                        }
-                        className="aspect-video w-full object-cover"
-                      />
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-border px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground">
+                        {uploadingSectionIndex ===
+                        index
+                          ? '正在上传...'
+                          : '选择并上传图片'}
+
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/gif"
+                          disabled={
+                            uploadingSectionIndex !==
+                            null
+                          }
+                          onChange={(e) => {
+                            const file =
+                              e.target.files?.[0]
+
+                            if (file) {
+                              uploadSectionImage(
+                                file,
+                                index,
+                              )
+                            }
+
+                            e.target.value =
+                              ''
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {section.image && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateSection(
+                              index,
+                              'image',
+                              '',
+                            )
+                          }
+                          className="rounded-full border border-border px-4 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          清除图片
+                        </button>
+                      )}
                     </div>
-                  )}
-                </div>
+
+                    {section.image && (
+                      <div className="mt-3 overflow-hidden rounded-xl border border-border bg-muted">
+                        <img
+                          src={
+                            section.image
+                          }
+                          alt={
+                            section.title ||
+                            '系列封面预览'
+                          }
+                          className="aspect-video w-full object-cover"
+                        />
+                      </div>
+                    )}
+                  </div>
 
                 <div className="mt-5">
                   <div className="flex items-center justify-between gap-3">
