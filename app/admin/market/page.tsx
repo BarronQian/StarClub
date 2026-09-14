@@ -7,7 +7,9 @@ import { createAdminClient } from '@/lib/supabase-admin'
 
 import { AdminHeader } from '@/components/admin/admin-header'
 import { MarketForceCloseButton } from '@/components/admin/market-force-close-button'
+import { MarketDeleteButton } from '@/components/admin/market-delete-button'
 import { MarketReportActions } from '@/components/admin/market-report-actions'
+import { MarketReportEvidence } from '@/components/admin/market-report-evidence'
 
 import { Badge } from '@/components/ui/badge'
 
@@ -70,6 +72,7 @@ type MarketReportRow = {
   reported_user_id: string
   reason: string
   details: string | null
+  evidence_url: string | null
   status: MarketReportStatus
   resolution_note: string | null
   handled_at: string | null
@@ -247,6 +250,7 @@ export default async function AdminMarketPage() {
           reported_user_id,
           reason,
           details,
+          evidence_url,
           status,
           resolution_note,
           handled_at,
@@ -702,6 +706,10 @@ export default async function AdminMarketPage() {
                       举报时间
                     </TableHead>
 
+                    <TableHead>
+                      举报截图
+                    </TableHead>
+
                     <TableHead className="text-right">
                       操作
                     </TableHead>
@@ -713,7 +721,7 @@ export default async function AdminMarketPage() {
                   0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={7}
+                        colSpan={8}
                         className="py-12 text-center text-sm text-muted-foreground"
                       >
                         当前没有市场举报
@@ -860,6 +868,14 @@ export default async function AdminMarketPage() {
                               {formatDate(
                                 report.created_at,
                               )}
+                            </TableCell>
+                            
+                            <TableCell className="whitespace-nowrap">
+                              <MarketReportEvidence
+                                url={
+                                  report.evidence_url
+                                }
+                              />
                             </TableCell>
 
                             <TableCell className="min-w-92 text-right">
@@ -1080,6 +1096,15 @@ export default async function AdminMarketPage() {
                                     }
                                   />
                                 ) : null}
+
+                                <MarketDeleteButton
+                                  listingId={
+                                    listing.id
+                                  }
+                                  title={
+                                    listing.title
+                                  }
+                                />
                               </div>
                             </TableCell>
                           </TableRow>

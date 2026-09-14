@@ -29,8 +29,8 @@ import {
 } from '@/components/community-comment-dialog'
 
 import {
-  CommunityPostMenu,
-} from '@/components/community-post-menu'
+  CommunityPostCard,
+} from '@/components/community/community-post-card'
 
 import EmojiPicker, {
   EmojiClickData,
@@ -246,6 +246,36 @@ export default function CommunityPage() {
   >(null)
 
   const [
+  adminDeletingPost,
+  setAdminDeletingPost,
+] = useState(false)
+
+  const [
+    moderationTargetPost,
+    setModerationTargetPost,
+  ] = useState<
+    CommunityPost | null
+  >(null)
+
+  const [
+    moderationAction,
+    setModerationAction,
+  ] = useState<
+    'mute' |
+    null
+  >(null)
+
+  const [
+    moderationReason,
+    setModerationReason,
+  ] = useState('')
+
+  const [
+    moderationSubmitting,
+    setModerationSubmitting,
+  ] = useState(false)
+
+  const [
     deletingPostId,
     setDeletingPostId,
   ] = useState<
@@ -331,6 +361,16 @@ const emojiPickerRef =
   ] = useState<
     string | null
   >(null)
+
+  const [
+    isAdmin,
+    setIsAdmin,
+  ] = useState(false)
+
+  const [
+    isOwner,
+    setIsOwner,
+  ] = useState(false)
 
   const [
     currentAvatar,
@@ -1506,43 +1546,46 @@ const [
       [],
     )
 
-  useEffect(() => {
-    const supabase =
-      getSupabaseBrowser()
+useEffect(() => {
+  const supabase =
+    getSupabaseBrowser()
 
-    const applySession =
-      async (
-        session: any,
-      ) => {
-        const userId =
-          session?.user?.id ??
-          null
+  const applySession =
+    async (
+      session: any,
+    ) => {
+      const userId =
+        session?.user?.id ??
+        null
 
-        if (!userId) {
-          setLoggedIn(
-            false,
-          )
-
-          setCurrentUserId(
-            null,
-          )
-
-          setCurrentAvatar(
-            null,
-          )
-
-          return
-        }
-
-        setLoggedIn(true)
+      if (!userId) {
+        setLoggedIn(false)
 
         setCurrentUserId(
-          userId,
+          null,
         )
 
-        const {
-          data: profile,
-        } = await supabase
+        setCurrentAvatar(
+          null,
+        )
+
+        setIsAdmin(false)
+        setIsOwner(false)
+
+        return
+      }
+
+      setLoggedIn(true)
+
+      setCurrentUserId(
+        userId,
+      )
+
+      const [
+        profileResult,
+        adminStatusResult,
+      ] = await Promise.all([
+        supabase
           .from(
             'profiles',
           )
@@ -1553,51 +1596,90 @@ const [
             'id',
             userId,
           )
-          .maybeSingle()
+          .maybeSingle(),
 
-        setCurrentAvatar(
-          profile
-            ?.avatar_url ??
-            null,
-        )
-      }
+        session?.access_token
+          ? fetch(
+              '/api/community/admin-status',
+              {
+                cache:
+                  'no-store',
 
-    const initialize =
-      async () => {
-        const {
-          data: {
-            session,
-          },
-        } =
-          await supabase.auth.getSession()
+                headers: {
+                  Authorization:
+                    `Bearer ${session.access_token}`,
+                },
+              },
+            )
+          : Promise.resolve(
+              null,
+            ),
+      ])
 
-        await applySession(
-          session,
-        )
-      }
-
-    void initialize()
-
-    const {
-      data: {
-        subscription,
-      },
-    } =
-      supabase.auth.onAuthStateChange(
-        (
-          _event,
-          session,
-        ) => {
-          void applySession(
-            session,
-          )
-        },
+      setCurrentAvatar(
+        profileResult.data
+          ?.avatar_url ??
+          null,
       )
 
-    return () => {
-      subscription.unsubscribe()
+      if (
+        adminStatusResult &&
+        adminStatusResult.ok
+      ) {
+        const adminData =
+          await adminStatusResult.json()
+
+        setIsAdmin(
+          adminData.isAdmin ===
+            true,
+        )
+
+        setIsOwner(
+          adminData.isOwner ===
+            true,
+        )
+      } else {
+        setIsAdmin(false)
+        setIsOwner(false)
+      }
     }
-  }, [])
+
+  const initialize =
+    async () => {
+      const {
+        data: {
+          session,
+        },
+      } =
+        await supabase.auth.getSession()
+
+      await applySession(
+        session,
+      )
+    }
+
+  void initialize()
+
+  const {
+    data: {
+      subscription,
+    },
+  } =
+    supabase.auth.onAuthStateChange(
+      (
+        _event,
+        session,
+      ) => {
+        void applySession(
+          session,
+        )
+      },
+    )
+
+  return () => {
+    subscription.unsubscribe()
+  }
+}, [])
 
   useEffect(() => {
   if (!emojiOpen) {
@@ -1743,6 +1825,9 @@ const [
       setCommentPost(null)
       setDeleteConfirmPost(
         null,
+      )
+      setAdminDeletingPost(
+        false,
       )
       setPosts([])
       setMyComments([])
@@ -1940,6 +2025,122 @@ const [
         )
       }
     }
+  
+  const submitMute =
+  async (
+    duration:
+      | '1h'
+      | '24h'
+      | '7d'
+      | 'permanent',
+  ) => {
+    if (
+      !moderationTargetPost ||
+      moderationSubmitting
+    ) {
+      return
+    }
+
+    const reason =
+      moderationReason.trim()
+
+    if (!reason) {
+      setError(
+        '请填写禁言原因',
+      )
+      return
+    }
+
+    try {
+      setError(null)
+      setModerationSubmitting(
+        true,
+      )
+
+      const supabase =
+        getSupabaseBrowser()
+
+      const {
+        data: {
+          session,
+        },
+      } =
+        await supabase.auth.getSession()
+
+      if (
+        !session?.access_token
+      ) {
+        setError(
+          '登录状态已失效',
+        )
+        return
+      }
+
+      const response =
+        await fetch(
+          '/api/community/admin/users/mute',
+          {
+            method: 'POST',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+
+            body:
+              JSON.stringify({
+                userId:
+                  moderationTargetPost.author_id,
+
+                duration,
+
+                reason,
+              }),
+          },
+        )
+
+      const data =
+        await response
+          .json()
+          .catch(() => ({}))
+
+      if (!response.ok) {
+        setError(
+          data.error ||
+            '禁言用户失败',
+        )
+        return
+      }
+
+      setModerationTargetPost(
+        null,
+      )
+
+      setModerationAction(
+        null,
+      )
+
+      setModerationReason(
+        '',
+      )
+    } catch (error) {
+      console.error(
+        'Failed to mute user:',
+        error,
+      )
+
+      setError(
+        '禁言用户失败',
+      )
+    } finally {
+      setModerationSubmitting(
+        false,
+      )
+    }
+  }
 
   const deletePost =
     async () => {
@@ -1981,21 +2182,28 @@ const [
           postId,
         )
 
-        const response =
-          await fetch(
-            `/api/community/posts?postId=${encodeURIComponent(
-              postId,
-            )}`,
-            {
-              method:
-                'DELETE',
+          const endpoint =
+            adminDeletingPost
+              ? `/api/community/admin/posts/${encodeURIComponent(
+                  postId,
+                )}`
+              : `/api/community/posts?postId=${encodeURIComponent(
+                  postId,
+                )}`
 
-              headers: {
-                Authorization:
-                  `Bearer ${session.access_token}`,
+          const response =
+            await fetch(
+              endpoint,
+              {
+                method:
+                  'DELETE',
+
+                headers: {
+                  Authorization:
+                    `Bearer ${session.access_token}`,
+                },
               },
-            },
-          )
+            )
 
         const data =
           await response.json()
@@ -2034,6 +2242,9 @@ const [
 
         setDeleteConfirmPost(
           null,
+        )
+        setAdminDeletingPost(
+          false,
         )
       } catch (
         error
@@ -3097,225 +3308,99 @@ const pageDescription =
                   )
                 ) : posts.length >
                   0 ? (
-                  posts.map(
-                    (post) => {
-                      const author =
-                        getPostAuthor(
-                          post,
-                        )
-
-                      const displayName =
-                        author
-                          ?.star_citizen_handle ||
-                        author
-                          ?.display_name ||
-                        author
-                          ?.username ||
-                        author
-                          ?.profile_slug ||
-                        'StarClub 用户'
-
-                      const starClubId =
-                        author
-                          ?.profile_slug &&
-                        author
-                          ?.member_number !==
-                          null &&
-                        author
-                          ?.member_number !==
-                          undefined
-                          ? `${author.profile_slug}#${String(
-                              author.member_number,
-                            ).padStart(
-                              4,
-                              '0',
-                            )}`
-                          : null
-
-                      const isOwner =
-                        currentUserId ===
-                        post.author_id
-
-                      return (
-                        <article
+                    
+                    posts.map(
+                      (post) => (
+                        <CommunityPostCard
                           key={
                             post.id
                           }
-                          className="rounded-2xl border border-border bg-white p-5 shadow-[0_6px_20px_rgba(0,0,0,0.025)]"
-                        >
-                          <div className="flex gap-3">
+                          post={
+                            post
+                          }
+                          currentUserId={
+                            currentUserId
+                          }
+                            isAdmin={
+                              isAdmin
+                            }
+                          onDelete={(
+                            targetPost,
+                          ) => {
+                            setAdminDeletingPost(
+                              false,
+                            )
 
-                            {author
-                              ?.profile_slug ? (
-                              <Link
-                                href={`/profile/${encodeURIComponent(
-                                  author.profile_slug,
-                                )}`}
-                                className="shrink-0"
-                              >
-                                {author.avatar_url ? (
-                                  <img
-                                    src={
-                                      author.avatar_url
-                                    }
-                                    alt={
-                                      displayName
-                                    }
-                                    className="size-11 rounded-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="size-11 rounded-full bg-neutral-100" />
-                                )}
-                              </Link>
-                            ) : (
-                              <div className="size-11 shrink-0 rounded-full bg-neutral-100" />
-                            )}
+                            setDeleteConfirmPost(
+                              targetPost,
+                            )
+                          }}
+                          onEdit={(
+                            targetPost,
+                          ) => {
+                            console.log(
+                              'edit post',
+                              targetPost.id,
+                            )
+                          }}
+                          onToggleLike={(
+                            postId,
+                          ) => {
+                            void toggleLike(
+                              postId,
+                            )
+                          }}
+                          onOpenComments={(
+                            targetPost,
+                          ) => {
+                            setCommentPost(
+                              targetPost,
+                            )
+                          }}
+                          onAdminDelete={(
+                            targetPost,
+                          ) => {
+                            setAdminDeletingPost(
+                              true,
+                            )
 
-                            <div className="min-w-0 flex-1">
+                            setDeleteConfirmPost(
+                              targetPost,
+                            )
+                          }}
 
-                              <div className="flex items-start justify-between gap-3">
+                            onMuteUser={(
+                              targetPost,
+                            ) => {
+                              setModerationReason(
+                                '',
+                              )
 
-                                <div className="min-w-0">
+                              setError(
+                                null,
+                              )
 
-                                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              setModerationTargetPost(
+                                targetPost,
+                              )
 
-                                    {author
-                                      ?.profile_slug ? (
-                                      <Link
-                                        href={`/profile/${encodeURIComponent(
-                                          author.profile_slug,
-                                        )}`}
-                                        className="truncate text-sm font-semibold hover:underline"
-                                      >
-                                        {
-                                          displayName
-                                        }
-                                      </Link>
-                                    ) : (
-                                      <span className="truncate text-sm font-semibold">
-                                        {
-                                          displayName
-                                        }
-                                      </span>
-                                    )}
+                              setModerationAction(
+                                'mute',
+                              )
+                            }}
 
-                                    {author
-                                      ?.rsi_verified &&
-                                      author
-                                        ?.star_citizen_handle && (
-                                        <span
-                                          title="RSI Handle 已认证"
-                                          className="inline-flex size-4 items-center justify-center rounded-full bg-[#b87300] text-[9px] font-bold text-white"
-                                        >
-                                          ✓
-                                        </span>
-                                      )}
+                          onGlobalBan={(
+                            targetPost,
+                          ) => {
+                            console.log(
+                              'global ban',
+                              targetPost.author_id,
+                            )
+                          }}
+                        />
+                      ),
+                    )
 
-                                    <span className="text-xs text-muted-foreground">
-                                      {formatPostTime(
-                                        post.created_at,
-                                      )}
-                                    </span>
-
-                                  </div>
-
-                                  {starClubId && (
-                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                      @
-                                      {
-                                        starClubId
-                                      }
-                                    </p>
-                                  )}
-
-                                </div>
-
-                                <CommunityPostMenu
-                                  createdAt={
-                                    post.created_at
-                                  }
-                                  isOwner={
-                                    isOwner
-                                  }
-                                  onEdit={() => {
-                                    console.log(
-                                      'edit post',
-                                      post.id,
-                                    )
-                                  }}
-                                  onDelete={() => {
-                                    setDeleteConfirmPost(
-                                      post,
-                                    )
-                                  }}
-                                />
-
-                              </div>
-
-                              <p className="mt-4 whitespace-pre-wrap wrap-break-word text-[15px] leading-7 text-neutral-800">
-                                {
-                                  post.content
-                                }
-                              </p>
-
-                              <div className="mt-5 flex items-center gap-6 border-t border-border pt-4">
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    toggleLike(
-                                      post.id,
-                                    )
-                                  }
-                                  className={
-                                    post.liked_by_me
-                                      ? 'inline-flex items-center gap-1.5 text-xs text-red-500 transition-colors'
-                                      : 'inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-red-500'
-                                  }
-                                >
-                                  <Heart
-                                    className={
-                                      post.liked_by_me
-                                        ? 'size-4 fill-red-500 text-red-500'
-                                        : 'size-4'
-                                    }
-                                    strokeWidth={
-                                      1.6
-                                    }
-                                  />
-
-                                  {post.like_count ??
-                                    0}
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setCommentPost(
-                                      post,
-                                    )
-                                  }}
-                                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-[#a66700]"
-                                >
-                                  <MessageCircle
-                                    className="size-4"
-                                    strokeWidth={
-                                      1.6
-                                    }
-                                  />
-
-                                  {post.comment_count ??
-                                    0}
-                                </button>
-
-                              </div>
-
-                            </div>
-                          </div>
-                        </article>
-                      )
-                    },
-                  )
                 ) : (
                   <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center">
 
@@ -3530,6 +3615,9 @@ const pageDescription =
               setDeleteConfirmPost(
                 null,
               )
+              setAdminDeletingPost(
+                false,
+              )
             }
           }}
         >
@@ -3548,11 +3636,15 @@ const pageDescription =
               id="delete-post-title"
               className="text-lg font-semibold"
             >
-              删除动态？
+              {adminDeletingPost
+                ? '管理员删除动态？'
+                : '删除动态？'}
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              删除后这条动态将不会再显示。
+              {adminDeletingPost
+                ? '你正在以管理员身份删除其他用户的动态。删除后该动态将不会再显示。'
+                : '删除后这条动态将不会再显示。'}
             </p>
 
             <div className="mt-6 flex justify-end gap-3">
@@ -3567,6 +3659,10 @@ const pageDescription =
                 onClick={() => {
                   setDeleteConfirmPost(
                     null,
+                  )
+
+                  setAdminDeletingPost(
+                    false,
                   )
                 }}
                 className="inline-flex h-10 items-center justify-center rounded-full border border-border px-5 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
@@ -3586,15 +3682,193 @@ const pageDescription =
                 }}
                 className="inline-flex h-10 items-center justify-center rounded-full bg-red-600 px-5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {deletingPostId
-                  ? '删除中...'
-                  : '删除动态'}
+            {deletingPostId
+              ? '删除中...'
+              : adminDeletingPost
+                ? '管理员删除'
+                : '删除动态'}
               </button>
 
             </div>
           </div>
         </div>
       )}
+
+{moderationTargetPost &&
+  moderationAction ===
+    'mute' && (
+    <div
+      className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 px-4 backdrop-blur-[1px]"
+      onMouseDown={() => {
+        if (
+          moderationSubmitting
+        ) {
+          return
+        }
+
+        setModerationTargetPost(
+          null,
+        )
+
+        setModerationAction(
+          null,
+        )
+
+        setModerationReason(
+          '',
+        )
+        setError(
+          null,
+        )
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        onMouseDown={(
+          event,
+        ) => {
+          event.stopPropagation()
+        }}
+        className="w-full max-w-sm rounded-2xl border border-border bg-white p-6 shadow-2xl"
+      >
+        <h2 className="text-lg font-semibold">
+          禁言用户
+        </h2>
+
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          禁言后，该用户暂时无法发布动态、评论等社区内容。
+        </p>
+
+        <div className="mt-5">
+          <label className="text-xs font-medium text-neutral-700">
+            处罚原因
+          </label>
+
+          <textarea
+            value={
+              moderationReason
+            }
+            onChange={(
+              event,
+            ) => {
+              setModerationReason(
+                event.target.value,
+              )
+            }}
+            maxLength={500}
+            rows={3}
+            placeholder="例如：多次发布违规内容"
+            className="mt-2 w-full resize-none rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none transition focus:border-neutral-400"
+          />
+
+          <p className="mt-1 text-right text-[11px] text-muted-foreground">
+            {
+              moderationReason.length
+            }
+            /500
+          </p>
+        </div>
+
+        <p className="mt-4 text-xs font-medium text-neutral-700">
+          选择禁言时长
+        </p>
+
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            disabled={
+              moderationSubmitting
+            }
+            onClick={() => {
+              void submitMute(
+                '1h',
+              )
+            }}
+            className="rounded-xl border border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            1 小时
+          </button>
+
+          <button
+            type="button"
+            disabled={
+              moderationSubmitting
+            }
+            onClick={() => {
+              void submitMute(
+                '24h',
+              )
+            }}
+            className="rounded-xl border border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            24 小时
+          </button>
+
+          <button
+            type="button"
+            disabled={
+              moderationSubmitting
+            }
+            onClick={() => {
+              void submitMute(
+                '7d',
+              )
+            }}
+            className="rounded-xl border border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            7 天
+          </button>
+
+          <button
+            type="button"
+            disabled={
+              moderationSubmitting
+            }
+            onClick={() => {
+              void submitMute(
+                'permanent',
+              )
+            }}
+            className="rounded-xl border border-red-200 px-4 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            永久禁言
+          </button>
+        </div>
+
+        {error && (
+          <p className="mt-4 text-xs text-red-600">
+            {error}
+          </p>
+        )}
+
+        <div className="mt-6 flex justify-end">
+          <button
+            type="button"
+            disabled={
+              moderationSubmitting
+            }
+            onClick={() => {
+              setModerationTargetPost(
+                null,
+              )
+
+              setModerationAction(
+                null,
+              )
+
+              setModerationReason(
+                '',
+              )
+            }}
+            className="inline-flex h-10 items-center justify-center rounded-full border border-border px-5 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
 
 {deleteConfirmComment && (
   <div

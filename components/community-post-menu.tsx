@@ -1,9 +1,12 @@
 'use client'
 
 import {
+  Ban,
   MoreHorizontal,
   Pencil,
+  ShieldAlert,
   Trash2,
+  VolumeX,
 } from 'lucide-react'
 
 import {
@@ -14,9 +17,17 @@ import {
 
 type CommunityPostMenuProps = {
   createdAt: string
+
   isOwner: boolean
+  isAdmin?: boolean
+
   onEdit?: () => void
   onDelete?: () => void
+
+  onAdminDelete?: () => void
+  onMuteUser?: () => void
+  onCommunityBan?: () => void
+  onGlobalBan?: () => void
 }
 
 const EDIT_WINDOW_MS =
@@ -25,11 +36,18 @@ const EDIT_WINDOW_MS =
 export function CommunityPostMenu({
   createdAt,
   isOwner,
+  isAdmin = false,
   onEdit,
   onDelete,
+  onAdminDelete,
+  onMuteUser,
+  onCommunityBan,
+  onGlobalBan,
 }: CommunityPostMenuProps) {
-  const [open, setOpen] =
-    useState(false)
+  const [
+    open,
+    setOpen,
+  ] = useState(false)
 
   const menuRef =
     useRef<HTMLDivElement | null>(
@@ -99,7 +117,10 @@ export function CommunityPostMenu({
     }
   }, [open])
 
-  if (!isOwner) {
+  if (
+    !isOwner &&
+    !isAdmin
+  ) {
     return null
   }
 
@@ -127,61 +148,140 @@ export function CommunityPostMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 z-50 w-52 overflow-hidden rounded-xl border border-border bg-background py-1.5 shadow-xl">
+        <div className="absolute right-0 top-10 z-50 w-56 overflow-hidden rounded-xl border border-border bg-background py-1.5 shadow-xl">
 
-          <button
-            type="button"
-            disabled={!canEdit}
-            title={
-              canEdit
-                ? '编辑动态'
-                : '仅发布后 48 小时内可编辑'
-            }
-            onClick={() => {
-              if (!canEdit) {
-                return
-              }
+          {isOwner && (
+            <>
+              <button
+                type="button"
+                disabled={!canEdit}
+                title={
+                  canEdit
+                    ? '编辑动态'
+                    : '仅发布后 48 小时内可编辑'
+                }
+                onClick={() => {
+                  if (!canEdit) {
+                    return
+                  }
 
-              setOpen(false)
-              onEdit?.()
-            }}
-            className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Pencil
-              className="size-4"
-              strokeWidth={1.8}
-            />
+                  setOpen(false)
+                  onEdit?.()
+                }}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Pencil
+                  className="size-4"
+                  strokeWidth={1.8}
+                />
 
-            <div>
-              <div className="font-medium">
-                编辑动态
-              </div>
+                <div>
+                  <div className="font-medium">
+                    编辑动态
+                  </div>
 
-              {!canEdit && (
-                <div className="mt-0.5 text-[11px] font-normal text-muted-foreground">
-                  已超过 48 小时
+                  {!canEdit && (
+                    <div className="mt-0.5 text-[11px] font-normal text-muted-foreground">
+                      已超过 48 小时
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </button>
+              </button>
 
-          <div className="mx-3 border-t border-border" />
+              <div className="mx-3 border-t border-border" />
 
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false)
-              onDelete?.()
-            }}
-            className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-red-500 transition-colors hover:bg-red-500/10"
-          >
-            <Trash2
-              className="size-4"
-              strokeWidth={1.8}
-            />
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false)
+                  onDelete?.()
+                }}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-red-500 transition-colors hover:bg-red-500/10"
+              >
+                <Trash2
+                  className="size-4"
+                  strokeWidth={1.8}
+                />
 
-            删除动态
-          </button>
+                删除动态
+              </button>
+            </>
+          )}
+
+          {isAdmin &&
+            !isOwner && (
+              <>
+                <div className="px-4 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  ADMIN
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false)
+                    onAdminDelete?.()
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-red-500 transition-colors hover:bg-red-500/10"
+                >
+                  <Trash2
+                    className="size-4"
+                    strokeWidth={1.8}
+                  />
+
+                  管理员删除动态
+                </button>
+
+                <div className="mx-3 border-t border-border" />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false)
+                    onMuteUser?.()
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors hover:bg-muted"
+                >
+                  <VolumeX
+                    className="size-4"
+                    strokeWidth={1.8}
+                  />
+
+                  禁言用户
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false)
+                    onCommunityBan?.()
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-orange-600 transition-colors hover:bg-orange-500/10"
+                >
+                  <Ban
+                    className="size-4"
+                    strokeWidth={1.8}
+                  />
+
+                  社区封禁
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false)
+                    onGlobalBan?.()
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-500/10"
+                >
+                  <ShieldAlert
+                    className="size-4"
+                    strokeWidth={1.8}
+                  />
+
+                  全站封禁
+                </button>
+              </>
+            )}
 
         </div>
       )}

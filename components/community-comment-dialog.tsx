@@ -176,6 +176,11 @@ export function CommunityCommentDialog({
   )
 
   const [
+    isAdmin,
+    setIsAdmin,
+  ] = useState(false)
+
+  const [
     currentUserAvatar,
     setCurrentUserAvatar,
   ] = useState<string | null>(
@@ -424,34 +429,75 @@ export function CommunityCommentDialog({
             setCurrentUserAvatar(
               null,
             )
+
+            setIsAdmin(false)
+
             return
           }
 
-          const {
-            data: profile,
-          } = await supabase
-            .from(
-              'profiles',
-            )
-            .select(
-              'avatar_url',
-            )
-            .eq(
-              'id',
-              userId,
-            )
-            .maybeSingle()
+          const [
+            profileResult,
+            adminStatusResult,
+          ] = await Promise.all([
+            supabase
+              .from(
+                'profiles',
+              )
+              .select(
+                'avatar_url',
+              )
+              .eq(
+                'id',
+                userId,
+              )
+              .maybeSingle(),
+
+            session?.access_token
+              ? fetch(
+                  '/api/community/admin-status',
+                  {
+                    cache:
+                      'no-store',
+
+                    headers: {
+                      Authorization:
+                        `Bearer ${session.access_token}`,
+                    },
+                  },
+                )
+              : Promise.resolve(
+                  null,
+                ),
+          ])
 
           setCurrentUserAvatar(
-            profile?.avatar_url ??
+            profileResult.data
+              ?.avatar_url ??
               null,
           )
-        } catch (error) {
-          console.error(
-            'Failed to load current user:',
-            error,
-          )
-        }
+
+          if (
+            adminStatusResult &&
+            adminStatusResult.ok
+          ) {
+            const adminData =
+              await adminStatusResult.json()
+
+            setIsAdmin(
+              adminData.isAdmin ===
+                true,
+            )
+          } else {
+            setIsAdmin(false)
+          }
+          } catch (error) {
+            console.error(
+              'Failed to load current user:',
+              error,
+            )
+
+            setIsAdmin(false)
+          }
       }
 
     void loadCurrentUser()
@@ -934,21 +980,41 @@ export function CommunityCommentDialog({
           return
         }
 
-        const response =
-          await fetch(
-            `/api/community/comments?commentId=${encodeURIComponent(
-              commentId,
-            )}`,
-            {
-              method:
-                'DELETE',
+            const targetComment =
+              comments.find(
+                (comment) =>
+                  comment.id ===
+                  commentId,
+              )
 
-              headers: {
-                Authorization:
-                  `Bearer ${session.access_token}`,
-              },
-            },
-          )
+            const isOwnComment =
+              targetComment
+                ?.author_id ===
+              currentUserId
+
+            const endpoint =
+              isAdmin &&
+              !isOwnComment
+                ? `/api/community/admin/comments/${encodeURIComponent(
+                    commentId,
+                  )}`
+                : `/api/community/comments?commentId=${encodeURIComponent(
+                    commentId,
+                  )}`
+
+            const response =
+              await fetch(
+                endpoint,
+                {
+                  method:
+                    'DELETE',
+
+                  headers: {
+                    Authorization:
+                      `Bearer ${session.access_token}`,
+                  },
+                },
+              )
 
         const data =
           await response.json()
@@ -1107,7 +1173,10 @@ export function CommunityCommentDialog({
 
                 </div>
 
-                {isOwnComment && (
+                {(
+                  isOwnComment ||
+                  isAdmin
+                ) && (
                   <button
                     type="button"
                     disabled={
@@ -1121,10 +1190,12 @@ export function CommunityCommentDialog({
                     }}
                     className="shrink-0 text-xs text-muted-foreground transition-colors hover:text-red-500 disabled:opacity-40"
                   >
-                    {deletingCommentId ===
-                    comment.id
-                      ? '删除中...'
-                      : '删除'}
+                  {deletingCommentId ===
+                  comment.id
+                    ? '删除中...'
+                    : isOwnComment
+                      ? '删除'
+                      : '管理员删除'}
                   </button>
                 )}
               </div>
