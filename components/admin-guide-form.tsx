@@ -136,6 +136,18 @@ export function AdminGuideForm({
         '',
     )
 
+    const [
+      isUploadingImage,
+      setIsUploadingImage,
+    ] = useState(false)
+
+    const [
+      imageUploadError,
+      setImageUploadError,
+    ] = useState<
+      string | null
+    >(null)
+
   const [author, setAuthor] =
     useState(
       initialData?.author ??
@@ -265,6 +277,72 @@ export function AdminGuideForm({
       ),
     )
   }
+
+  async function handleImageUpload(
+  file: File,
+) {
+  setImageUploadError(null)
+  setIsUploadingImage(true)
+
+  try {
+    const formData =
+      new FormData()
+
+    formData.append(
+      'file',
+      file,
+    )
+
+    const response =
+      await fetch(
+        '/api/admin/guides/upload',
+        {
+          method: 'POST',
+          body: formData,
+        },
+      )
+
+    const data =
+      await response
+        .json()
+        .catch(
+          () => ({}),
+        )
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ??
+          '上传图片失败',
+      )
+    }
+
+    if (
+      typeof data.url !==
+      'string'
+    ) {
+      throw new Error(
+        '上传成功，但没有返回图片地址',
+      )
+    }
+
+    setImage(
+      data.url,
+    )
+  } catch (err) {
+    console.error(
+      '[ADMIN GUIDE IMAGE] Upload failed:',
+      err,
+    )
+
+    setImageUploadError(
+      err instanceof Error
+        ? err.message
+        : '上传图片失败',
+    )
+  } finally {
+    setIsUploadingImage(false)
+  }
+}
 
   async function handleSubmit(
     event: FormEvent,
@@ -633,16 +711,76 @@ export function AdminGuideForm({
               封面图片
             </label>
 
-            <input
-              value={image}
-              onChange={(e) =>
-                setImage(
-                  e.target.value,
-                )
-              }
-              className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
-              placeholder="/images/guides/..."
-            />
+            <div className="mt-2 grid gap-3">
+              <input
+                value={image}
+                onChange={(e) =>
+                  setImage(
+                    e.target.value,
+                  )
+                }
+                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+                placeholder="/images/guides/... 或 Supabase 图片地址"
+              />
+
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-border px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground">
+                  {isUploadingImage
+                    ? '正在上传...'
+                    : '选择并上传图片'}
+
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    disabled={
+                      isUploadingImage
+                    }
+                    onChange={(e) => {
+                      const file =
+                        e.target.files?.[0]
+
+                      if (file) {
+                        handleImageUpload(
+                          file,
+                        )
+                      }
+
+                      e.target.value =
+                        ''
+                    }}
+                    className="hidden"
+                  />
+                </label>
+
+                {image && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setImage('')
+                    }
+                    className="rounded-full border border-border px-4 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    清除封面
+                  </button>
+                )}
+              </div>
+
+              {imageUploadError && (
+                <p className="text-xs text-destructive">
+                  {imageUploadError}
+                </p>
+              )}
+
+              {image && (
+                <div className="overflow-hidden rounded-2xl border border-border bg-background">
+                  <img
+                    src={image}
+                    alt="攻略封面预览"
+                    className="aspect-video w-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {type ===
