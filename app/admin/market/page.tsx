@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 
 import { AdminHeader } from '@/components/admin/admin-header'
 import { MarketForceCloseButton } from '@/components/admin/market-force-close-button'
+import { MarketDeleteButton } from '@/components/admin/market-delete-button'
 import { MarketReportActions } from '@/components/admin/market-report-actions'
 import { MarketReportEvidence } from '@/components/admin/market-report-evidence'
 
@@ -1095,6 +1096,15 @@ export default async function AdminMarketPage() {
                                     }
                                   />
                                 ) : null}
+
+                                <MarketDeleteButton
+                                  listingId={
+                                    listing.id
+                                  }
+                                  title={
+                                    listing.title
+                                  }
+                                />
                               </div>
                             </TableCell>
                           </TableRow>
