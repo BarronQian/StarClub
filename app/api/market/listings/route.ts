@@ -177,12 +177,19 @@ export async function GET(
         'deleted_at',
         null,
       )
-      .order(
-        'created_at',
-        {
-          ascending: false,
-        },
-      )
+    .order(
+      'closed_at',
+      {
+        ascending: true,
+        nullsFirst: true,
+      },
+    )
+    .order(
+      'created_at',
+      {
+        ascending: false,
+      },
+    )
 
   if (mine) {
     const authorization =
@@ -503,13 +510,13 @@ export async function POST(
   } =
     await supabase
       .from('profiles')
-      .select(`
-        id,
-        banned_at,
-        muted_until,
-        rsi_handle:star_citizen_handle,
-        rsi_verified
-      `)
+        .select(`
+          id,
+          banned_at,
+          market_banned_at,
+          rsi_handle:star_citizen_handle,
+          rsi_verified
+        `)
       .eq(
         'id',
         userId,
@@ -532,30 +539,13 @@ export async function POST(
   }
 
   if (
-    profile.banned_at
+    profile.banned_at ||
+    profile.market_banned_at
   ) {
     return NextResponse.json(
       {
         error:
-          '当前账号无法发布交易',
-      },
-      {
-        status: 403,
-      },
-    )
-  }
-
-  if (
-    profile.muted_until &&
-    new Date(
-      profile.muted_until,
-    ).getTime() >
-      Date.now()
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          '当前账号暂时无法发布交易',
+          '当前账号已被限制使用市场功能',
       },
       {
         status: 403,
