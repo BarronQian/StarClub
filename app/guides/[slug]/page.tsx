@@ -119,6 +119,24 @@ function formatDate(
   )
 }
 
+function getBilibiliEmbedUrl(
+  videoUrl: string
+) {
+  const bvMatch =
+    videoUrl.match(
+      /\/video\/(BV[a-zA-Z0-9]+)/
+    )
+
+  if (!bvMatch) {
+    return null
+  }
+
+  const bvid =
+    bvMatch[1]
+
+  return `https://player.bilibili.com/player.html?bvid=${bvid}&page=1&high_quality=1&danmaku=0`
+}
+
 type GuidePageProps = {
   params: Promise<{
     slug: string
@@ -159,6 +177,14 @@ export default async function GuidePage({
 
   const isVideo =
     guide.type === 'video'
+
+  const bilibiliEmbedUrl =
+  isVideo &&
+  guide.video_url
+    ? getBilibiliEmbedUrl(
+        guide.video_url
+      )
+    : null
 
   return (
     <div className="pb-24 lg:pb-32">
@@ -281,7 +307,7 @@ export default async function GuidePage({
                   className="object-cover"
                 />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/25 via-transparent to-transparent" />
 
                 <div className="absolute bottom-4 left-4">
                   <span className="rounded-full bg-black/70 px-3 py-1.5 text-[0.65rem] tracking-[0.12em] text-white backdrop-blur">
@@ -311,20 +337,58 @@ export default async function GuidePage({
             </div>
 
             <div className="p-6 sm:p-8">
-              <p className="max-w-3xl text-sm leading-7 text-muted-foreground">
-                本攻略为视频内容，点击下方按钮前往原视频观看完整教学。
-              </p>
+              {bilibiliEmbedUrl && (
+                <div className="overflow-hidden rounded-2xl bg-black">
+                  <div className="relative aspect-video">
+                    <iframe
+                      src={bilibiliEmbedUrl}
+                      title={guide.title}
+                      className="absolute inset-0 h-full w-full"
+                      allowFullScreen
+                      scrolling="no"
+                      frameBorder="0"
+                      allow="autoplay; fullscreen"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+                </div>
+              )}
 
-              <div className="mt-6">
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <span className="font-display text-[0.6rem] tracking-[0.25em] text-primary">
+                    ORIGINAL VIDEO
+                  </span>
+
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {guide.author && (
+                      <>
+                        作者：
+                        <span className="text-foreground">
+                          {guide.author}
+                        </span>
+                      </>
+                    )}
+
+                    {guide.creator && (
+                      <>
+                        {' · '}
+                        出品：
+                        <span className="text-foreground">
+                          {guide.creator}
+                        </span>
+                      </>
+                    )}
+                  </p>
+                </div>
+
                 <Link
-                  href={
-                    guide.video_url
-                  }
+                  href={guide.video_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                  className="inline-flex items-center justify-center rounded-full border border-primary/30 px-5 py-2.5 text-sm text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
                 >
-                  前往观看视频
+                  前往 Bilibili ↗
                 </Link>
               </div>
             </div>
