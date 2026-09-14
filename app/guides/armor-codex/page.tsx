@@ -1,204 +1,238 @@
-'use client'
+import type { Metadata } from 'next'
+import { createClient } from '@supabase/supabase-js'
 
-import { useState } from 'react'
-import Image from 'next/image'
-import { ArchiveBreadcrumb } from '@/components/archive-breadcrumb'
+import {
+  ArmorCodexContent,
+  type ArmorSeriesItem,
+} from '@/components/armor-codex-content'
 
-type ArmorSource =
-  | '只可搜刮'
-  | '可购买'
-  | '维克洛兑换'
+function getSupabase() {
+  const supabaseUrl =
+    process.env.SUPABASE_URL
 
-type ArmorSeries = {
-  id: string
-  name: string
-  cn: string
-  image: string
-  sources: ArmorSource[]
+  const supabaseServiceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (
+    !supabaseUrl ||
+    !supabaseServiceRoleKey
+  ) {
+    return null
+  }
+
+  return createClient(
+    supabaseUrl,
+    supabaseServiceRoleKey,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  )
 }
 
-const filters: Array<'全部' | ArmorSource> = [
-  '全部',
-  '只可搜刮',
-  '可购买',
-  '维克洛兑换',
-]
+type GuideSectionRow = {
+  id: string
+  slug: string
+  title: string
+  subtitle: string | null
+  image: string | null
+  tags: string[] | null
+  published: boolean
+  sort_order: number
+}
 
-const armorSeries: ArmorSeries[] = [
-  {
-    id: 'palatino',
-    name: 'Palatino',
-    cn: '帕拉提诺护甲系列',
-    image: '/images/guides/armor/palatino-armor-cover.jpg',
-    sources: ['只可搜刮'],
-  },
-  {
-    id: 'monde',
-    name: 'Monde',
-    cn: '蒙德护甲系列',
-    image: '/images/guides/armor/monde-armor-cover.jpg',
-    sources: ['只可搜刮'],
-  },
-  {
-    id: 'geist',
-    name: 'Geist',
-    cn: '幽影护甲系列',
-    image: '/images/guides/armor/geist-armor-cover.jpg',
-    sources: ['只可搜刮'],
-  },
-  {
-    id: 'wikelo',
-    name: 'Wikelo',
-    cn: '维克洛稀有护甲',
-    image: '/images/guides/armor/wikelo-armor-cover.jpg',
-    sources: ['维克洛兑换'],
-  },
-  {
-    id: 'ninetail',
-    name: 'Nine Tails',
-    cn: '九尾护甲系列',
-    image: '/images/guides/armor/ninetail-armor-cover.jpg',
-    sources: ['只可搜刮'],
-  },
-  {
-    id: 'overlord',
-    name: 'Overlord',
-    cn: '领主护甲系列',
-    image: '/images/guides/armor/overlord-armor-cover.jpg',
-    sources: ['只可搜刮'],
-  },
-]
+async function getArmorCodexGuide() {
+  const supabase = getSupabase()
 
-export default function ArmorCodexPage() {
-  const [activeFilter, setActiveFilter] =
-    useState<(typeof filters)[number]>('全部')
+  if (!supabase) {
+    return null
+  }
 
-  const filteredArmor =
-    activeFilter === '全部'
-      ? armorSeries
-      : armorSeries.filter((armor) =>
-          armor.sources.includes(activeFilter),
-        )
+  const {
+    data,
+    error,
+  } = await supabase
+    .from('guides')
+    .select(`
+      title,
+      description,
+      image,
+      seo_title,
+      seo_description
+    `)
+    .eq(
+      'slug',
+      'armor-codex'
+    )
+    .eq(
+      'published',
+      true
+    )
+    .single()
+
+  if (
+    error ||
+    !data
+  ) {
+    console.error(
+      '[ARMOR CODEX] Failed to load guide metadata:',
+      error
+    )
+
+    return null
+  }
+
+  return data
+}
+
+async function getArmorSeries() {
+  const supabase = getSupabase()
+
+  if (!supabase) {
+    console.error(
+      '[ARMOR CODEX] Supabase env missing'
+    )
+
+    return []
+  }
+
+  const {
+    data: guide,
+    error: guideError,
+  } = await supabase
+    .from('guides')
+    .select('id')
+    .eq('slug', 'armor-codex')
+    .single()
+
+  if (
+    guideError ||
+    !guide
+  ) {
+    console.error(
+      '[ARMOR CODEX] Failed to find parent guide:',
+      guideError
+    )
+
+    return []
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from('guide_sections')
+    .select(`
+      id,
+      slug,
+      title,
+      subtitle,
+      image,
+      tags,
+      published,
+      sort_order
+    `)
+    .eq(
+      'guide_id',
+      guide.id
+    )
+    .eq(
+      'published',
+      true
+    )
+    .order(
+      'sort_order',
+      {
+        ascending: true,
+      }
+    )
+
+  if (error) {
+    console.error(
+      '[ARMOR CODEX] Failed to load sections:',
+      error
+    )
+
+    return []
+  }
 
   return (
-    <div className="pb-24 lg:pb-32">
-      <section className="relative border-b border-border">
-        <div
-          aria-hidden="true"
-          className="hud-grid absolute inset-0 -z-10 opacity-70"
-        />
+    (data as GuideSectionRow[] | null) ?? []
+  ).map(
+    (row): ArmorSeriesItem => ({
+      id: row.id,
+      slug: row.slug,
+      name: row.title,
+      cn: row.subtitle ?? '',
+      image: row.image ?? '',
+      sources:
+        (row.tags ?? []) as ArmorSeriesItem['sources'],
+    })
+  )
+}
 
-        <div className="site-container py-16 lg:py-24">
-          <ArchiveBreadcrumb
-            items={[
-              { label: '首页', href: '/' },
-              { label: '中文攻略', href: '/guides' },
-              { label: '特色护甲图鉴' },
-            ]}
-          />
+export async function generateMetadata(): Promise<Metadata> {
+  const guide =
+    await getArmorCodexGuide()
 
-          <div className="mt-8">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="font-display text-[0.65rem] tracking-[0.35em] text-primary">
-                STAR CITIZEN ARMOR CODEX
-              </span>
+  const title =
+    guide?.seo_title?.trim() ||
+    guide?.title ||
+    '星际公民护甲图鉴'
 
-              <span className="h-px w-10 bg-primary/40" />
+  const description =
+    guide?.seo_description?.trim() ||
+    guide?.description ||
+    '整理《星际公民》稀有护甲、获取方式与系列资料的中文护甲图鉴。'
 
-              <span className="text-[0.65rem] tracking-[0.3em] text-muted-foreground">
-                STARCLUB ORIGINAL
-              </span>
-            </div>
+  const image =
+    guide?.image ||
+    undefined
 
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <h1 className="font-display text-4xl tracking-tight sm:text-5xl lg:text-6xl">
-                星际公民特色护甲图鉴
-              </h1>
+  return {
+    title,
+    description,
 
-              <span className="rounded-full bg-primary px-3 py-1.5 text-[0.62rem] tracking-[0.12em] text-primary-foreground">
-                酒馆原创
-              </span>
-            </div>
+    openGraph: {
+      title,
+      description,
+      type: 'website',
 
-            <p className="mt-6 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-              收录《星际公民》中具有特色外观、特殊获取方式及收藏价值的护甲系列，
-              整理护甲外观、名称、来源与获取方式。
-            </p>
+      images:
+        image
+          ? [
+              {
+                url: image,
+                alt: title,
+              },
+            ]
+          : undefined,
+    },
 
-            <div className="mt-8 flex items-center gap-6 text-xs text-muted-foreground">
-              <span>
-                已收录{' '}
-                <strong className="font-medium text-foreground">
-                  {armorSeries.length}
-                </strong>{' '}
-                个系列
-              </span>
+    twitter: {
+      card:
+        'summary_large_image',
 
-              <span className="h-3 w-px bg-border" />
+      title,
+      description,
 
-              <span>持续更新</span>
-            </div>
-          </div>
-        </div>
-      </section>
+      images:
+        image
+          ? [image]
+          : undefined,
+    },
+  }
+}
 
-      <section className="site-container pt-12 lg:pt-16">
-        <div className="flex flex-wrap gap-2 border-b border-border pb-8">
-          {filters.map((filter) => (
-            <button
-              key={filter}
-              type="button"
-              onClick={() => setActiveFilter(filter)}
-              className={`rounded-full border px-4 py-2 text-xs transition-all ${
-                activeFilter === filter
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground'
-              }`}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
+export default async function ArmorCodexPage() {
+  const armorSeries =
+    await getArmorSeries()
 
-        <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {filteredArmor.map((armor) => (
-            <article
-              key={armor.id}
-              className="group overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
-            >
-              <div className="relative aspect-4/3 overflow-hidden bg-muted">
-                <Image
-                  src={armor.image}
-                  alt={`${armor.name} ${armor.cn}`}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                />
-              </div>
-
-              <div className="p-5">
-                <div className="flex flex-wrap gap-1.5">
-                  {armor.sources.map((source) => (
-                    <span
-                      key={source}
-                      className="rounded-full bg-primary/8 px-2.5 py-1 text-[0.6rem] tracking-[0.08em] text-primary"
-                    >
-                      {source}
-                    </span>
-                  ))}
-                </div>
-
-                <h2 className="mt-4 font-display text-xl tracking-tight">
-                  {armor.name}
-                </h2>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {armor.cn}
-                </p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-    </div>
+  return (
+    <ArmorCodexContent
+      armorSeries={armorSeries}
+    />
   )
 }

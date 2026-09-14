@@ -1,11 +1,18 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
 type LocalEventTimeProps = {
   startTimes: string[]
   fallback?: string
 }
 
-function formatLocalDateTime(iso: string) {
+type FormattedDateTime = {
+  dateTime: string
+  timeZone: string
+}
+
+function formatLocalDateTime(iso: string): FormattedDateTime {
   const date = new Date(iso)
 
   const parts = new Intl.DateTimeFormat(undefined, {
@@ -31,24 +38,51 @@ export function LocalEventTime({
   startTimes,
   fallback,
 }: LocalEventTimeProps) {
+  const [formattedTimes, setFormattedTimes] = useState<
+    FormattedDateTime[] | null
+  >(null)
+
+  useEffect(() => {
+    if (!startTimes.length) {
+      setFormattedTimes([])
+      return
+    }
+
+    setFormattedTimes(
+      startTimes.map((time) => formatLocalDateTime(time))
+    )
+  }, [startTimes])
+
   if (!startTimes.length) {
     return fallback ? <span>{fallback}</span> : null
   }
 
+  if (!formattedTimes) {
+    return (
+      <div className="flex flex-col gap-1">
+        {startTimes.map((time) => (
+          <span key={time} className="invisible">
+            0000.00.00 · 00:00
+          </span>
+        ))}
+
+        <span className="invisible text-xs text-muted-foreground">
+          当地时间 · UTC
+        </span>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-1">
-      {startTimes.map((time) => {
-        const formatted = formatLocalDateTime(time)
-
-        return (
-          <span key={time}>
-            {formatted.dateTime}
-          </span>
-        )
-      })}
+      {formattedTimes.map((formatted, index) => (
+        <span key={startTimes[index]}>
+          {formatted.dateTime}
+        </span>
+      ))}
 
       <span className="text-xs text-muted-foreground">
-        当地时间 · {formatLocalDateTime(startTimes[0]).timeZone}
+        当地时间 · {formattedTimes[0]?.timeZone}
       </span>
     </div>
   )
