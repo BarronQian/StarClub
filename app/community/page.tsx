@@ -29,8 +29,8 @@ import {
 } from '@/components/community-comment-dialog'
 
 import {
-  CommunityPostMenu,
-} from '@/components/community-post-menu'
+  CommunityPostCard,
+} from '@/components/community/community-post-card'
 
 import EmojiPicker, {
   EmojiClickData,
@@ -3097,225 +3097,52 @@ const pageDescription =
                   )
                 ) : posts.length >
                   0 ? (
-                  posts.map(
-                    (post) => {
-                      const author =
-                        getPostAuthor(
-                          post,
-                        )
-
-                      const displayName =
-                        author
-                          ?.star_citizen_handle ||
-                        author
-                          ?.display_name ||
-                        author
-                          ?.username ||
-                        author
-                          ?.profile_slug ||
-                        'StarClub 用户'
-
-                      const starClubId =
-                        author
-                          ?.profile_slug &&
-                        author
-                          ?.member_number !==
-                          null &&
-                        author
-                          ?.member_number !==
-                          undefined
-                          ? `${author.profile_slug}#${String(
-                              author.member_number,
-                            ).padStart(
-                              4,
-                              '0',
-                            )}`
-                          : null
-
-                      const isOwner =
-                        currentUserId ===
-                        post.author_id
-
-                      return (
-                        <article
+                    
+                    posts.map(
+                      (post) => (
+                        <CommunityPostCard
                           key={
                             post.id
                           }
-                          className="rounded-2xl border border-border bg-white p-5 shadow-[0_6px_20px_rgba(0,0,0,0.025)]"
-                        >
-                          <div className="flex gap-3">
+                          post={
+                            post
+                          }
+                          currentUserId={
+                            currentUserId
+                          }
+                          onDelete={(
+                            targetPost,
+                          ) => {
+                            setDeleteConfirmPost(
+                              targetPost,
+                            )
+                          }}
+                          onEdit={(
+                            targetPost,
+                          ) => {
+                            console.log(
+                              'edit post',
+                              targetPost.id,
+                            )
+                          }}
+                          onToggleLike={(
+                            postId,
+                          ) => {
+                            void toggleLike(
+                              postId,
+                            )
+                          }}
+                          onOpenComments={(
+                            targetPost,
+                          ) => {
+                            setCommentPost(
+                              targetPost,
+                            )
+                          }}
+                        />
+                      ),
+                    )
 
-                            {author
-                              ?.profile_slug ? (
-                              <Link
-                                href={`/profile/${encodeURIComponent(
-                                  author.profile_slug,
-                                )}`}
-                                className="shrink-0"
-                              >
-                                {author.avatar_url ? (
-                                  <img
-                                    src={
-                                      author.avatar_url
-                                    }
-                                    alt={
-                                      displayName
-                                    }
-                                    className="size-11 rounded-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="size-11 rounded-full bg-neutral-100" />
-                                )}
-                              </Link>
-                            ) : (
-                              <div className="size-11 shrink-0 rounded-full bg-neutral-100" />
-                            )}
-
-                            <div className="min-w-0 flex-1">
-
-                              <div className="flex items-start justify-between gap-3">
-
-                                <div className="min-w-0">
-
-                                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-
-                                    {author
-                                      ?.profile_slug ? (
-                                      <Link
-                                        href={`/profile/${encodeURIComponent(
-                                          author.profile_slug,
-                                        )}`}
-                                        className="truncate text-sm font-semibold hover:underline"
-                                      >
-                                        {
-                                          displayName
-                                        }
-                                      </Link>
-                                    ) : (
-                                      <span className="truncate text-sm font-semibold">
-                                        {
-                                          displayName
-                                        }
-                                      </span>
-                                    )}
-
-                                    {author
-                                      ?.rsi_verified &&
-                                      author
-                                        ?.star_citizen_handle && (
-                                        <span
-                                          title="RSI Handle 已认证"
-                                          className="inline-flex size-4 items-center justify-center rounded-full bg-[#b87300] text-[9px] font-bold text-white"
-                                        >
-                                          ✓
-                                        </span>
-                                      )}
-
-                                    <span className="text-xs text-muted-foreground">
-                                      {formatPostTime(
-                                        post.created_at,
-                                      )}
-                                    </span>
-
-                                  </div>
-
-                                  {starClubId && (
-                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                      @
-                                      {
-                                        starClubId
-                                      }
-                                    </p>
-                                  )}
-
-                                </div>
-
-                                <CommunityPostMenu
-                                  createdAt={
-                                    post.created_at
-                                  }
-                                  isOwner={
-                                    isOwner
-                                  }
-                                  onEdit={() => {
-                                    console.log(
-                                      'edit post',
-                                      post.id,
-                                    )
-                                  }}
-                                  onDelete={() => {
-                                    setDeleteConfirmPost(
-                                      post,
-                                    )
-                                  }}
-                                />
-
-                              </div>
-
-                              <p className="mt-4 whitespace-pre-wrap wrap-break-word text-[15px] leading-7 text-neutral-800">
-                                {
-                                  post.content
-                                }
-                              </p>
-
-                              <div className="mt-5 flex items-center gap-6 border-t border-border pt-4">
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    toggleLike(
-                                      post.id,
-                                    )
-                                  }
-                                  className={
-                                    post.liked_by_me
-                                      ? 'inline-flex items-center gap-1.5 text-xs text-red-500 transition-colors'
-                                      : 'inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-red-500'
-                                  }
-                                >
-                                  <Heart
-                                    className={
-                                      post.liked_by_me
-                                        ? 'size-4 fill-red-500 text-red-500'
-                                        : 'size-4'
-                                    }
-                                    strokeWidth={
-                                      1.6
-                                    }
-                                  />
-
-                                  {post.like_count ??
-                                    0}
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setCommentPost(
-                                      post,
-                                    )
-                                  }}
-                                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-[#a66700]"
-                                >
-                                  <MessageCircle
-                                    className="size-4"
-                                    strokeWidth={
-                                      1.6
-                                    }
-                                  />
-
-                                  {post.comment_count ??
-                                    0}
-                                </button>
-
-                              </div>
-
-                            </div>
-                          </div>
-                        </article>
-                      )
-                    },
-                  )
                 ) : (
                   <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center">
 
