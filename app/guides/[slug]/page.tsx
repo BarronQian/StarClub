@@ -4,6 +4,10 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 
 import { ArchiveBreadcrumb } from '@/components/archive-breadcrumb'
+import {
+  GuideContentBlocks,
+  type GuideContentBlock,
+} from '@/components/guide-content-blocks'
 
 function getSupabase() {
   const supabaseUrl =
@@ -38,7 +42,11 @@ type GuideRow = {
   description: string | null
   category: string
   tags: string[] | null
-  type: 'article' | 'video' | 'discord' | 'external'
+  type:
+    | 'article'
+    | 'video'
+    | 'discord'
+    | 'external'
   image: string | null
   author: string | null
   creator: string | null
@@ -51,7 +59,8 @@ type GuideRow = {
 async function getGuide(
   slug: string
 ) {
-  const supabase = getSupabase()
+  const supabase =
+    getSupabase()
 
   if (!supabase) {
     return null
@@ -96,6 +105,54 @@ async function getGuide(
   }
 
   return data as GuideRow
+}
+
+async function getGuideBlocks(
+  guideId: string
+) {
+  const supabase =
+    getSupabase()
+
+  if (!supabase) {
+    return []
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from(
+      'guide_content_blocks'
+    )
+    .select(`
+      id,
+      block_type,
+      block_order,
+      content
+    `)
+    .eq(
+      'guide_id',
+      guideId
+    )
+    .order(
+      'block_order',
+      {
+        ascending: true,
+      }
+    )
+
+  if (error) {
+    console.error(
+      '[GUIDE BLOCKS] Failed to load:',
+      error
+    )
+
+    return []
+  }
+
+  return (
+    data ?? []
+  ) as GuideContentBlock[]
 }
 
 function formatDate(
@@ -150,13 +207,6 @@ export default async function GuidePage({
     slug,
   } = await params
 
-  /*
-   * armor-codex 有自己独立的页面：
-   * app/guides/armor-codex/page.tsx
-   *
-   * 正常情况下 Next.js 会优先匹配静态路由，
-   * 这里再防止它意外进入通用模板。
-   */
   if (
     slug === 'armor-codex'
   ) {
@@ -179,12 +229,19 @@ export default async function GuidePage({
     guide.type === 'video'
 
   const bilibiliEmbedUrl =
-  isVideo &&
-  guide.video_url
-    ? getBilibiliEmbedUrl(
-        guide.video_url
-      )
-    : null
+    isVideo &&
+    guide.video_url
+      ? getBilibiliEmbedUrl(
+          guide.video_url
+        )
+      : null
+
+  const blocks =
+    !isVideo
+      ? await getGuideBlocks(
+          guide.id
+        )
+      : []
 
   return (
     <div className="pb-24 lg:pb-32">
@@ -206,7 +263,8 @@ export default async function GuidePage({
                 href: '/guides',
               },
               {
-                label: guide.title,
+                label:
+                  guide.title,
               },
             ]}
           />
@@ -223,13 +281,17 @@ export default async function GuidePage({
                 <span className="h-px w-10 bg-primary/40" />
 
                 <span className="text-[0.65rem] tracking-[0.3em] text-muted-foreground">
-                  {guide.category}
+                  {
+                    guide.category
+                  }
                 </span>
               </div>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <h1 className="max-w-4xl font-display text-4xl tracking-tight sm:text-5xl lg:text-6xl">
-                  {guide.title}
+                  {
+                    guide.title
+                  }
                 </h1>
 
                 {guide.original && (
@@ -241,7 +303,9 @@ export default async function GuidePage({
 
               {guide.description && (
                 <p className="mt-6 max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
-                  {guide.description}
+                  {
+                    guide.description
+                  }
                 </p>
               )}
 
@@ -250,12 +314,18 @@ export default async function GuidePage({
                   0 && (
                   <div className="mt-6 flex flex-wrap gap-2">
                     {guide.tags.map(
-                      (tag) => (
+                      (
+                        tag
+                      ) => (
                         <span
-                          key={tag}
+                          key={
+                            tag
+                          }
                           className="rounded-full bg-primary/8 px-3 py-1.5 text-xs tracking-[0.08em] text-primary"
                         >
-                          {tag}
+                          {
+                            tag
+                          }
                         </span>
                       )
                     )}
@@ -289,7 +359,9 @@ export default async function GuidePage({
                   <span>
                     发布时间：
                     <strong className="font-medium text-foreground">
-                      {date}
+                      {
+                        date
+                      }
                     </strong>
                   </span>
                 )}
@@ -299,8 +371,12 @@ export default async function GuidePage({
             {guide.image && (
               <div className="relative aspect-video overflow-hidden rounded-2xl border border-border bg-muted">
                 <Image
-                  src={guide.image}
-                  alt={guide.title}
+                  src={
+                    guide.image
+                  }
+                  alt={
+                    guide.title
+                  }
                   fill
                   priority
                   sizes="(min-width: 1024px) 45vw, 100vw"
@@ -341,13 +417,17 @@ export default async function GuidePage({
                 <div className="overflow-hidden rounded-2xl bg-black">
                   <div className="relative aspect-video">
                     <iframe
-                      src={bilibiliEmbedUrl}
-                      title={guide.title}
+                      src={
+                        bilibiliEmbedUrl
+                      }
+                      title={
+                        guide.title
+                      }
                       className="absolute inset-0 h-full w-full"
+                      allow="fullscreen"
                       allowFullScreen
                       scrolling="no"
                       frameBorder="0"
-                      allow="fullscreen"
                       referrerPolicy="no-referrer-when-downgrade"
                     />
                   </div>
@@ -365,7 +445,9 @@ export default async function GuidePage({
                       <>
                         作者：
                         <span className="text-foreground">
-                          {guide.author}
+                          {
+                            guide.author
+                          }
                         </span>
                       </>
                     )}
@@ -375,7 +457,9 @@ export default async function GuidePage({
                         {' · '}
                         出品：
                         <span className="text-foreground">
-                          {guide.creator}
+                          {
+                            guide.creator
+                          }
                         </span>
                       </>
                     )}
@@ -383,7 +467,9 @@ export default async function GuidePage({
                 </div>
 
                 <Link
-                  href={guide.video_url}
+                  href={
+                    guide.video_url
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center rounded-full border border-primary/30 px-5 py-2.5 text-sm text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
@@ -394,22 +480,9 @@ export default async function GuidePage({
             </div>
           </div>
         ) : (
-          <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-            <span className="font-display text-[0.62rem] tracking-[0.3em] text-primary">
-              GUIDE CONTENT
-            </span>
-
-            <h2 className="mt-3 font-display text-2xl tracking-tight">
-              攻略正文
-            </h2>
-
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
-              该攻略页面已经接入 Supabase。
-              下一步会把图文正文内容接入
-              guide_content_blocks，
-              以后可以直接通过后台编辑。
-            </p>
-          </div>
+          <GuideContentBlocks
+            blocks={blocks}
+          />
         )}
       </section>
     </div>
