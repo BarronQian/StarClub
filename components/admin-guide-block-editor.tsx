@@ -366,6 +366,70 @@ export function AdminGuideBlockEditor({
     setSuccess(null)
   }
 
+  async function uploadBlockImage(
+  file: File,
+  blockIndex: number,
+) {
+  setError(null)
+
+  try {
+    const formData =
+      new FormData()
+
+    formData.append(
+      'file',
+      file,
+    )
+
+    const response =
+      await fetch(
+        '/api/admin/guides/upload',
+        {
+          method: 'POST',
+          body: formData,
+        },
+      )
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}))
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ??
+          '上传图片失败',
+      )
+    }
+
+    if (
+      typeof data.url !==
+      'string'
+    ) {
+      throw new Error(
+        '上传成功，但没有返回图片地址',
+      )
+    }
+
+    updateBlockContent(
+      blockIndex,
+      'src',
+      data.url,
+    )
+  } catch (err) {
+    console.error(
+      '[ADMIN GUIDE BLOCK IMAGE] Upload failed:',
+      err,
+    )
+
+    setError(
+      err instanceof Error
+        ? err.message
+        : '上传图片失败',
+    )
+  }
+}
+
   async function saveBlocks() {
     setError(null)
     setSuccess(null)
@@ -615,6 +679,9 @@ export function AdminGuideBlockEditor({
                     updateBlockContent={
                       updateBlockContent
                     }
+                      uploadBlockImage={
+                      uploadBlockImage
+                    }
                     updateListItem={
                       updateListItem
                     }
@@ -731,12 +798,17 @@ type FieldProps = {
     blockIndex: number,
     itemIndex: number,
   ) => void
+  uploadBlockImage: (
+  file: File,
+  blockIndex: number,
+) => Promise<void>
 }
 
 function BlockEditorFields({
   block,
   index,
   updateBlockContent,
+  uploadBlockImage,
   updateListItem,
   addListItem,
   removeListItem,
@@ -840,84 +912,119 @@ function BlockEditorFields({
     )
   }
 
-  if (
-    block.block_type ===
-    'image'
-  ) {
-    return (
-      <div className="grid gap-4">
-        <div>
-          <label className="text-sm font-medium">
-            图片地址
-          </label>
+if (
+  block.block_type ===
+  'image'
+) {
+  const src =
+    typeof content.src ===
+    'string'
+      ? content.src
+      : ''
+
+  return (
+    <div className="grid gap-4">
+      <div>
+        <label className="text-sm font-medium">
+          图片地址
+        </label>
+
+        <input
+          value={src}
+          onChange={(e) =>
+            updateBlockContent(
+              index,
+              'src',
+              e.target.value,
+            )
+          }
+          placeholder="图片 URL 或上传图片"
+          className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+        />
+
+        <label className="mt-3 inline-flex cursor-pointer rounded-full border border-border px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground">
+          上传图片
 
           <input
-            value={
-              typeof content.src ===
-              'string'
-                ? content.src
-                : ''
-            }
-            onChange={(e) =>
-              updateBlockContent(
-                index,
-                'src',
-                e.target.value,
-              )
-            }
-            placeholder="/images/guides/..."
-            className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="hidden"
+            onChange={(e) => {
+              const file =
+                e.target.files?.[0]
+
+              if (file) {
+                uploadBlockImage(
+                  file,
+                  index,
+                )
+              }
+
+              e.target.value =
+                ''
+            }}
           />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">
-            Alt
-          </label>
-
-          <input
-            value={
-              typeof content.alt ===
-              'string'
-                ? content.alt
-                : ''
-            }
-            onChange={(e) =>
-              updateBlockContent(
-                index,
-                'alt',
-                e.target.value,
-              )
-            }
-            className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">
-            图片说明
-          </label>
-
-          <input
-            value={
-              typeof content.caption ===
-              'string'
-                ? content.caption
-                : ''
-            }
-            onChange={(e) =>
-              updateBlockContent(
-                index,
-                'caption',
-                e.target.value,
-              )
-            }
-            className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
-          />
-        </div>
+        </label>
       </div>
-    )
-  }
+
+      {src && (
+        <div className="overflow-hidden rounded-2xl border border-border">
+          <img
+            src={src}
+            alt="正文图片预览"
+            className="max-h-105 w-full object-contain"
+          />
+        </div>
+      )}
+
+      <div>
+        <label className="text-sm font-medium">
+          Alt
+        </label>
+
+        <input
+          value={
+            typeof content.alt ===
+            'string'
+              ? content.alt
+              : ''
+          }
+          onChange={(e) =>
+            updateBlockContent(
+              index,
+              'alt',
+              e.target.value,
+            )
+          }
+          className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+        />
+      </div>
+
+      <div>
+        <label className="text-sm font-medium">
+          图片说明
+        </label>
+
+        <input
+          value={
+            typeof content.caption ===
+            'string'
+              ? content.caption
+              : ''
+          }
+          onChange={(e) =>
+            updateBlockContent(
+              index,
+              'caption',
+              e.target.value,
+            )
+          }
+          className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+        />
+      </div>
+    </div>
+  )
+}
 
   if (
     block.block_type ===
