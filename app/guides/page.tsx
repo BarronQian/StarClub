@@ -8,6 +8,8 @@ import {
 
 import type { GuideCategory } from '@/lib/guides'
 
+export const dynamic = 'force-dynamic'
+
 function getSupabase() {
   const supabaseUrl =
     process.env.SUPABASE_URL

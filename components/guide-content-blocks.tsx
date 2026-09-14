@@ -1,4 +1,11 @@
+'use client'
+
 import Image from 'next/image'
+import {
+  useEffect,
+  useState,
+} from 'react'
+
 import {
   getVideoEmbedUrl,
 } from '@/lib/video-embed'
@@ -14,9 +21,54 @@ type Props = {
   blocks: GuideContentBlock[]
 }
 
+type LightboxImage = {
+  src: string
+  alt: string
+} | null
+
 export function GuideContentBlocks({
   blocks,
 }: Props) {
+  const [
+    lightboxImage,
+    setLightboxImage,
+  ] = useState<LightboxImage>(null)
+
+  useEffect(() => {
+    if (!lightboxImage) {
+      return
+    }
+
+    function handleKeyDown(
+      event: KeyboardEvent,
+    ) {
+      if (event.key === 'Escape') {
+        setLightboxImage(null)
+      }
+    }
+
+    document.addEventListener(
+      'keydown',
+      handleKeyDown,
+    )
+
+    const originalOverflow =
+      document.body.style.overflow
+
+    document.body.style.overflow =
+      'hidden'
+
+    return () => {
+      document.removeEventListener(
+        'keydown',
+        handleKeyDown,
+      )
+
+      document.body.style.overflow =
+        originalOverflow
+    }
+  }, [lightboxImage])
+
   if (blocks.length === 0) {
     return (
       <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
@@ -36,249 +88,307 @@ export function GuideContentBlocks({
   }
 
   return (
-    <article className="mx-auto max-w-4xl">
-      <div className="space-y-8">
-        {blocks.map((block) => {
-          const content =
-            block.content ?? {}
+    <>
+      <article className="mx-auto max-w-4xl">
+        <div className="space-y-10">
+          {blocks.map((block) => {
+            const content =
+              block.content ?? {}
 
-          switch (block.block_type) {
-            case 'heading': {
-              const text =
-                typeof content.text === 'string'
-                  ? content.text
-                  : ''
+            switch (block.block_type) {
+              case 'heading': {
+                const text =
+                  typeof content.text ===
+                  'string'
+                    ? content.text
+                    : ''
 
-              const level =
-                typeof content.level === 'number'
-                  ? content.level
-                  : 2
+                const level =
+                  typeof content.level ===
+                  'number'
+                    ? content.level
+                    : 2
 
-              if (!text) {
-                return null
-              }
+                if (!text) {
+                  return null
+                }
 
-              if (level === 3) {
+                if (level === 3) {
+                  return (
+                    <h3
+                      key={block.id}
+                      className="pt-3 font-display text-xl tracking-tight sm:text-2xl"
+                    >
+                      {text}
+                    </h3>
+                  )
+                }
+
                 return (
-                  <h3
+                  <h2
                     key={block.id}
-                    className="pt-3 font-display text-xl tracking-tight sm:text-2xl"
+                    className="pt-4 font-display text-2xl tracking-tight sm:text-3xl"
                   >
                     {text}
-                  </h3>
+                  </h2>
                 )
               }
 
-              return (
-                <h2
-                  key={block.id}
-                  className="pt-4 font-display text-2xl tracking-tight sm:text-3xl"
-                >
-                  {text}
-                </h2>
-              )
-            }
+              case 'paragraph': {
+                const text =
+                  typeof content.text ===
+                  'string'
+                    ? content.text
+                    : ''
 
-            case 'paragraph': {
-              const text =
-                typeof content.text === 'string'
-                  ? content.text
-                  : ''
+                if (!text) {
+                  return null
+                }
 
-              if (!text) {
-                return null
+                return (
+                  <p
+                    key={block.id}
+                    className="whitespace-pre-line text-sm leading-8 text-muted-foreground sm:text-base"
+                  >
+                    {text}
+                  </p>
+                )
               }
 
-              return (
-                <p
-                  key={block.id}
-                  className="whitespace-pre-line text-sm leading-8 text-muted-foreground sm:text-base"
-                >
-                  {text}
-                </p>
-              )
-            }
+              case 'image': {
+                const src =
+                  typeof content.src ===
+                  'string'
+                    ? content.src
+                    : ''
 
-            case 'image': {
-              const src =
-                typeof content.src === 'string'
-                  ? content.src
-                  : ''
+                const alt =
+                  typeof content.alt ===
+                  'string'
+                    ? content.alt
+                    : ''
 
-              const alt =
-                typeof content.alt === 'string'
-                  ? content.alt
-                  : ''
+                const caption =
+                  typeof content.caption ===
+                  'string'
+                    ? content.caption
+                    : ''
 
-              const caption =
-                typeof content.caption === 'string'
-                  ? content.caption
-                  : ''
+                if (!src) {
+                  return null
+                }
 
-              if (!src) {
-                return null
-              }
-
-              return (
-                <figure
-                  key={block.id}
-                  className="space-y-3"
-                >
-                  <div className="relative aspect-video overflow-hidden rounded-2xl border border-border bg-muted">
-                    <Image
-                      src={src}
-                      alt={alt}
-                      fill
-                      sizes="(min-width: 1024px) 896px, 100vw"
-                      className="object-contain"
-                    />
-                  </div>
-
-                  {caption && (
-                    <figcaption className="text-center text-xs leading-6 text-muted-foreground">
-                      {caption}
-                    </figcaption>
-                  )}
-                </figure>
-              )
-            }
-
-            case 'list': {
-              const items =
-                Array.isArray(content.items)
-                  ? content.items.filter(
-                      (
-                        item
-                      ): item is string =>
-                        typeof item ===
-                        'string'
-                    )
-                  : []
-
-              const ordered =
-                content.ordered === true
-
-              if (items.length === 0) {
-                return null
-              }
-
-              const ListTag =
-                ordered ? 'ol' : 'ul'
-
-              return (
-                <ListTag
-                  key={block.id}
-                  className={`space-y-2 pl-6 text-sm leading-7 text-muted-foreground sm:text-base ${
-                    ordered
-                      ? 'list-decimal'
-                      : 'list-disc'
-                  }`}
-                >
-                  {items.map(
-                    (item, index) => (
-                      <li key={index}>
-                        {item}
-                      </li>
-                    )
-                  )}
-                </ListTag>
-              )
-            }
-
-            case 'callout': {
-              const title =
-                typeof content.title ===
-                'string'
-                  ? content.title
-                  : ''
-
-              const text =
-                typeof content.text ===
-                'string'
-                  ? content.text
-                  : ''
-
-              if (!title && !text) {
-                return null
-              }
-
-              return (
-                <div
-                  key={block.id}
-                  className="rounded-2xl border border-primary/20 bg-primary/5 p-5 sm:p-6"
-                >
-                  {title && (
-                    <h3 className="font-medium text-foreground">
-                      {title}
-                    </h3>
-                  )}
-
-                  {text && (
-                    <p className="mt-2 whitespace-pre-line text-sm leading-7 text-muted-foreground">
-                      {text}
-                    </p>
-                  )}
-                </div>
-              )
-            }
-
-            case 'video': {
-              const url =
-                typeof content.url === 'string'
-                  ? content.url
-                  : ''
-
-              const title =
-                typeof content.title === 'string'
-                  ? content.title
-                  : ''
-
-              if (!url) {
-                return null
-              }
-
-              const video =
-                getVideoEmbedUrl(url)
-
-              if (!video) {
-                return null
-              }
-
-              return (
-                <figure
-                  key={block.id}
-                  className="space-y-3"
-                >
-                  <div className="overflow-hidden rounded-2xl border border-border bg-black">
-                    <div className="relative aspect-video">
-                      <iframe
-                        src={video.embedUrl}
-                        title={
-                          title ||
-                          '攻略视频'
-                        }
-                        className="absolute inset-0 h-full w-full"
-                        allow="fullscreen"
-                        allowFullScreen
-                        frameBorder="0"
+                return (
+                  <figure
+                    key={block.id}
+                    className="space-y-3"
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setLightboxImage({
+                          src,
+                          alt,
+                        })
+                      }
+                      className="group block w-full cursor-zoom-in overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                      aria-label="点击放大图片"
+                    >
+                      <Image
+                        src={src}
+                        alt={alt}
+                        width={1600}
+                        height={1200}
+                        sizes="(min-width: 1024px) 896px, 100vw"
+                        className="mx-auto h-auto max-h-[75vh] w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
                       />
-                    </div>
+                    </button>
+
+                    {caption && (
+                      <figcaption className="text-center text-xs leading-6 text-muted-foreground">
+                        {caption}
+                      </figcaption>
+                    )}
+                  </figure>
+                )
+              }
+
+              case 'list': {
+                const items =
+                  Array.isArray(content.items)
+                    ? content.items.filter(
+                        (
+                          item,
+                        ): item is string =>
+                          typeof item ===
+                          'string',
+                      )
+                    : []
+
+                const ordered =
+                  content.ordered === true
+
+                if (items.length === 0) {
+                  return null
+                }
+
+                const ListTag =
+                  ordered ? 'ol' : 'ul'
+
+                return (
+                  <ListTag
+                    key={block.id}
+                    className={`space-y-2 pl-6 text-sm leading-7 text-muted-foreground sm:text-base ${
+                      ordered
+                        ? 'list-decimal'
+                        : 'list-disc'
+                    }`}
+                  >
+                    {items.map(
+                      (item, index) => (
+                        <li key={index}>
+                          {item}
+                        </li>
+                      ),
+                    )}
+                  </ListTag>
+                )
+              }
+
+              case 'callout': {
+                const title =
+                  typeof content.title ===
+                  'string'
+                    ? content.title
+                    : ''
+
+                const text =
+                  typeof content.text ===
+                  'string'
+                    ? content.text
+                    : ''
+
+                if (!title && !text) {
+                  return null
+                }
+
+                return (
+                  <div
+                    key={block.id}
+                    className="rounded-2xl border border-primary/20 bg-primary/5 p-5 sm:p-6"
+                  >
+                    {title && (
+                      <h3 className="font-medium text-foreground">
+                        {title}
+                      </h3>
+                    )}
+
+                    {text && (
+                      <p className="mt-2 whitespace-pre-line text-sm leading-7 text-muted-foreground">
+                        {text}
+                      </p>
+                    )}
                   </div>
+                )
+              }
 
-                  {title && (
-                    <figcaption className="text-center text-xs leading-6 text-muted-foreground">
-                      {title}
-                    </figcaption>
-                  )}
-                </figure>
-              )
+              case 'video': {
+                const url =
+                  typeof content.url ===
+                  'string'
+                    ? content.url
+                    : ''
+
+                const title =
+                  typeof content.title ===
+                  'string'
+                    ? content.title
+                    : ''
+
+                if (!url) {
+                  return null
+                }
+
+                const video =
+                  getVideoEmbedUrl(url)
+
+                if (!video) {
+                  return null
+                }
+
+                return (
+                  <figure
+                    key={block.id}
+                    className="space-y-3"
+                  >
+                    <div className="overflow-hidden rounded-2xl bg-black">
+                      <div className="relative aspect-video">
+                        <iframe
+                          src={video.embedUrl}
+                          title={
+                            title ||
+                            '攻略视频'
+                          }
+                          className="absolute inset-0 h-full w-full"
+                          allow="fullscreen"
+                          allowFullScreen
+                          frameBorder="0"
+                        />
+                      </div>
+                    </div>
+
+                    {title && (
+                      <figcaption className="text-center text-xs leading-6 text-muted-foreground">
+                        {title}
+                      </figcaption>
+                    )}
+                  </figure>
+                )
+              }
+
+              default:
+                return null
             }
+          })}
+        </div>
+      </article>
 
-            default:
-              return null
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-100 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm sm:p-8"
+          onClick={() =>
+            setLightboxImage(null)
           }
-        })}
-      </div>
-    </article>
+        >
+          <button
+            type="button"
+            onClick={() =>
+              setLightboxImage(null)
+            }
+            className="absolute right-5 top-5 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition-colors hover:bg-white/20"
+            aria-label="关闭图片"
+          >
+            ×
+          </button>
+
+          <div
+            className="relative flex h-full w-full items-center justify-center"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <Image
+              src={lightboxImage.src}
+              alt={lightboxImage.alt}
+              width={2400}
+              height={1800}
+              sizes="100vw"
+              className="max-h-[92vh] w-auto max-w-[96vw] object-contain"
+              priority
+            />
+          </div>
+        </div>
+      )}
+    </>
   )
 }
