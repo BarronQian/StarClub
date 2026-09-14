@@ -43,6 +43,21 @@ type GuideSectionRow = {
   sort_order: number
 }
 
+type GuideSectionItemRow = {
+  id: string
+  section_id: string
+  slug: string
+  title: string
+  subtitle: string | null
+  description: string | null
+  image: string | null
+  source: string | null
+  acquisition: string | null
+  tags: string[] | null
+  published: boolean
+  sort_order: number
+}
+
 async function getArmorSection(
   sectionSlug: string
 ) {
@@ -106,6 +121,63 @@ async function getArmorSection(
   }
 
   return data as GuideSectionRow
+}
+
+async function getArmorSectionItems(
+  sectionId: string
+) {
+  const supabase = getSupabase()
+
+  if (!supabase) {
+    return []
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from('guide_section_items')
+    .select(`
+      id,
+      section_id,
+      slug,
+      title,
+      subtitle,
+      description,
+      image,
+      source,
+      acquisition,
+      tags,
+      published,
+      sort_order
+    `)
+    .eq(
+      'section_id',
+      sectionId
+    )
+    .eq(
+      'published',
+      true
+    )
+    .order(
+      'sort_order',
+      {
+        ascending: true,
+      }
+    )
+
+  if (error) {
+    console.error(
+      '[ARMOR SECTION ITEMS] Failed to load:',
+      error
+    )
+
+    return []
+  }
+
+  return (
+    data ?? []
+  ) as GuideSectionItemRow[]
 }
 
 type ArmorSectionPageProps = {
@@ -193,6 +265,11 @@ export default async function ArmorSectionPage({
   if (!armor) {
     notFound()
   }
+
+  const items =
+    await getArmorSectionItems(
+      armor.id
+    )
 
   return (
     <div className="pb-24 lg:pb-32">
@@ -286,21 +363,127 @@ export default async function ArmorSectionPage({
       </section>
 
       <section className="site-container pt-12 lg:pt-16">
-        <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-          <span className="font-display text-[0.62rem] tracking-[0.3em] text-primary">
-            SERIES DETAILS
-          </span>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <span className="font-display text-[0.62rem] tracking-[0.3em] text-primary">
+              SERIES DETAILS
+            </span>
 
-          <h2 className="mt-3 font-display text-2xl tracking-tight">
-            系列详情
-          </h2>
+            <h2 className="mt-3 font-display text-2xl tracking-tight sm:text-3xl">
+              系列护甲
+            </h2>
 
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
-            当前页面已经正式接入 Supabase。
-            下一步我们会把每个护甲系列的具体护甲、图片、来源、获取方式等内容也迁进数据库，
-            并由后台统一管理。
-          </p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              共收录 {items.length} 件护甲
+            </p>
+          </div>
         </div>
+
+        {items.length > 0 ? (
+          <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {items.map(
+              (item) => (
+                <article
+                  key={item.id}
+                  className="group overflow-hidden rounded-2xl border border-border bg-card transition-colors hover:border-primary/35"
+                >
+                  {item.image && (
+                    <div className="relative aspect-4/3 overflow-hidden border-b border-border bg-muted">
+                      <Image
+                        src={item.image}
+                        alt={
+                          item.subtitle
+                            ? `${item.title} ${item.subtitle}`
+                            : item.title
+                        }
+                        fill
+                        sizes="(min-width: 1280px) 30vw, (min-width: 768px) 45vw, 100vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      />
+                    </div>
+                  )}
+
+                  <div className="p-5 sm:p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-display text-xl tracking-tight">
+                          {item.title}
+                        </h3>
+
+                        {item.subtitle && (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {item.subtitle}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {item.tags &&
+                      item.tags.length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {item.tags.map(
+                            (tag) => (
+                              <span
+                                key={tag}
+                                className="rounded-full bg-primary/8 px-2.5 py-1 text-[0.68rem] tracking-[0.06em] text-primary"
+                              >
+                                {tag}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      )}
+
+                    {item.description && (
+                      <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                        {item.description}
+                      </p>
+                    )}
+
+                    {(item.source ||
+                      item.acquisition) && (
+                      <div className="mt-5 space-y-3 border-t border-border pt-4">
+                        {item.source && (
+                          <div>
+                            <div className="text-[0.62rem] tracking-[0.18em] text-muted-foreground">
+                              SOURCE
+                            </div>
+
+                            <div className="mt-1 text-sm">
+                              {item.source}
+                            </div>
+                          </div>
+                        )}
+
+                        {item.acquisition && (
+                          <div>
+                            <div className="text-[0.62rem] tracking-[0.18em] text-muted-foreground">
+                              ACQUISITION
+                            </div>
+
+                            <div className="mt-1 text-sm leading-6">
+                              {item.acquisition}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </article>
+              )
+            )}
+          </div>
+        ) : (
+          <div className="mt-8 rounded-2xl border border-dashed border-border bg-card/50 px-6 py-14 text-center">
+            <div className="font-display text-sm tracking-[0.18em] text-muted-foreground">
+              NO ARMOR ITEMS
+            </div>
+
+            <p className="mt-3 text-sm text-muted-foreground">
+              该系列的具体护甲资料正在整理中。
+            </p>
+          </div>
+        )}
       </section>
     </div>
   )

@@ -5,6 +5,10 @@ import {
   useState,
 } from 'react'
 
+import {
+  AdminGuideSectionItemsEditor,
+} from '@/components/admin-guide-section-items-editor'
+
 type GuideSection = {
   id?: string
   slug: string
@@ -951,6 +955,24 @@ export function AdminGuideSectionsEditor({
                     前台发布此系列
                   </span>
                 </label>
+
+                {section.id ? (
+                    <AdminGuideSectionItemsEditor
+                      guideId={guideId}
+                      sectionId={section.id}
+                      sectionTitle={
+                        section.subtitle ||
+                        section.title ||
+                        '未命名系列'
+                      }
+                    />
+                  ) : (
+                    <div className="mt-6 rounded-xl border border-dashed border-border px-5 py-6 text-center text-xs text-muted-foreground">
+                      请先保存这个新系列，
+                      保存后才能添加具体护甲条目。
+                    </div>
+                  )}
+
               </div>
             )
           },
