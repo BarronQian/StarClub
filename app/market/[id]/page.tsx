@@ -14,6 +14,7 @@ import {
   Send,
   User,
   X,
+  Flag,
 } from 'lucide-react'
 import {
   use,
@@ -1376,13 +1377,26 @@ async function submitReport() {
                 {currentUserId !==
                   listing.seller_id ? (
                   <div className="mt-4 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={openReportDialog}
-                      className="text-xs text-muted-foreground transition-colors hover:text-red-500"
-                    >
-                      举报此交易
-                    </button>
+                      <button
+                        type="button"
+                        onClick={openReportDialog}
+                        className="
+                          inline-flex h-10 items-center justify-center gap-2
+                          rounded-full
+                          border border-red-200
+                          bg-red-50
+                          px-5
+                          text-sm font-medium text-red-600
+                          transition-all
+                          hover:border-red-300
+                          hover:bg-red-100
+                          hover:text-red-700
+                          active:scale-[0.98]
+                        "
+                      >
+                        <Flag className="h-4 w-4" />
+                        举报此交易
+                      </button>
                   </div>
                 ) : null}
                 <div className="flex gap-3">
