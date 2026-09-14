@@ -12,6 +12,10 @@ import {
   type EditableGuideBlock,
 } from '@/components/admin-guide-block-editor'
 
+import {
+  AdminGuideDeleteButton,
+} from '@/components/admin-guide-delete-button'
+
 function getSupabase() {
   const supabaseUrl =
     process.env.SUPABASE_URL
@@ -326,6 +330,11 @@ export default async function EditGuidePage({
             >
               返回攻略管理
             </Link>
+
+            <AdminGuideDeleteButton
+              guideId={guide.id}
+              guideTitle={guide.title}
+            />
           </div>
         </div>
 
