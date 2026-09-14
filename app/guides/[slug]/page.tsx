@@ -342,7 +342,9 @@ export default async function GuidePage({
                 <span className="font-display text-[0.65rem] tracking-[0.35em] text-primary">
                   {isVideo
                     ? 'VIDEO GUIDE'
-                    : 'STAR CITIZEN GUIDE'}
+                    : isExternal
+                      ? 'EXTERNAL RESOURCE'
+                      : 'STAR CITIZEN GUIDE'}
                 </span>
 
                 <span className="h-px w-10 bg-primary/40" />
@@ -456,7 +458,9 @@ export default async function GuidePage({
                   <span className="rounded-full bg-black/70 px-3 py-1.5 text-[0.65rem] tracking-[0.12em] text-white backdrop-blur">
                     {isVideo
                       ? '视频攻略'
-                      : '图文攻略'}
+                      : isExternal
+                        ? '外部资源'
+                        : '图文攻略'}
                   </span>
                 </div>
               </div>
