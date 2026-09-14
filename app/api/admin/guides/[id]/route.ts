@@ -161,6 +161,11 @@ export async function PATCH(
     'string'
       ? body.video_url.trim()
       : ''
+  const externalUrl =
+  typeof body.external_url ===
+  'string'
+    ? body.external_url.trim()
+    : ''
 
   const seoTitle =
     typeof body.seo_title ===
@@ -214,14 +219,12 @@ export async function PATCH(
         )
       : 0
 
-  const publishedAt =
+  const requestedPublishedAt =
     typeof body.published_at ===
       'string' &&
     body.published_at.trim()
-      ? body.published_at
-      : published
-        ? new Date().toISOString()
-        : null
+      ? body.published_at.trim()
+      : null
 
   if (!title) {
     return NextResponse.json(
@@ -261,7 +264,6 @@ export async function PATCH(
   const allowedTypes = [
     'article',
     'video',
-    'discord',
     'external',
   ]
 
@@ -296,6 +298,21 @@ export async function PATCH(
     )
   }
 
+  if (
+  type === 'external' &&
+  !externalUrl
+) {
+  return NextResponse.json(
+    {
+      error:
+        '外部攻略需要填写外部链接',
+    },
+    {
+      status: 400,
+    },
+  )
+}
+
   const supabase =
     getAdminSupabase()
 
@@ -304,7 +321,7 @@ export async function PATCH(
     error: currentError,
   } = await supabase
     .from('guides')
-    .select('id')
+    .select('id, published_at')
     .eq('id', id)
     .maybeSingle()
 
@@ -323,13 +340,22 @@ export async function PATCH(
     )
   }
 
+  const publishedAt =
+  requestedPublishedAt ??
+  currentGuide.published_at ??
+  (
+    published
+      ? new Date().toISOString()
+      : null
+  )
+
   const {
     data: duplicateSlug,
     error:
       duplicateSlugError,
   } = await supabase
     .from('guides')
-    .select('id')
+    .select('id, published_at')
     .eq('slug', slug)
     .neq('id', id)
     .maybeSingle()
@@ -384,6 +410,8 @@ export async function PATCH(
         creator || null,
       video_url:
         videoUrl || null,
+      external_url:
+        externalUrl || null,
       original,
       published,
       featured,

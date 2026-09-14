@@ -40,6 +40,21 @@ function getAdminSupabase() {
   )
 }
 
+const ALLOWED_CATEGORIES = new Set([
+  '萌新入门',
+  'FPS单兵战斗',
+  '飞船空战',
+  '舰船武器组件',
+  '单兵武器装备',
+  '经济 / 赚钱',
+  '探索 / 旅游',
+  '沙盒活动',
+  '限时活动',
+  '维克洛商店',
+  '舰船升级CCU',
+  '其他',
+])
+
 function normalizeSlug(
   value: string,
 ) {
@@ -140,6 +155,11 @@ export async function POST(
     'string'
       ? body.video_url.trim()
       : ''
+  const externalUrl =
+  typeof body.external_url ===
+  'string'
+    ? body.external_url.trim()
+    : ''
 
   const seoTitle =
     typeof body.seo_title ===
@@ -221,10 +241,15 @@ export async function POST(
     )
   }
 
-  if (!category) {
+  if (
+    !category ||
+    !ALLOWED_CATEGORIES.has(
+      category,
+    )
+  ) {
     return NextResponse.json(
       {
-        error: '请选择攻略分类',
+        error: '攻略分类无效',
       },
       {
         status: 400,
@@ -235,7 +260,6 @@ export async function POST(
   const allowedTypes = [
     'article',
     'video',
-    'discord',
     'external',
   ]
 
@@ -268,6 +292,21 @@ export async function POST(
       },
     )
   }
+
+  if (
+  type === 'external' &&
+  !externalUrl
+) {
+  return NextResponse.json(
+    {
+      error:
+        '外部攻略需要填写外部链接',
+    },
+    {
+      status: 400,
+    },
+  )
+}
 
   const supabase =
     getAdminSupabase()
@@ -333,6 +372,9 @@ export async function POST(
         creator || null,
       video_url:
         videoUrl ||
+        null,
+      external_url:
+        externalUrl ||
         null,
       original,
       published,

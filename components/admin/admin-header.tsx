@@ -12,8 +12,9 @@ type AdminSection =
   | 'users'
   | 'market'
   | 'events'
+  | 'guides'
+  | 'sponsors'
   | 'executive-hangar'
-    | 'sponsors'
 
 export function AdminHeader({
   adminEmail,
@@ -137,6 +138,20 @@ export function AdminHeader({
           活动管理
         </Button>
         
+        <Button
+        variant={
+          active === 'guides'
+            ? 'default'
+            : 'outline'
+        }
+        size="sm"
+        onClick={() =>
+          go('/admin/guides')
+        }
+      >
+        攻略管理
+      </Button>
+
         <Button
           variant={
             active === 'sponsors'

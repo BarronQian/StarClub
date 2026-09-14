@@ -62,22 +62,30 @@ const normalizeTags = (
     .filter(Boolean)
 }
 
+type NormalizedGuideSectionItem = {
+  id?: string
+  section_id: string
+  slug: string
+  title: string
+  subtitle: string | null
+  description: string | null
+  image: string | null
+  source: string | null
+  acquisition: string | null
+  tags: string[]
+  published: boolean
+  sort_order: number
+}
+
 export async function GET(
   _request: NextRequest,
   context: RouteContext
 ) {
-  const admin =
+  const auth =
     await requireAdminApi()
 
-  if (!admin) {
-    return NextResponse.json(
-      {
-        error: 'Unauthorized',
-      },
-      {
-        status: 401,
-      }
-    )
+  if (auth.response) {
+    return auth.response
   }
 
   const {
@@ -183,18 +191,11 @@ export async function PUT(
   request: NextRequest,
   context: RouteContext
 ) {
-  const admin =
+  const auth =
     await requireAdminApi()
 
-  if (!admin) {
-    return NextResponse.json(
-      {
-        error: 'Unauthorized',
-      },
-      {
-        status: 401,
-      }
-    )
+  if (auth.response) {
+    return auth.response
   }
 
   const {
@@ -247,7 +248,7 @@ export async function PUT(
       ? body.items
       : []
 
-  const normalizedItems =
+  const normalizedItems: NormalizedGuideSectionItem[] =
     incomingItems.map(
       (
         item: Record<
@@ -429,15 +430,19 @@ export async function PUT(
   }
 
   const incomingIds =
-    new Set(
+    new Set<string>(
       normalizedItems
         .map(
-          (item) =>
+          (
+            item: {
+              id?: string
+            }
+          ) =>
             item.id
         )
         .filter(
           (
-            itemId
+            itemId: string | undefined
           ): itemId is string =>
             Boolean(itemId)
         )

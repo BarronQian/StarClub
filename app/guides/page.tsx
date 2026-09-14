@@ -41,7 +41,7 @@ type GuideRow = {
   description: string | null
   category: string
   tags: string[] | null
-  type: 'article' | 'video' | 'discord' | 'external'
+  type: 'article' | 'video' | 'external'
   image: string | null
   author: string | null
   creator: string | null

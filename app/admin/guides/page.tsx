@@ -1,5 +1,9 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
+
+import { getAdminSession } from '@/lib/admin-auth'
+import { AdminHeader } from '@/components/admin/admin-header'
 
 function getSupabase() {
   const supabaseUrl =
@@ -110,13 +114,26 @@ function formatDate(
 }
 
 export default async function AdminGuidesPage() {
+  const session =
+    await getAdminSession()
+
+  if (!session) {
+    redirect('/admin/login')
+  }
+
   const guides =
     await getGuides()
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="site-container py-10 lg:py-14">
-        <div className="flex flex-col gap-6 border-b border-border pb-8 sm:flex-row sm:items-end sm:justify-between">
+      <main className="mx-auto flex max-w-6xl flex-col gap-10 px-6 pb-10 pt-20">
+        <AdminHeader
+          adminEmail={session.email}
+          active="guides"
+        />
+
+        <div>
+          <div className="flex flex-col gap-6 border-b border-border pb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <span className="font-display text-[0.65rem] tracking-[0.32em] text-primary">
               ADMIN / GUIDES
@@ -289,6 +306,7 @@ export default async function AdminGuidesPage() {
           共 {guides.length} 篇攻略
         </div>
       </div>
-    </div>
-  )
+    </main>
+  </div>
+)
 }
