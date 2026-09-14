@@ -242,6 +242,36 @@ export default function MarketListingPage({
   ] =
     useState(false)
 
+    const [
+      reportDialogOpen,
+      setReportDialogOpen,
+    ] = useState(false)
+
+    const [
+      reportReason,
+      setReportReason,
+    ] = useState('')
+
+    const [
+      reportDetails,
+      setReportDetails,
+    ] = useState('')
+
+    const [
+      submittingReport,
+      setSubmittingReport,
+    ] = useState(false)
+
+    const [
+      reportError,
+      setReportError,
+    ] = useState('')
+
+    const [
+      reportSuccess,
+      setReportSuccess,
+    ] = useState('')
+
   useEffect(() => {
     async function loadListing() {
       setLoading(true)
@@ -664,6 +694,140 @@ export default function MarketListingPage({
       )
     }
   }
+
+  function openReportDialog() {
+  setReportReason('')
+  setReportDetails('')
+  setReportError('')
+  setReportSuccess('')
+
+  setReportDialogOpen(true)
+}
+
+async function submitReport() {
+  if (!listing) {
+    setReportError(
+      '交易信息尚未加载完成',
+    )
+    return
+  }
+
+  if (submittingReport) {
+    return
+  }
+
+  setReportError('')
+  setReportSuccess('')
+
+  if (!reportReason) {
+    setReportError(
+      '请选择举报原因',
+    )
+    return
+  }
+
+  if (
+    reportDetails.length >
+    1500
+  ) {
+    setReportError(
+      '补充说明不能超过 1500 个字符',
+    )
+    return
+  }
+
+  setSubmittingReport(true)
+
+  try {
+    const {
+      getSupabaseBrowser,
+    } =
+      await import(
+        '@/lib/supabase-browser'
+      )
+
+    const supabase =
+      getSupabaseBrowser()
+
+    const {
+      data: {
+        session,
+      },
+    } =
+      await supabase.auth.getSession()
+
+    if (!session) {
+      throw new Error(
+        '请先登录后举报交易',
+      )
+    }
+
+    const response =
+      await fetch(
+        '/api/market/reports',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+
+            Authorization:
+              `Bearer ${session.access_token}`,
+          },
+
+          body:
+            JSON.stringify({
+              listingId:
+                listing.id,
+
+              reason:
+                reportReason,
+
+              details:
+                reportDetails.trim(),
+            }),
+        },
+      )
+
+    const data =
+      await readJsonSafely(
+        response,
+      )
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ??
+          '提交举报失败',
+      )
+    }
+
+    setReportSuccess(
+      '举报已提交，我们会尽快处理。',
+    )
+
+    window.setTimeout(
+      () => {
+        setReportDialogOpen(
+          false,
+        )
+
+        setReportReason('')
+        setReportDetails('')
+        setReportSuccess('')
+      },
+      1200,
+    )
+  } catch (err) {
+    setReportError(
+      err instanceof Error
+        ? err.message
+        : '提交举报失败',
+    )
+  } finally {
+    setSubmittingReport(false)
+  }
+}
 
   return (
     <>
@@ -1168,6 +1332,16 @@ export default function MarketListingPage({
               </div>
 
               <div className="mt-5 rounded-2xl border border-border bg-muted/30 p-5">
+                  
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={openReportDialog}
+                      className="text-xs text-muted-foreground transition-colors hover:text-red-500"
+                    >
+                      举报此交易
+                    </button>
+                  </div>
                 <div className="flex gap-3">
                   <RefreshCw className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 
@@ -1528,6 +1702,163 @@ export default function MarketListingPage({
           </div>
         </div>
       )}
+
+      {reportDialogOpen && (
+        <div className="fixed inset-0 z-120 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border px-6 py-5">
+              <div>
+                <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  REPORT LISTING
+                </div>
+
+                <h2 className="mt-1 text-xl font-semibold">
+                  举报此交易
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                disabled={submittingReport}
+                onClick={() =>
+                  setReportDialogOpen(false)
+                }
+                className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6 p-6">
+              <div className="rounded-xl border border-border bg-muted/30 p-4">
+                <div className="text-sm font-medium">
+                  {listing.title}
+                </div>
+
+                <div className="mt-1 text-xs text-muted-foreground">
+                  发布者：
+                  {listing.profiles?.rsi_handle
+                    ? `@${listing.profiles.rsi_handle}`
+                    : sellerName}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  举报原因
+                </label>
+
+                <select
+                  value={reportReason}
+                  onChange={(event) =>
+                    setReportReason(
+                      event.target.value,
+                    )
+                  }
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none"
+                >
+                  <option value="">
+                    请选择举报原因
+                  </option>
+
+                  <option value="fraud">
+                    疑似诈骗
+                  </option>
+
+                  <option value="misleading">
+                    虚假 / 误导交易信息
+                  </option>
+
+                  <option value="rmt">
+                    RMT / 现金交易
+                  </option>
+
+                  <option value="prohibited">
+                    违规商品或内容
+                  </option>
+
+                  <option value="spam">
+                    垃圾信息 / 恶意刷屏
+                  </option>
+
+                  <option value="other">
+                    其他
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  补充说明
+
+                  <span className="ml-2 font-normal text-muted-foreground">
+                    可选
+                  </span>
+                </label>
+
+                <textarea
+                  value={reportDetails}
+                  onChange={(event) =>
+                    setReportDetails(
+                      event.target.value,
+                    )
+                  }
+                  maxLength={1500}
+                  rows={5}
+                  placeholder="请简要说明举报原因，例如交易内容、行为或其他需要管理员注意的信息。"
+                  className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm leading-6 outline-none"
+                />
+
+                <div className="mt-1 text-right text-xs text-muted-foreground">
+                  {reportDetails.length}/1500
+                </div>
+              </div>
+
+              {reportError && (
+                <div className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-500">
+                  {reportError}
+                </div>
+              )}
+
+              {reportSuccess && (
+                <div className="rounded-xl bg-green-500/10 px-4 py-3 text-sm text-green-600">
+                  {reportSuccess}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
+              <button
+                type="button"
+                disabled={submittingReport}
+                onClick={() =>
+                  setReportDialogOpen(false)
+                }
+                className="h-10 rounded-full border border-border px-5 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                取消
+              </button>
+
+              <button
+                type="button"
+                disabled={submittingReport}
+                onClick={submitReport}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-red-500 px-5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {submittingReport ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    提交中...
+                  </>
+                ) : (
+                  '提交举报'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
   )
 }
