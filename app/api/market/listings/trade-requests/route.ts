@@ -583,7 +583,7 @@ export async function POST(
         star_citizen_handle,
         rsi_verified,
         banned_at,
-        muted_until
+        market_banned_at
       `)
       .eq(
         'id',
@@ -607,30 +607,13 @@ export async function POST(
     }
 
     if (
-      profile.banned_at
+      profile.banned_at ||
+      profile.market_banned_at
     ) {
       return NextResponse.json(
         {
           error:
-            '当前账号无法使用市场交易功能',
-        },
-        {
-          status: 403,
-        },
-      )
-    }
-
-    if (
-      profile.muted_until &&
-      new Date(
-        profile.muted_until,
-      ).getTime() >
-        Date.now()
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            '当前账号暂时无法发送交易申请',
+            '当前账号已被限制使用市场功能',
         },
         {
           status: 403,

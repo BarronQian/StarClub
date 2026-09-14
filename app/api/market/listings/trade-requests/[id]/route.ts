@@ -173,7 +173,7 @@ export async function PATCH(
       .select(`
         id,
         banned_at,
-        muted_until,
+        market_banned_at,
         rsi_verified,
         star_citizen_handle
       `)
@@ -204,7 +204,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error:
-            '当前账号无法使用市场功能',
+            '当前账号已被全站封禁',
         },
         {
           status: 403,
@@ -213,16 +213,13 @@ export async function PATCH(
     }
 
     if (
-      profile.muted_until &&
-      new Date(
-        profile.muted_until,
-      ).getTime() >
-        Date.now()
+      profile.market_banned_at &&
+      action === 'accept'
     ) {
       return NextResponse.json(
         {
           error:
-            '当前账号暂时无法使用市场功能',
+            '当前账号已被限制使用市场功能，无法接受新的交易申请',
         },
         {
           status: 403,
