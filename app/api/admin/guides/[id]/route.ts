@@ -430,3 +430,113 @@ export async function PATCH(
     guide: data,
   })
 }
+export async function DELETE(
+  _request: NextRequest,
+  context: RouteContext,
+) {
+  const auth =
+    await requireAdminApi()
+
+  if (auth.response) {
+    return auth.response
+  }
+
+  try {
+    const {
+      id,
+    } = await context.params
+
+    const supabase =
+      getAdminSupabase()
+
+    const {
+      data: guide,
+      error: guideError,
+    } = await supabase
+      .from('guides')
+      .select(`
+        id,
+        title,
+        slug
+      `)
+      .eq(
+        'id',
+        id,
+      )
+      .single()
+
+    if (
+      guideError ||
+      !guide
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            '攻略不存在',
+        },
+        {
+          status: 404,
+        },
+      )
+    }
+
+    const {
+      error: deleteError,
+    } = await supabase
+      .from('guides')
+      .delete()
+      .eq(
+        'id',
+        id,
+      )
+
+    if (deleteError) {
+      console.error(
+        '[ADMIN GUIDES] Delete failed:',
+        deleteError,
+      )
+
+      return NextResponse.json(
+        {
+          error:
+            '删除攻略失败',
+        },
+        {
+          status: 500,
+        },
+      )
+    }
+
+    return NextResponse.json({
+      ok: true,
+
+      deleted: {
+        id:
+          guide.id,
+
+        title:
+          guide.title,
+
+        slug:
+          guide.slug,
+      },
+    })
+  } catch (error) {
+    console.error(
+      '[ADMIN GUIDES] DELETE failed:',
+      error,
+    )
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : '删除攻略失败',
+      },
+      {
+        status: 500,
+      },
+    )
+  }
+}
