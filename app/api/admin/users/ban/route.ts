@@ -10,7 +10,18 @@ import {
   isAdminUserId,
 } from '@/lib/admin-auth'
 
-import { createAdminClient } from '@/lib/supabase-admin'
+import {
+  createAdminClient,
+} from '@/lib/supabase-admin'
+
+type BanAction =
+  | 'ban'
+  | 'unban'
+
+type BanScope =
+  | 'community'
+  | 'market'
+  | 'global'
 
 export async function POST(
   request: NextRequest,
@@ -22,9 +33,10 @@ export async function POST(
     return auth.response
   }
 
-  const body = await request
-    .json()
-    .catch(() => null)
+  const body =
+    await request
+      .json()
+      .catch(() => null)
 
   const userId =
     typeof body?.userId ===
@@ -35,7 +47,13 @@ export async function POST(
   const action =
     typeof body?.action ===
     'string'
-      ? body.action
+      ? body.action.trim()
+      : ''
+
+  const scope =
+    typeof body?.scope ===
+    'string'
+      ? body.scope.trim()
       : ''
 
   const reason =
@@ -72,6 +90,22 @@ export async function POST(
   }
 
   if (
+    scope !== 'community' &&
+    scope !== 'market' &&
+    scope !== 'global'
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          '封禁类型无效',
+      },
+      {
+        status: 400,
+      },
+    )
+  }
+
+  if (
     action === 'ban' &&
     !reason
   ) {
@@ -86,15 +120,32 @@ export async function POST(
     )
   }
 
+  if (
+    reason.length >
+    1000
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          '封禁原因不能超过 1000 个字符',
+      },
+      {
+        status: 400,
+      },
+    )
+  }
+
+  const banAction =
+    action as BanAction
+
+  const banScope =
+    scope as BanScope
+
   const admin =
     createAdminClient()
 
   /*
-   * 社区身份判断。
-   *
-   * Owner / Admin 的社区身份
-   * 都按照 Profile UUID 判断，
-   * 不再按照 Auth 邮箱判断。
+   * 社区身份保护
    */
   const targetIsOwner =
     isOwnerUserId(
@@ -107,28 +158,13 @@ export async function POST(
       userId,
     )
 
-  /*
-   * 当前后台操作者是否为最高权限 Owner。
-   *
-   * 后台权限仍然按照
-   * STARCLUB_OWNER_EMAIL 判断。
-   */
   const callerIsOwner =
     isOwnerEmail(
       auth.session.email,
     )
 
   /*
-   * 社区 Owner 永远不可被封禁。
-   *
-   * 普通 Admin：
-   * - 不能封禁 Owner
-   * - 不能解除 Owner 的封禁状态
-   *
-   * 后台 Owner：
-   * - 不能封禁社区 Owner
-   * - 如果数据库历史上错误留下封禁，
-   *   可以执行 unban 清理。
+   * Owner 保护
    */
   if (targetIsOwner) {
     if (!callerIsOwner) {
@@ -143,7 +179,9 @@ export async function POST(
       )
     }
 
-    if (action === 'ban') {
+    if (
+      banAction === 'ban'
+    ) {
       return NextResponse.json(
         {
           error:
@@ -157,10 +195,8 @@ export async function POST(
   }
 
   /*
-   * 普通 Admin 之间不能互相处罚。
-   *
-   * 只有后台 Owner
-   * 可以封禁 / 解封社区 Admin。
+   * 普通 Admin 之间不可互相处罚。
+   * 只有 Owner 可以操作其他 Admin。
    */
   if (
     targetIsAdmin &&
@@ -177,32 +213,37 @@ export async function POST(
     )
   }
 
-  /*
-   * 确认社区 Profile 存在，
-   * 并读取当前处罚状态。
-   */
   const {
     data: profile,
     error: profileError,
-  } = await admin
-    .from('profiles')
-    .select(`
-      id,
-      muted_until,
-      banned_at
-    `)
-    .eq(
-      'id',
-      userId,
-    )
-    .maybeSingle()
+  } =
+    await admin
+      .from('profiles')
+      .select(`
+        id,
+        muted_until,
+
+        community_banned_at,
+        community_ban_reason,
+
+        market_banned_at,
+        market_ban_reason,
+
+        banned_at,
+        ban_reason
+      `)
+      .eq(
+        'id',
+        userId,
+      )
+      .maybeSingle()
 
   if (
     profileError ||
     !profile
   ) {
     console.error(
-      '[v0] Target profile lookup error:',
+      '[ADMIN USERS BAN] Target profile lookup error:',
       profileError,
     )
 
@@ -217,15 +258,93 @@ export async function POST(
     )
   }
 
-  if (action === 'ban') {
-    /*
-     * 防止重复封禁。
-     */
-    if (profile.banned_at) {
+  /*
+   * ==========================
+   * 社区封禁
+   * ==========================
+   */
+  if (
+    banScope ===
+    'community'
+  ) {
+    if (
+      banAction === 'ban'
+    ) {
+      if (
+        profile.community_banned_at
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              '该用户已经处于社区封禁状态',
+          },
+          {
+            status: 409,
+          },
+        )
+      }
+
+      const now =
+        new Date().toISOString()
+
+      const {
+        error: updateError,
+      } =
+        await admin
+          .from('profiles')
+          .update({
+            community_banned_at:
+              now,
+
+            community_ban_reason:
+              reason,
+
+            /*
+             * 社区封禁优先于社区禁言。
+             */
+            muted_until:
+              null,
+
+            moderated_by:
+              auth.session.id,
+          })
+          .eq(
+            'id',
+            userId,
+          )
+
+      if (updateError) {
+        console.error(
+          '[ADMIN USERS BAN] Community ban failed:',
+          updateError,
+        )
+
+        return NextResponse.json(
+          {
+            error:
+              '社区封禁失败，请重试',
+          },
+          {
+            status: 500,
+          },
+        )
+      }
+
+      return NextResponse.json({
+        ok: true,
+        scope:
+          'community',
+        banned: true,
+      })
+    }
+
+    if (
+      !profile.community_banned_at
+    ) {
       return NextResponse.json(
         {
           error:
-            '该用户已经处于封禁状态',
+            '该用户当前没有被社区封禁',
         },
         {
           status: 409,
@@ -235,40 +354,34 @@ export async function POST(
 
     const {
       error: updateError,
-    } = await admin
-      .from('profiles')
-      .update({
-        banned_at:
-          new Date().toISOString(),
+    } =
+      await admin
+        .from('profiles')
+        .update({
+          community_banned_at:
+            null,
 
-        /*
-         * 封禁优先于禁言。
-         * 一旦封禁，同时清除禁言时间。
-         */
-        muted_until:
-          null,
+          community_ban_reason:
+            null,
 
-        moderation_reason:
-          reason,
-
-        moderated_by:
-          auth.session.id,
-      })
-      .eq(
-        'id',
-        userId,
-      )
+          moderated_by:
+            auth.session.id,
+        })
+        .eq(
+          'id',
+          userId,
+        )
 
     if (updateError) {
       console.error(
-        '[v0] User ban error:',
+        '[ADMIN USERS BAN] Community unban failed:',
         updateError,
       )
 
       return NextResponse.json(
         {
           error:
-            '封禁用户失败，请重试',
+            '解除社区封禁失败，请重试',
         },
         {
           status: 500,
@@ -278,64 +391,295 @@ export async function POST(
 
     return NextResponse.json({
       ok: true,
-      banned: true,
+      scope:
+        'community',
+      banned: false,
     })
   }
 
   /*
-   * action === 'unban'
+   * ==========================
+   * 市场封禁
+   * ==========================
    */
+  if (
+    banScope ===
+    'market'
+  ) {
+    if (
+      banAction === 'ban'
+    ) {
+      if (
+        profile.market_banned_at
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              '该用户已经处于市场封禁状态',
+          },
+          {
+            status: 409,
+          },
+        )
+      }
 
-  if (!profile.banned_at) {
-    return NextResponse.json(
-      {
-        error:
-          '该用户当前没有被封禁',
-      },
-      {
-        status: 409,
-      },
-    )
-  }
+      const now =
+        new Date().toISOString()
 
-  const {
-    error: unbanError,
-  } = await admin
-    .from('profiles')
-    .update({
-      banned_at:
-        null,
+      const {
+        error: updateError,
+      } =
+        await admin
+          .from('profiles')
+          .update({
+            market_banned_at:
+              now,
 
-      moderation_reason:
-        null,
+            market_ban_reason:
+              reason,
 
-      moderated_by:
-        null,
+            moderated_by:
+              auth.session.id,
+          })
+          .eq(
+            'id',
+            userId,
+          )
+
+      if (updateError) {
+        console.error(
+          '[ADMIN USERS BAN] Market ban failed:',
+          updateError,
+        )
+
+        return NextResponse.json(
+          {
+            error:
+              '市场封禁失败，请重试',
+          },
+          {
+            status: 500,
+          },
+        )
+      }
+
+      return NextResponse.json({
+        ok: true,
+        scope:
+          'market',
+        banned: true,
+      })
+    }
+
+    if (
+      !profile.market_banned_at
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            '该用户当前没有被市场封禁',
+        },
+        {
+          status: 409,
+        },
+      )
+    }
+
+    const {
+      error: updateError,
+    } =
+      await admin
+        .from('profiles')
+        .update({
+          market_banned_at:
+            null,
+
+          market_ban_reason:
+            null,
+
+          moderated_by:
+            auth.session.id,
+        })
+        .eq(
+          'id',
+          userId,
+        )
+
+    if (updateError) {
+      console.error(
+        '[ADMIN USERS BAN] Market unban failed:',
+        updateError,
+      )
+
+      return NextResponse.json(
+        {
+          error:
+            '解除市场封禁失败，请重试',
+        },
+        {
+          status: 500,
+        },
+      )
+    }
+
+    return NextResponse.json({
+      ok: true,
+      scope:
+        'market',
+      banned: false,
     })
-    .eq(
-      'id',
-      userId,
-    )
-
-  if (unbanError) {
-    console.error(
-      '[v0] User unban error:',
-      unbanError,
-    )
-
-    return NextResponse.json(
-      {
-        error:
-          '解除封禁失败，请重试',
-      },
-      {
-        status: 500,
-      },
-    )
   }
 
-  return NextResponse.json({
-    ok: true,
-    banned: false,
-  })
+  /*
+   * ==========================
+   * 全站封禁
+   * ==========================
+   */
+  if (
+    banScope ===
+    'global'
+  ) {
+    if (
+      banAction === 'ban'
+    ) {
+      if (
+        profile.banned_at
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              '该用户已经处于全站封禁状态',
+          },
+          {
+            status: 409,
+          },
+        )
+      }
+
+      const now =
+        new Date().toISOString()
+
+      const {
+        error: updateError,
+      } =
+        await admin
+          .from('profiles')
+          .update({
+            banned_at:
+              now,
+
+            ban_reason:
+              reason,
+
+            /*
+             * 全站封禁后无需保留临时禁言。
+             *
+             * 社区封禁 / 市场封禁状态不清除，
+             * 这样未来解除全站封禁后，
+             * 原有专项处罚仍然有效。
+             */
+            muted_until:
+              null,
+
+            moderated_by:
+              auth.session.id,
+          })
+          .eq(
+            'id',
+            userId,
+          )
+
+      if (updateError) {
+        console.error(
+          '[ADMIN USERS BAN] Global ban failed:',
+          updateError,
+        )
+
+        return NextResponse.json(
+          {
+            error:
+              '全站封禁失败，请重试',
+          },
+          {
+            status: 500,
+          },
+        )
+      }
+
+      return NextResponse.json({
+        ok: true,
+        scope:
+          'global',
+        banned: true,
+      })
+    }
+
+    if (
+      !profile.banned_at
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            '该用户当前没有被全站封禁',
+        },
+        {
+          status: 409,
+        },
+      )
+    }
+
+    const {
+      error: updateError,
+    } =
+      await admin
+        .from('profiles')
+        .update({
+          banned_at:
+            null,
+
+          ban_reason:
+            null,
+
+          moderated_by:
+            auth.session.id,
+        })
+        .eq(
+          'id',
+          userId,
+        )
+
+    if (updateError) {
+      console.error(
+        '[ADMIN USERS BAN] Global unban failed:',
+        updateError,
+      )
+
+      return NextResponse.json(
+        {
+          error:
+            '解除全站封禁失败，请重试',
+        },
+        {
+          status: 500,
+        },
+      )
+    }
+
+    return NextResponse.json({
+      ok: true,
+      scope:
+        'global',
+      banned: false,
+    })
+  }
+
+  return NextResponse.json(
+    {
+      error:
+        '无法处理该封禁操作',
+    },
+    {
+      status: 400,
+    },
+  )
 }

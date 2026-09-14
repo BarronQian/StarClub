@@ -731,7 +731,6 @@ export async function POST(
       .select(`
         id,
         banned_at,
-        muted_until,
         rsi_verified,
         star_citizen_handle
       `)
@@ -763,24 +762,6 @@ export async function POST(
         {
           error:
             '当前账号无法使用交易会话',
-        },
-        {
-          status: 403,
-        },
-      )
-    }
-
-    if (
-      profile.muted_until &&
-      new Date(
-        profile.muted_until,
-      ).getTime() >
-        Date.now()
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            '当前账号暂时无法发送交易消息',
         },
         {
           status: 403,

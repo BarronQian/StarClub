@@ -25,8 +25,18 @@ type UserItem = {
   member_number: number | null
   profile_slug: string | null
   created_at: string
+
   muted_until: string | null
+
+  community_banned_at: string | null
+  community_ban_reason: string | null
+
+  market_banned_at: string | null
+  market_ban_reason: string | null
+
   banned_at: string | null
+  ban_reason: string | null
+
   moderation_reason: string | null
   moderated_by: string | null
 }
