@@ -148,7 +148,7 @@ export default async function AdminGuidesPage() {
             </h1>
 
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              管理中文攻略、视频攻略、分类、发布状态与正文内容。
+              管理中文攻略、视频攻略、分类、标签与正文内容。
             </p>
           </div>
 
@@ -175,10 +175,6 @@ export default async function AdminGuidesPage() {
 
                   <th className="px-5 py-4 font-medium">
                     类型
-                  </th>
-
-                  <th className="px-5 py-4 font-medium">
-                    状态
                   </th>
 
                   <th className="px-5 py-4 font-medium">
@@ -231,18 +227,6 @@ export default async function AdminGuidesPage() {
                       </td>
 
                       <td className="px-5 py-4">
-                        {guide.published ? (
-                          <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-600 dark:text-emerald-400">
-                            已发布
-                          </span>
-                        ) : (
-                          <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-                            草稿
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-5 py-4">
                         {guide.original ? (
                           <span className="text-xs text-primary">
                             酒馆原创
@@ -286,7 +270,7 @@ export default async function AdminGuidesPage() {
                   0 && (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={6}
                       className="px-5 py-16 text-center text-sm text-muted-foreground"
                     >
                       暂无攻略

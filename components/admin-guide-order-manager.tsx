@@ -153,6 +153,19 @@ export function AdminGuideOrderManager({
             '保存排序失败',
         )
       }
+      
+      setItems((current) =>
+        current.map(
+          (
+            guide,
+            index,
+          ) => ({
+            ...guide,
+            sort_order:
+              (index + 1) * 10,
+          }),
+        ),
+      )
 
       setMessage(
         '攻略排序已保存',
