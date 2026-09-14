@@ -397,6 +397,7 @@ export async function POST(
         star_citizen_handle,
         rsi_verified,
         muted_until,
+        community_banned_at,
         banned_at
       `)
       .eq(
@@ -421,12 +422,15 @@ export async function POST(
     }
 
     if (
-      profile.banned_at
+      profile.banned_at ||
+      profile.community_banned_at
     ) {
       return NextResponse.json(
         {
           error:
-            '该账号已被封禁，无法评论',
+            profile.banned_at
+              ? '该账号已被全站封禁，无法评论'
+              : '该账号已被社区封禁，无法评论',
         },
         {
           status: 403,
