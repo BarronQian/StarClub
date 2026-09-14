@@ -68,12 +68,12 @@ type GuideRow = {
   type:
     | 'article'
     | 'video'
-    | 'discord'
     | 'external'
   image: string | null
   author: string | null
   creator: string | null
   video_url: string | null
+  external_url: string | null
   original: boolean
   published: boolean
   featured: boolean
@@ -137,6 +137,7 @@ async function getGuide(
       author,
       creator,
       video_url,
+      external_url,
       original,
       published,
       featured,
@@ -344,6 +345,10 @@ export default async function EditGuidePage({
 
       video_url:
         guide.video_url ??
+        '',
+
+      external_url:
+        guide.external_url ??
         '',
 
       original:
