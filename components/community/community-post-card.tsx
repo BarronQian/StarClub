@@ -71,13 +71,19 @@ function formatPostTime(
 export function CommunityPostCard({
   post,
   currentUserId,
+  isAdmin,
   onDelete,
   onEdit,
   onToggleLike,
   onOpenComments,
+  onAdminDelete,
+  onMuteUser,
+  onCommunityBan,
+  onGlobalBan,
 }: {
   post: CommunityPost
   currentUserId: string | null
+  isAdmin: boolean
   onDelete: (
     post: CommunityPost,
   ) => void
@@ -90,6 +96,22 @@ export function CommunityPostCard({
   onOpenComments: (
     post: CommunityPost,
   ) => void
+    onAdminDelete?: (
+    post: CommunityPost,
+  ) => void
+
+  onMuteUser?: (
+    post: CommunityPost,
+  ) => void
+
+  onCommunityBan?: (
+    post: CommunityPost,
+  ) => void
+
+  onGlobalBan?: (
+    post: CommunityPost,
+  ) => void
+
 }) {
   const author =
     getPostAuthor(post)
@@ -214,11 +236,37 @@ export function CommunityPostCard({
               isOwner={
                 isOwner
               }
+              isAdmin={
+                isAdmin
+              }
               onEdit={() => {
                 onEdit(post)
               }}
               onDelete={() => {
                 onDelete(post)
+              }}
+                onAdminDelete={() => {
+                onAdminDelete?.(
+                  post,
+                )
+              }}
+
+              onMuteUser={() => {
+                onMuteUser?.(
+                  post,
+                )
+              }}
+
+              onCommunityBan={() => {
+                onCommunityBan?.(
+                  post,
+                )
+              }}
+
+              onGlobalBan={() => {
+                onGlobalBan?.(
+                  post,
+                )
               }}
             />
 
