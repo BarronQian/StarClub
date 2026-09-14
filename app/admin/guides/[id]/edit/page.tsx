@@ -7,6 +7,11 @@ import {
   type AdminGuideFormData,
 } from '@/components/admin-guide-form'
 
+import {
+  AdminGuideBlockEditor,
+  type EditableGuideBlock,
+} from '@/components/admin-guide-block-editor'
+
 function getSupabase() {
   const supabaseUrl =
     process.env.SUPABASE_URL
@@ -57,6 +62,22 @@ type GuideRow = {
   published_at: string | null
   seo_title: string | null
   seo_description: string | null
+}
+
+type BlockRow = {
+  id: string
+  block_type:
+    | 'heading'
+    | 'paragraph'
+    | 'image'
+    | 'list'
+    | 'callout'
+    | 'video'
+  block_order: number
+  content: Record<
+    string,
+    unknown
+  >
 }
 
 async function getGuide(
@@ -110,6 +131,54 @@ async function getGuide(
   return data as GuideRow
 }
 
+async function getGuideBlocks(
+  guideId: string,
+) {
+  const supabase =
+    getSupabase()
+
+  if (!supabase) {
+    return []
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from(
+      'guide_content_blocks',
+    )
+    .select(`
+      id,
+      block_type,
+      block_order,
+      content
+    `)
+    .eq(
+      'guide_id',
+      guideId,
+    )
+    .order(
+      'block_order',
+      {
+        ascending: true,
+      },
+    )
+
+  if (error) {
+    console.error(
+      '[ADMIN GUIDE BLOCKS] Load failed:',
+      error,
+    )
+
+    return []
+  }
+
+  return (
+    data ?? []
+  ) as BlockRow[]
+}
+
 type EditGuidePageProps = {
   params: Promise<{
     id: string
@@ -129,6 +198,14 @@ export default async function EditGuidePage({
   if (!guide) {
     notFound()
   }
+
+  const blocks =
+    guide.type ===
+    'article'
+      ? await getGuideBlocks(
+          guide.id,
+        )
+      : []
 
   const initialData: AdminGuideFormData =
     {
@@ -196,6 +273,24 @@ export default async function EditGuidePage({
         '',
     }
 
+  const initialBlocks: EditableGuideBlock[] =
+    blocks.map(
+      (block) => ({
+        id:
+          block.id,
+
+        block_type:
+          block.block_type,
+
+        block_order:
+          block.block_order,
+
+        content:
+          block.content ??
+          {},
+      }),
+    )
+
   return (
     <div className="min-h-screen bg-background">
       <div className="site-container max-w-5xl py-10 lg:py-14">
@@ -242,6 +337,20 @@ export default async function EditGuidePage({
             }
           />
         </div>
+
+        {guide.type ===
+          'article' && (
+          <div className="mt-8">
+            <AdminGuideBlockEditor
+              guideId={
+                guide.id
+              }
+              initialBlocks={
+                initialBlocks
+              }
+            />
+          </div>
+        )}
       </div>
     </div>
   )
