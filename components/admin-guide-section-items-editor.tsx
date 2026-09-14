@@ -189,7 +189,10 @@ export function AdminGuideSectionItemsEditor({
 
         setItems(
           loadedItems.sort(
-            (a, b) =>
+            (
+              a: GuideSectionItem,
+              b: GuideSectionItem,
+            ) =>
               a.sort_order -
               b.sort_order,
           ),
@@ -487,8 +490,8 @@ export function AdminGuideSectionItemsEditor({
       const payload =
         items.map(
           (
-            item,
-            index,
+            item: GuideSectionItem,
+            index: number,
           ) => ({
             ...item,
 
