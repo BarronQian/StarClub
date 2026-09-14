@@ -246,6 +246,11 @@ export default function CommunityPage() {
   >(null)
 
   const [
+  adminDeletingPost,
+  setAdminDeletingPost,
+] = useState(false)
+
+  const [
     deletingPostId,
     setDeletingPostId,
   ] = useState<
@@ -1796,6 +1801,9 @@ useEffect(() => {
       setDeleteConfirmPost(
         null,
       )
+      setAdminDeletingPost(
+        false,
+      )
       setPosts([])
       setMyComments([])
       setHasMore(false)
@@ -2033,21 +2041,28 @@ useEffect(() => {
           postId,
         )
 
-        const response =
-          await fetch(
-            `/api/community/posts?postId=${encodeURIComponent(
-              postId,
-            )}`,
-            {
-              method:
-                'DELETE',
+          const endpoint =
+            adminDeletingPost
+              ? `/api/community/admin/posts/${encodeURIComponent(
+                  postId,
+                )}`
+              : `/api/community/posts?postId=${encodeURIComponent(
+                  postId,
+                )}`
 
-              headers: {
-                Authorization:
-                  `Bearer ${session.access_token}`,
+          const response =
+            await fetch(
+              endpoint,
+              {
+                method:
+                  'DELETE',
+
+                headers: {
+                  Authorization:
+                    `Bearer ${session.access_token}`,
+                },
               },
-            },
-          )
+            )
 
         const data =
           await response.json()
@@ -2086,6 +2101,9 @@ useEffect(() => {
 
         setDeleteConfirmPost(
           null,
+        )
+        setAdminDeletingPost(
+          false,
         )
       } catch (
         error
@@ -3168,6 +3186,10 @@ const pageDescription =
                           onDelete={(
                             targetPost,
                           ) => {
+                            setAdminDeletingPost(
+                              false,
+                            )
+
                             setDeleteConfirmPost(
                               targetPost,
                             )
@@ -3194,12 +3216,15 @@ const pageDescription =
                               targetPost,
                             )
                           }}
-                            onAdminDelete={(
+                          onAdminDelete={(
                             targetPost,
                           ) => {
-                            console.log(
-                              'admin delete',
-                              targetPost.id,
+                            setAdminDeletingPost(
+                              true,
+                            )
+
+                            setDeleteConfirmPost(
+                              targetPost,
                             )
                           }}
 
@@ -3447,6 +3472,9 @@ const pageDescription =
               setDeleteConfirmPost(
                 null,
               )
+              setAdminDeletingPost(
+                false,
+              )
             }
           }}
         >
@@ -3465,11 +3493,15 @@ const pageDescription =
               id="delete-post-title"
               className="text-lg font-semibold"
             >
-              删除动态？
+              {adminDeletingPost
+                ? '管理员删除动态？'
+                : '删除动态？'}
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              删除后这条动态将不会再显示。
+              {adminDeletingPost
+                ? '你正在以管理员身份删除其他用户的动态。删除后该动态将不会再显示。'
+                : '删除后这条动态将不会再显示。'}
             </p>
 
             <div className="mt-6 flex justify-end gap-3">
@@ -3484,6 +3516,10 @@ const pageDescription =
                 onClick={() => {
                   setDeleteConfirmPost(
                     null,
+                  )
+
+                  setAdminDeletingPost(
+                    false,
                   )
                 }}
                 className="inline-flex h-10 items-center justify-center rounded-full border border-border px-5 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
@@ -3503,9 +3539,11 @@ const pageDescription =
                 }}
                 className="inline-flex h-10 items-center justify-center rounded-full bg-red-600 px-5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {deletingPostId
-                  ? '删除中...'
-                  : '删除动态'}
+            {deletingPostId
+              ? '删除中...'
+              : adminDeletingPost
+                ? '管理员删除'
+                : '删除动态'}
               </button>
 
             </div>
