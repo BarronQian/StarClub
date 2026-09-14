@@ -276,7 +276,7 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-14 flex flex-col gap-5 border-t border-border pt-6 text-[0.72rem] leading-relaxed text-muted-foreground sm:flex-row sm:items-end sm:justify-between">
+        <div className="mt-14 flex flex-col gap-5 border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground sm:flex-row sm:items-end sm:justify-between">
           <div className="flex shrink-0 flex-col gap-2">
             <p>
               © 2026 StarClub 星际酒馆 · 非官方玩家社区
@@ -301,8 +301,8 @@ export function SiteFooter() {
             </div>
           </div>
 
-          <div className="max-w-2xl text-left sm:text-right">
-            <p className="tracking-[0.06em]">
+          <div className="max-w-xl text-left sm:text-right">
+            <p>
               Star Citizen® and Cloud Imperium® are trademarks of Cloud Imperium Rights LLC.
             </p>
 
