@@ -50,13 +50,6 @@ type AdminGuideFormProps = {
   initialData?: Partial<AdminGuideFormData>
 }
 
-function toDateTimeLocal(
-  value?: string | null,
-) {
-  if (!value) {
-    return ''
-  }
-
   const date =
     new Date(value)
 
@@ -204,15 +197,6 @@ export function AdminGuideForm({
   ] = useState(
     initialData?.sort_order ??
       0,
-  )
-
-  const [
-    publishedAt,
-    setPublishedAt,
-  ] = useState(
-    toDateTimeLocal(
-      initialData?.published_at,
-    ),
   )
 
   const [
