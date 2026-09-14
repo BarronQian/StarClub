@@ -222,6 +222,55 @@ export async function POST(
     const supabase =
       getAdminSupabase()
 
+    const {
+      data: currentProfile,
+      error: currentProfileError,
+    } =
+      await supabase
+        .from('profiles')
+        .select(`
+          id,
+          community_banned_at,
+          banned_at
+        `)
+        .eq(
+          'id',
+          user.id,
+        )
+        .maybeSingle()
+
+    if (
+      currentProfileError ||
+      !currentProfile
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            '找不到个人资料',
+        },
+        {
+          status: 404,
+        },
+      )
+    }
+
+    if (
+      currentProfile.banned_at ||
+      currentProfile.community_banned_at
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            currentProfile.banned_at
+              ? '该账号已被全站封禁，无法关注用户'
+              : '该账号已被社区封禁，无法关注用户',
+        },
+        {
+          status: 403,
+        },
+      )
+    }
+
     // 确认目标用户存在
     const {
       data: targetProfile,
