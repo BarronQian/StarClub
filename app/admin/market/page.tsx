@@ -116,6 +116,7 @@ export default async function AdminMarketPage() {
     wtsResult,
     wtbResult,
     wttResult,
+    pendingReportsResult,
   ] =
     await Promise.all([
       supabase
@@ -206,6 +207,20 @@ export default async function AdminMarketPage() {
           'listing_type',
           'wtt',
         ),
+
+      supabase
+        .from('market_reports')
+        .select(
+          'id',
+          {
+            count: 'exact',
+            head: true,
+          },
+        )
+        .eq(
+          'status',
+          'pending',
+        ),
     ])
 
   if (
@@ -290,7 +305,10 @@ export default async function AdminMarketPage() {
         activeCount,
       0,
     )
-
+  
+    const pendingReportsCount =
+  pendingReportsResult.count ?? 0
+  
   return (
     <div className="min-h-svh bg-background">
       <main className="mx-auto flex max-w-6xl flex-col gap-10 px-6 pb-10 pt-20">
@@ -370,6 +388,22 @@ export default async function AdminMarketPage() {
 
               <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
                 {wttResult.count ?? 0}
+              </p>
+            </div>
+
+            <div className="corner-cut border border-border bg-card p-5">
+              <p className="text-xs text-muted-foreground">
+                待处理举报
+              </p>
+
+              <p
+                className={`mt-2 text-3xl font-semibold tracking-tight ${
+                  pendingReportsCount > 0
+                    ? 'text-red-500'
+                    : 'text-foreground'
+                }`}
+              >
+                {pendingReportsCount}
               </p>
             </div>
           </div>
