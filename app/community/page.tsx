@@ -333,6 +333,16 @@ const emojiPickerRef =
   >(null)
 
   const [
+    isAdmin,
+    setIsAdmin,
+  ] = useState(false)
+
+  const [
+    isOwner,
+    setIsOwner,
+  ] = useState(false)
+
+  const [
     currentAvatar,
     setCurrentAvatar,
   ] = useState<
@@ -1506,43 +1516,46 @@ const [
       [],
     )
 
-  useEffect(() => {
-    const supabase =
-      getSupabaseBrowser()
+useEffect(() => {
+  const supabase =
+    getSupabaseBrowser()
 
-    const applySession =
-      async (
-        session: any,
-      ) => {
-        const userId =
-          session?.user?.id ??
-          null
+  const applySession =
+    async (
+      session: any,
+    ) => {
+      const userId =
+        session?.user?.id ??
+        null
 
-        if (!userId) {
-          setLoggedIn(
-            false,
-          )
-
-          setCurrentUserId(
-            null,
-          )
-
-          setCurrentAvatar(
-            null,
-          )
-
-          return
-        }
-
-        setLoggedIn(true)
+      if (!userId) {
+        setLoggedIn(false)
 
         setCurrentUserId(
-          userId,
+          null,
         )
 
-        const {
-          data: profile,
-        } = await supabase
+        setCurrentAvatar(
+          null,
+        )
+
+        setIsAdmin(false)
+        setIsOwner(false)
+
+        return
+      }
+
+      setLoggedIn(true)
+
+      setCurrentUserId(
+        userId,
+      )
+
+      const [
+        profileResult,
+        adminStatusResult,
+      ] = await Promise.all([
+        supabase
           .from(
             'profiles',
           )
@@ -1553,51 +1566,90 @@ const [
             'id',
             userId,
           )
-          .maybeSingle()
+          .maybeSingle(),
 
-        setCurrentAvatar(
-          profile
-            ?.avatar_url ??
-            null,
-        )
-      }
+        session?.access_token
+          ? fetch(
+              '/api/community/admin-status',
+              {
+                cache:
+                  'no-store',
 
-    const initialize =
-      async () => {
-        const {
-          data: {
-            session,
-          },
-        } =
-          await supabase.auth.getSession()
+                headers: {
+                  Authorization:
+                    `Bearer ${session.access_token}`,
+                },
+              },
+            )
+          : Promise.resolve(
+              null,
+            ),
+      ])
 
-        await applySession(
-          session,
-        )
-      }
-
-    void initialize()
-
-    const {
-      data: {
-        subscription,
-      },
-    } =
-      supabase.auth.onAuthStateChange(
-        (
-          _event,
-          session,
-        ) => {
-          void applySession(
-            session,
-          )
-        },
+      setCurrentAvatar(
+        profileResult.data
+          ?.avatar_url ??
+          null,
       )
 
-    return () => {
-      subscription.unsubscribe()
+      if (
+        adminStatusResult &&
+        adminStatusResult.ok
+      ) {
+        const adminData =
+          await adminStatusResult.json()
+
+        setIsAdmin(
+          adminData.isAdmin ===
+            true,
+        )
+
+        setIsOwner(
+          adminData.isOwner ===
+            true,
+        )
+      } else {
+        setIsAdmin(false)
+        setIsOwner(false)
+      }
     }
-  }, [])
+
+  const initialize =
+    async () => {
+      const {
+        data: {
+          session,
+        },
+      } =
+        await supabase.auth.getSession()
+
+      await applySession(
+        session,
+      )
+    }
+
+  void initialize()
+
+  const {
+    data: {
+      subscription,
+    },
+  } =
+    supabase.auth.onAuthStateChange(
+      (
+        _event,
+        session,
+      ) => {
+        void applySession(
+          session,
+        )
+      },
+    )
+
+  return () => {
+    subscription.unsubscribe()
+  }
+}, [])
 
   useEffect(() => {
   if (!emojiOpen) {
