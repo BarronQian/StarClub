@@ -5,9 +5,8 @@ import {
 
 import {
   requireAdminApi,
-  isOwnerEmail,
-  isOwnerUserId,
-  isAdminUserId,
+  isAdminIdentity,
+  isOwnerIdentity,
 } from '@/lib/admin-auth'
 
 import {
@@ -147,21 +146,50 @@ export async function POST(
   /*
    * 社区身份保护
    */
-  const targetIsOwner =
-    isOwnerUserId(
-      userId,
-    )
+    const {
+      data: {
+        user: targetUser,
+      },
+      error:
+        targetUserError,
+    } =
+      await admin.auth.admin.getUserById(
+        userId,
+      )
 
-  const targetIsAdmin =
-    !targetIsOwner &&
-    isAdminUserId(
-      userId,
-    )
+    if (
+      targetUserError ||
+      !targetUser
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            '找不到该用户账号',
+        },
+        {
+          status: 404,
+        },
+      )
+    }
 
-  const callerIsOwner =
-    isOwnerEmail(
-      auth.session.email,
-    )
+    const targetIsOwner =
+      isOwnerIdentity(
+        targetUser.id,
+        targetUser.email,
+      )
+
+    const targetIsAdmin =
+      !targetIsOwner &&
+      isAdminIdentity(
+        targetUser.id,
+        targetUser.email,
+      )
+
+    const callerIsOwner =
+      isOwnerIdentity(
+        auth.session.id,
+        auth.session.email,
+      )
 
   /*
    * Owner 保护
@@ -463,6 +491,41 @@ export async function POST(
         )
       }
 
+      const {
+        error:
+          listingsError,
+      } =
+        await admin
+          .from(
+            'market_listings',
+          )
+          .update({
+            closed_at:
+              now,
+
+            updated_at:
+              now,
+          })
+          .eq(
+            'seller_id',
+            userId,
+          )
+          .is(
+            'closed_at',
+            null,
+          )
+          .is(
+            'deleted_at',
+            null,
+          )
+
+      if (listingsError) {
+        console.error(
+          '[ADMIN USERS BAN] Close all listings after market ban failed:',
+          listingsError,
+        )
+      }
+
       return NextResponse.json({
         ok: true,
         scope:
@@ -605,6 +668,120 @@ export async function POST(
           },
         )
       }
+      
+      /*
+        * 全站封禁后隐藏该用户全部社区内容
+        * 并下架全部仍在架的市场商单。
+        */
+
+        const {
+          error: postsError,
+        } =
+          await admin
+            .from('posts')
+            .update({
+              deleted_at: now,
+              updated_at: now,
+            })
+            .eq(
+              'author_id',
+              userId,
+            )
+            .is(
+              'deleted_at',
+              null,
+            )
+
+        if (postsError) {
+          console.error(
+            '[ADMIN USERS BAN] Hide posts after global ban failed:',
+            postsError,
+          )
+        }
+
+        const {
+          error: commentsError,
+        } =
+          await admin
+            .from(
+              'post_comments',
+            )
+            .update({
+              deleted_at: now,
+              updated_at: now,
+            })
+            .eq(
+              'author_id',
+              userId,
+            )
+            .is(
+              'deleted_at',
+              null,
+            )
+
+        if (commentsError) {
+          console.error(
+            '[ADMIN USERS BAN] Hide comments after global ban failed:',
+            commentsError,
+          )
+        }
+
+        const {
+          error: guestbookError,
+        } =
+          await admin
+            .from(
+              'profile_guestbook',
+            )
+            .update({
+              deleted_at: now,
+            })
+            .eq(
+              'author_id',
+              userId,
+            )
+            .is(
+              'deleted_at',
+              null,
+            )
+
+        if (guestbookError) {
+          console.error(
+            '[ADMIN USERS BAN] Hide guestbook messages after global ban failed:',
+            guestbookError,
+          )
+        }
+
+        const {
+          error: listingsError,
+        } =
+          await admin
+            .from(
+              'market_listings',
+            )
+            .update({
+              closed_at: now,
+              updated_at: now,
+            })
+            .eq(
+              'seller_id',
+              userId,
+            )
+            .is(
+              'closed_at',
+              null,
+            )
+            .is(
+              'deleted_at',
+              null,
+            )
+
+        if (listingsError) {
+          console.error(
+            '[ADMIN USERS BAN] Close listings after global ban failed:',
+            listingsError,
+          )
+        }
 
       return NextResponse.json({
         ok: true,
