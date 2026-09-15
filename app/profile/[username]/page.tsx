@@ -11,10 +11,9 @@ import {
   Clock3,
   FileText,
   Heart,
-  ImageIcon,
-  MessageCircle,
   ShieldCheck,
   Ship,
+  UserPlus,
   Users,
 } from 'lucide-react'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
@@ -76,6 +75,13 @@ export default function PublicProfilePage() {
   const [visitors, setVisitors] =
     useState<ProfileVisitor[]>([])
 
+  const [
+    showAllVisitors,
+    setShowAllVisitors,
+  ] = useState(false)
+
+  const VISITORS_PREVIEW_LIMIT = 10
+
   const [discordRoles, setDiscordRoles] =
     useState<string[]>([])
 
@@ -103,6 +109,16 @@ export default function PublicProfilePage() {
           profile.member_number
         ).padStart(4, '0')}`
       : null
+  
+  const [
+  followingCount,
+  setFollowingCount,
+] = useState(0)
+
+const [
+  followerCount,
+  setFollowerCount,
+] = useState(0)
 
   const [
     profilePosts,
@@ -113,6 +129,13 @@ export default function PublicProfilePage() {
     profilePostsLoading,
     setProfilePostsLoading,
   ] = useState(true)
+
+  const [
+    showAllProfilePosts,
+    setShowAllProfilePosts,
+  ] = useState(false)
+
+  const PROFILE_POSTS_PREVIEW_LIMIT = 10
 
   const [
   currentUserId,
@@ -205,9 +228,23 @@ useEffect(() => {
           )
         }
 
-        setFollowing(
-          data.following === true,
-        )
+          setFollowing(
+            data.following === true,
+          )
+
+          setFollowingCount(
+            typeof data.followingCount ===
+              'number'
+              ? data.followingCount
+              : 0,
+          )
+
+          setFollowerCount(
+            typeof data.followerCount ===
+              'number'
+              ? data.followerCount
+              : 0,
+          )
       } catch (error) {
         console.error(
           'Failed to load follow status:',
@@ -626,38 +663,46 @@ const toggleFollow =
   void loadProfilePosts()
 }, [profile?.id])
 
-  const stats = [
-    {
-      label: '作品',
-      value: 0,
-      icon: ImageIcon,
-    },
-    {
-      label: '获赞',
-      value: 0,
-      icon: Heart,
-    },
-    {
-      label: '评论',
-      value: 0,
-      icon: MessageCircle,
-    },
-    {
-      label: '帖子',
-      value: 0,
-      icon: FileText,
-    },
-    {
-      label: '收藏',
-      value: 0,
-      icon: Bookmark,
-    },
-    {
-      label: '舰船',
-      value: 0,
-      icon: Ship,
-    },
-  ]
+const totalLikes =
+  profilePosts.reduce(
+    (total, post) =>
+      total +
+      (post.like_count ?? 0),
+    0,
+  )
+
+const stats = [
+  {
+    label: '动态',
+    value: profilePosts.length,
+    icon: FileText,
+  },
+  {
+    label: '获赞',
+    value: totalLikes,
+    icon: Heart,
+  },
+{
+  label: '关注',
+  value: followingCount,
+  icon: UserPlus,
+},
+{
+  label: '粉丝',
+  value: followerCount,
+  icon: Users,
+},
+  {
+    label: '收藏',
+    value: 0,
+    icon: Bookmark,
+  },
+  {
+    label: '舰船',
+    value: 0,
+    icon: Ship,
+  },
+]
 
   // 所有 Hooks 必须位于 conditional return 之前
   if (loading) {
@@ -954,28 +999,10 @@ const toggleFollow =
           <div className="flex flex-col gap-6">
 
             <section className="overflow-hidden rounded-2xl border border-border bg-white">
-              <div className="flex items-center gap-8 border-b border-border px-6">
-                {[
-                  '动态',
-                  '帖子',
-                  '评论',
-                  '点赞',
-                  '收藏',
-                ].map(
-                  (tab, i) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      className={`border-b-2 py-5 text-sm transition-colors ${
-                        i === 0
-                          ? 'border-primary text-foreground'
-                          : 'border-transparent text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  )
-                )}
+              <div className="flex items-center border-b border-border px-6">
+                <div className="border-b-2 border-primary py-5 text-sm text-foreground">
+                  动态
+                </div>
               </div>
 
                 {profilePostsLoading ? (
@@ -986,12 +1013,22 @@ const toggleFollow =
                   </div>
                 ) : profilePosts.length > 0 ? (
                   <div className="divide-y divide-border">
-                    {profilePosts.map(
-                      (post) => (
-                        <article
-                          key={post.id}
-                          className="px-6 py-6"
-                        >
+                    {profilePosts
+                      .slice(
+                        0,
+                        showAllProfilePosts
+                          ? profilePosts.length
+                          : PROFILE_POSTS_PREVIEW_LIMIT,
+                      )
+                      .map(
+                        (post) => (
+                          <Link
+                            key={post.id}
+                              href={`/community?postId=${encodeURIComponent(
+                                post.id,
+                              )}`}
+                            className="block px-6 py-6 transition-colors hover:bg-muted/30"
+                          >
                           <div className="flex items-center justify-between gap-4">
                             <span className="text-xs text-muted-foreground">
                               发布了动态
@@ -1019,8 +1056,28 @@ const toggleFollow =
                           <div className="mt-4 text-xs text-muted-foreground">
                             ♥ {post.like_count ?? 0}
                           </div>
-                        </article>
+                        </Link>
                       ),
+                    )}
+
+                    {profilePosts.length >
+                      PROFILE_POSTS_PREVIEW_LIMIT && (
+                      <div className="flex justify-center border-t border-border px-6 py-4">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowAllProfilePosts(
+                              (current) =>
+                                !current,
+                            )
+                          }
+                          className="text-sm font-medium text-[#a66700] transition-colors hover:text-[#8f5900]"
+                        >
+                          {showAllProfilePosts
+                            ? '收起'
+                            : `查看更多动态（${profilePosts.length - PROFILE_POSTS_PREVIEW_LIMIT}）`}
+                        </button>
+                      </div>
                     )}
                   </div>
                 ) : (
@@ -1118,8 +1175,15 @@ const toggleFollow =
 
               {visitors.length > 0 ? (
                 <div className="mt-5 space-y-4">
-                  {visitors.map(
-                    (visitor) => {
+                  {visitors
+                    .slice(
+                      0,
+                      showAllVisitors
+                        ? visitors.length
+                        : VISITORS_PREVIEW_LIMIT,
+                    )
+                    .map(
+                      (visitor) => {
                       const visitorId =
                         visitor.profileSlug &&
                         visitor.memberNumber !==
@@ -1191,6 +1255,25 @@ const toggleFollow =
                         </Link>
                       )
                     }
+                  )}
+                                    {visitors.length >
+                    VISITORS_PREVIEW_LIMIT && (
+                    <div className="flex justify-center border-t border-border pt-4">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowAllVisitors(
+                            (current) =>
+                              !current,
+                          )
+                        }
+                        className="text-xs font-medium text-[#a66700] transition-colors hover:text-[#8f5900]"
+                      >
+                        {showAllVisitors
+                          ? '收起'
+                          : `查看更多（${visitors.length - VISITORS_PREVIEW_LIMIT}）`}
+                      </button>
+                    </div>
                   )}
                 </div>
               ) : (

@@ -78,17 +78,6 @@ export async function GET(
     const user =
       await getCurrentUser(request)
 
-    if (!user) {
-      return NextResponse.json(
-        {
-          error: '请先登录',
-        },
-        {
-          status: 401,
-        },
-      )
-    }
-
     const profileId =
       request.nextUrl.searchParams.get(
         'profileId',
@@ -108,42 +97,114 @@ export async function GET(
     const supabase =
       getAdminSupabase()
 
-    const {
-      data,
-      error,
-    } =
-      await supabase
-        .from('profile_follows')
-        .select('id')
-        .eq(
-          'follower_id',
-          user.id,
-        )
-        .eq(
-          'following_id',
-          profileId,
-        )
-        .maybeSingle()
+    let following = false
 
-    if (error) {
-      console.error(
-        'Failed to check follow:',
+    if (user) {
+      const {
+        data,
         error,
-      )
+      } =
+        await supabase
+          .from('profile_follows')
+          .select('id')
+          .eq(
+            'follower_id',
+            user.id,
+          )
+          .eq(
+            'following_id',
+            profileId,
+          )
+          .maybeSingle()
 
-      return NextResponse.json(
-        {
-          error: '读取关注状态失败',
-        },
-        {
-          status: 500,
-        },
-      )
+      if (error) {
+        console.error(
+          'Failed to check follow:',
+          error,
+        )
+
+        return NextResponse.json(
+          {
+            error: '读取关注状态失败',
+          },
+          {
+            status: 500,
+          },
+        )
+      }
+
+      following = Boolean(data)
     }
+
+    const {
+  count: followingCount,
+  error: followingCountError,
+} =
+  await supabase
+    .from('profile_follows')
+    .select('*', {
+      count: 'exact',
+      head: true,
+    })
+    .eq(
+      'follower_id',
+      profileId,
+    )
+
+if (followingCountError) {
+  console.error(
+    'Failed to count following:',
+    followingCountError,
+  )
+
+  return NextResponse.json(
+    {
+      error: '读取关注数量失败',
+    },
+    {
+      status: 500,
+    },
+  )
+}
+
+const {
+  count: followerCount,
+  error: followerCountError,
+} =
+  await supabase
+    .from('profile_follows')
+    .select('*', {
+      count: 'exact',
+      head: true,
+    })
+    .eq(
+      'following_id',
+      profileId,
+    )
+
+if (followerCountError) {
+  console.error(
+    'Failed to count followers:',
+    followerCountError,
+  )
+
+  return NextResponse.json(
+    {
+      error: '读取粉丝数量失败',
+    },
+    {
+      status: 500,
+    },
+  )
+}
 
     return NextResponse.json(
       {
-        following: Boolean(data),
+          following,
+        followingCount:
+          followingCount ?? 0,
+        followerCount:
+          followerCount ?? 0,
       },
       {
         headers: {

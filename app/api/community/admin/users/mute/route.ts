@@ -5,9 +5,7 @@ import {
 
 import {
   isAdminIdentity,
-  isAdminUserId,
   isOwnerIdentity,
-  isOwnerUserId,
 } from '@/lib/admin-auth'
 
 import {
@@ -227,15 +225,43 @@ export async function POST(
     /*
      * 目标用户的 User ID 权限保护。
      */
-    const targetIsOwner =
-      isOwnerUserId(
+    const {
+      data: {
+        user: targetUser,
+      },
+      error:
+        targetUserError,
+    } =
+      await admin.auth.admin.getUserById(
         userId,
+      )
+
+    if (
+      targetUserError ||
+      !targetUser
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            '找不到该用户账号',
+        },
+        {
+          status: 404,
+        },
+      )
+    }
+
+    const targetIsOwner =
+      isOwnerIdentity(
+        targetUser.id,
+        targetUser.email,
       )
 
     const targetIsAdmin =
       !targetIsOwner &&
-      isAdminUserId(
-        userId,
+      isAdminIdentity(
+        targetUser.id,
+        targetUser.email,
       )
 
     const callerIsOwner =

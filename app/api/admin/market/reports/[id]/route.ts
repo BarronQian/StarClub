@@ -487,12 +487,9 @@ export async function PATCH(
       )
     }
 
-    if (
-      report.listing_id
-    ) {
       const {
         error:
-          listingError,
+          listingsError,
       } =
         await supabase
           .from(
@@ -506,17 +503,24 @@ export async function PATCH(
               handledAt,
           })
           .eq(
-            'id',
-            report.listing_id,
+            'seller_id',
+            report.reported_user_id,
+          )
+          .is(
+            'closed_at',
+            null,
+          )
+          .is(
+            'deleted_at',
+            null,
           )
 
-      if (listingError) {
+      if (listingsError) {
         console.error(
-          '[ADMIN MARKET REPORT] Close listing after market ban failed:',
-          listingError,
+          '[ADMIN MARKET REPORT] Close all listings after market ban failed:',
+          listingsError,
         )
       }
-    }
 
     const {
       error:

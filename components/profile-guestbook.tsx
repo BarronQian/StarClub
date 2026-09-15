@@ -38,6 +38,13 @@ export function ProfileGuestbook({
   const [messages, setMessages] =
     useState<GuestbookMessage[]>([])
 
+  const [
+  showAllMessages,
+  setShowAllMessages,
+] = useState(false)
+
+const MESSAGES_PREVIEW_LIMIT = 10
+
   const [content, setContent] =
     useState('')
 
@@ -407,7 +414,14 @@ export function ProfileGuestbook({
             </div>
           ) : messages.length > 0 ? (
             <div className="divide-y divide-border">
-              {messages.map(
+            {messages
+              .slice(
+                0,
+                showAllMessages
+                  ? messages.length
+                  : MESSAGES_PREVIEW_LIMIT,
+              )
+              .map(
                 (message) => {
                   const authorId =
                     message.author
@@ -561,7 +575,7 @@ export function ProfileGuestbook({
                             </div>
                           </div>
 
-                          <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-foreground/85">
+                          <p className="mt-3 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-foreground/85">
                             {
                               message.content
                             }
@@ -571,6 +585,25 @@ export function ProfileGuestbook({
                     </article>
                   )
                 }
+              )}
+                            {messages.length >
+                MESSAGES_PREVIEW_LIMIT && (
+                <div className="flex justify-center border-t border-border pt-4">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowAllMessages(
+                        (current) =>
+                          !current,
+                      )
+                    }
+                    className="text-xs font-medium text-[#a66700] transition-colors hover:text-[#8f5900]"
+                  >
+                    {showAllMessages
+                      ? '收起'
+                      : `查看更多留言（${messages.length - MESSAGES_PREVIEW_LIMIT}）`}
+                  </button>
+                </div>
               )}
             </div>
           ) : (
@@ -586,7 +619,7 @@ export function ProfileGuestbook({
       {/* 7 天留言冷却弹窗 */}
       {cooldownUntil && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/25 px-4 backdrop-blur-sm"
+          className="fixed inset-0 z-200 flex items-center justify-center bg-black/25 px-4 backdrop-blur-sm"
           onClick={() =>
             setCooldownUntil(null)
           }

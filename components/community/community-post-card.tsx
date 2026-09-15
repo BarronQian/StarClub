@@ -78,8 +78,6 @@ export function CommunityPostCard({
   onOpenComments,
   onAdminDelete,
   onMuteUser,
-  onCommunityBan,
-  onGlobalBan,
 }: {
   post: CommunityPost
   currentUserId: string | null
@@ -101,14 +99,6 @@ export function CommunityPostCard({
   ) => void
 
   onMuteUser?: (
-    post: CommunityPost,
-  ) => void
-
-  onCommunityBan?: (
-    post: CommunityPost,
-  ) => void
-
-  onGlobalBan?: (
     post: CommunityPost,
   ) => void
 
@@ -257,17 +247,6 @@ export function CommunityPostCard({
                 )
               }}
 
-              onCommunityBan={() => {
-                onCommunityBan?.(
-                  post,
-                )
-              }}
-
-              onGlobalBan={() => {
-                onGlobalBan?.(
-                  post,
-                )
-              }}
             />
 
           </div>
