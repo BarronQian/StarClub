@@ -228,8 +228,16 @@ useEffect(() => {
           )
         }
 
-          setFollowing(
-            data.following === true,
+          const nextFollowing =
+            data.following === true
+
+          setFollowing(nextFollowing)
+
+          setFollowerCount(
+            (current) =>
+              nextFollowing
+                ? current + 1
+                : Math.max(0, current - 1),
           )
 
           setFollowingCount(
