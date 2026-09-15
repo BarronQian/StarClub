@@ -282,7 +282,23 @@ export function SiteFooter() {
               © 2026 StarClub 星际酒馆 · 非官方玩家社区
             </p>
 
-            <div className="flex items-center gap-3">
+            <p className="text-[11px] text-muted-foreground/80">
+              Designed & Developed by{' '}
+              <span className="font-medium text-foreground/70">
+                GuMieHaoRen · 姑蔑好人
+              </span>
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href="/changelog"
+                className="transition-colors hover:text-foreground"
+              >
+                Changelog · v1.6
+              </a>
+
+              <span className="text-border">•</span>
+
               <a
                 href="/privacy"
                 className="transition-colors hover:text-foreground"

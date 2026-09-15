@@ -345,7 +345,7 @@ export function SiteHeader() {
           <a
             href={DISCORD_URL}
             {...EXTERNAL}
-            className="pill hidden bg-primary px-5 py-2.5 font-display text-[0.68rem] tracking-[0.22em] text-primary-foreground transition-opacity hover:opacity-85 lg:inline-block"
+            className="pill hidden bg-primary px-5 py-2.5 font-display text-[0.68rem] tracking-[0.22em] text-primary-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_6px_18px_rgba(184,115,0,0.22)] active:translate-y-0 active:scale-[0.98] lg:inline-block"
           >
             加入 DISCORD
           </a>

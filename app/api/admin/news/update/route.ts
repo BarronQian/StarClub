@@ -20,9 +20,12 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => null)
 
-  const id = Number(body?.id)
+  const id =
+    typeof body?.id === 'string'
+      ? body.id.trim()
+      : ''
 
-  if (!body || !Number.isFinite(id)) {
+  if (!body || !id) {
     return NextResponse.json(
       { error: '缺少资讯 ID' },
       { status: 400 },
