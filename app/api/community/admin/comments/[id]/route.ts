@@ -4,7 +4,7 @@ import {
 } from 'next/server'
 
 import {
-  isAdminUserId,
+  isAdminIdentity,
 } from '@/lib/admin-auth'
 
 import {
@@ -74,8 +74,9 @@ export async function DELETE(
     }
 
     if (
-      !isAdminUserId(
+      !isAdminIdentity(
         user.id,
+        user.email,
       )
     ) {
       return NextResponse.json(

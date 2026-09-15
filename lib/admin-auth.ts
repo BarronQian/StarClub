@@ -87,6 +87,42 @@ export function isAdminUserId(
   )
 }
 
+export function isOwnerIdentity(
+  userId: string | null | undefined,
+  email: string | null | undefined,
+): boolean {
+  return (
+    isOwnerUserId(userId) ||
+    isOwnerEmail(email)
+  )
+}
+
+export function isAdminIdentity(
+  userId: string | null | undefined,
+  email: string | null | undefined,
+): boolean {
+  if (
+    isOwnerIdentity(
+      userId,
+      email,
+    )
+  ) {
+    return true
+  }
+
+  if (
+    isAdminUserId(
+      userId,
+    )
+  ) {
+    return true
+  }
+
+  return isAdminEmail(
+    email,
+  )
+}
+
 /** Cookie that stores the caller's Supabase Auth access token once they've
  * been verified against STARCLUB_ADMIN_EMAILS at login time. This is a
  * minimal, stateless gate — no middleware, no SSR cookie-sync client. */

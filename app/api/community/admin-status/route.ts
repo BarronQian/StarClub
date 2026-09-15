@@ -5,8 +5,8 @@ import {
 
 import {
   getAnonClient,
-  isAdminUserId,
-  isOwnerUserId,
+  isAdminIdentity,
+  isOwnerIdentity,
 } from '@/lib/admin-auth'
 
 export async function GET(
@@ -65,20 +65,25 @@ export async function GET(
       })
     }
 
-    const userId =
-      data.user.id
+      const userId =
+        data.user.id
 
-    return NextResponse.json({
-      isAdmin:
-        isAdminUserId(
-          userId,
-        ),
+      const email =
+        data.user.email
 
-      isOwner:
-        isOwnerUserId(
-          userId,
-        ),
-    })
+      return NextResponse.json({
+        isAdmin:
+          isAdminIdentity(
+            userId,
+            email,
+          ),
+
+        isOwner:
+          isOwnerIdentity(
+            userId,
+            email,
+          ),
+      })
   } catch (error) {
     console.error(
       'Failed to check community admin status:',
