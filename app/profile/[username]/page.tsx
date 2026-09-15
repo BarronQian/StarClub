@@ -11,10 +11,9 @@ import {
   Clock3,
   FileText,
   Heart,
-  ImageIcon,
-  MessageCircle,
   ShieldCheck,
   Ship,
+  UserPlus,
   Users,
 } from 'lucide-react'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
@@ -110,6 +109,16 @@ export default function PublicProfilePage() {
           profile.member_number
         ).padStart(4, '0')}`
       : null
+  
+  const [
+  followingCount,
+  setFollowingCount,
+] = useState(0)
+
+const [
+  followerCount,
+  setFollowerCount,
+] = useState(0)
 
   const [
     profilePosts,
@@ -219,9 +228,23 @@ useEffect(() => {
           )
         }
 
-        setFollowing(
-          data.following === true,
-        )
+          setFollowing(
+            data.following === true,
+          )
+
+          setFollowingCount(
+            typeof data.followingCount ===
+              'number'
+              ? data.followingCount
+              : 0,
+          )
+
+          setFollowerCount(
+            typeof data.followerCount ===
+              'number'
+              ? data.followerCount
+              : 0,
+          )
       } catch (error) {
         console.error(
           'Failed to load follow status:',
@@ -640,38 +663,46 @@ const toggleFollow =
   void loadProfilePosts()
 }, [profile?.id])
 
-  const stats = [
-    {
-      label: '作品',
-      value: 0,
-      icon: ImageIcon,
-    },
-    {
-      label: '获赞',
-      value: 0,
-      icon: Heart,
-    },
-    {
-      label: '评论',
-      value: 0,
-      icon: MessageCircle,
-    },
-    {
-      label: '帖子',
-      value: 0,
-      icon: FileText,
-    },
-    {
-      label: '收藏',
-      value: 0,
-      icon: Bookmark,
-    },
-    {
-      label: '舰船',
-      value: 0,
-      icon: Ship,
-    },
-  ]
+const totalLikes =
+  profilePosts.reduce(
+    (total, post) =>
+      total +
+      (post.like_count ?? 0),
+    0,
+  )
+
+const stats = [
+  {
+    label: '动态',
+    value: profilePosts.length,
+    icon: FileText,
+  },
+  {
+    label: '获赞',
+    value: totalLikes,
+    icon: Heart,
+  },
+{
+  label: '关注',
+  value: followingCount,
+  icon: UserPlus,
+},
+{
+  label: '粉丝',
+  value: followerCount,
+  icon: Users,
+},
+  {
+    label: '收藏',
+    value: 0,
+    icon: Bookmark,
+  },
+  {
+    label: '舰船',
+    value: 0,
+    icon: Ship,
+  },
+]
 
   // 所有 Hooks 必须位于 conditional return 之前
   if (loading) {
