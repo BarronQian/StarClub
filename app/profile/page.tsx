@@ -131,6 +131,12 @@ export default function ProfilePage() {
     useState<ProfileVisitor[]>([])
 
   const [
+    showAllVisitors,
+    setShowAllVisitors,
+  ] = useState(false)
+
+  const VISITORS_PREVIEW_LIMIT = 10
+  const [
     coverUploading,
     setCoverUploading,
   ] = useState(false)
@@ -159,6 +165,13 @@ export default function ProfilePage() {
     profilePostsLoading,
     setProfilePostsLoading,
   ] = useState(true)
+
+  const [
+    showAllProfilePosts,
+    setShowAllProfilePosts,
+  ] = useState(false)
+
+  const PROFILE_POSTS_PREVIEW_LIMIT = 10
 
   const [
     followingCount,
@@ -716,6 +729,21 @@ useEffect(() => {
         total + (post.like_count ?? 0),
       0,
     )
+  const visibleVisitors =
+  showAllVisitors
+    ? visitors
+    : visitors.slice(
+        0,
+        VISITORS_PREVIEW_LIMIT,
+      )
+
+  const visibleProfilePosts =
+  showAllProfilePosts
+    ? profilePosts
+    : profilePosts.slice(
+        0,
+        PROFILE_POSTS_PREVIEW_LIMIT,
+      )
 
   const stats = [
     {
@@ -1650,13 +1678,17 @@ useEffect(() => {
                       正在加载动态...
                     </p>
                   </div>
-                ) : profilePosts.length > 0 ? (
-                  <div className="divide-y divide-border">
-                    {profilePosts.map(
+                  ) : profilePosts.length > 0 ? (
+                    <>
+                      <div className="divide-y divide-border">
+                   {visibleProfilePosts.map(
                       (post) => (
-                        <article
+                        <Link
                           key={post.id}
-                          className="px-6 py-6"
+                          href={`/community?postId=${encodeURIComponent(
+                            post.id,
+                          )}`}
+                          className="block px-6 py-6 transition-colors hover:bg-neutral-50/70"
                         >
                           <div className="flex items-center justify-between gap-4">
                             <span className="text-xs text-muted-foreground">
@@ -1687,12 +1719,32 @@ useEffect(() => {
                               ♥ {post.like_count ?? 0}
                             </span>
                           </div>
-                        </article>
+                        </Link>
                       ),
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex min-h-96 items-center justify-center px-6 py-16">
+              )}
+            </div>
+
+            {profilePosts.length >
+              PROFILE_POSTS_PREVIEW_LIMIT && (
+              <div className="border-t border-border px-6 py-4 text-center">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowAllProfilePosts(
+                      (current) => !current,
+                    )
+                  }
+                  className="text-xs font-medium text-primary transition-opacity hover:opacity-70"
+                >
+                  {showAllProfilePosts
+                    ? '收起动态'
+                    : `查看全部动态（${profilePosts.length}）`}
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+            <div className="flex min-h-96 items-center justify-center px-6 py-16">
                     <div className="text-center">
                       <p className="text-base font-medium">
                         还没有动态
@@ -1797,7 +1849,7 @@ useEffect(() => {
               {visitors.length >
               0 ? (
                 <div className="mt-5 space-y-4">
-                  {visitors.map(
+                  {visibleVisitors.map(
                     (
                       visitor
                     ) => {
@@ -1880,6 +1932,25 @@ useEffect(() => {
                         </Link>
                       )
                     }
+                  )}
+
+                  {visitors.length >
+                    VISITORS_PREVIEW_LIMIT && (
+                    <div className="pt-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowAllVisitors(
+                            (current) => !current,
+                          )
+                        }
+                        className="text-xs font-medium text-primary transition-opacity hover:opacity-70"
+                      >
+                        {showAllVisitors
+                          ? '收起访客'
+                          : `查看全部访客（${visitors.length}）`}
+                      </button>
+                    </div>
                   )}
                 </div>
               ) : (
