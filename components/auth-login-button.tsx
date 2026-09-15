@@ -5,10 +5,12 @@ import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
 type AuthLoginButtonProps = {
   variant?: 'default' | 'text'
+  redirectTo?: string
 }
 
 export function AuthLoginButton({
   variant = 'default',
+  redirectTo = '/',
 }: AuthLoginButtonProps) {
   const [loading, setLoading] = useState(false)
 
@@ -22,8 +24,8 @@ export function AuthLoginButton({
         await supabase.auth.signInWithOAuth({
           provider: 'discord',
           options: {
-            redirectTo:
-              `${window.location.origin}/`,
+          redirectTo:
+            `${window.location.origin}${redirectTo}`,
             scopes: 'identify email',
           },
         })

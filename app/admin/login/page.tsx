@@ -1,15 +1,18 @@
 'use client'
 
 import {
+  useEffect,
   useState,
   type FormEvent,
 } from 'react'
 
 import { useRouter } from 'next/navigation'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { AuthLoginButton } from '@/components/auth-login-button'
 
 export default function AdminLoginPage() {
   const [email, setEmail] =
@@ -25,6 +28,82 @@ export default function AdminLoginPage() {
     useState(false)
 
   const router = useRouter()
+    useEffect(() => {
+  let cancelled = false
+
+  const handleDiscordAdminLogin =
+    async () => {
+      const supabase =
+        getSupabaseBrowser()
+
+      const {
+        data: { session },
+      } =
+        await supabase.auth.getSession()
+
+      if (
+        !session?.access_token ||
+        cancelled
+      ) {
+        return
+      }
+
+      try {
+        const res = await fetch(
+          '/api/admin/discord-login',
+          {
+            method: 'POST',
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+          },
+        )
+
+        const data = await res
+          .json()
+          .catch(() => ({}))
+
+        if (!res.ok) {
+          if (res.status === 403) {
+            setError(
+              data.error ??
+                '该 Discord 账号没有后台管理权限',
+            )
+          }
+
+          return
+        }
+
+        if (cancelled) {
+          return
+        }
+
+        router.replace(
+          '/admin/gallery',
+        )
+
+        router.refresh()
+      } catch (error) {
+        console.error(
+          '[v0] Admin Discord session error:',
+          error,
+        )
+
+        if (!cancelled) {
+          setError(
+            'Discord 后台登录失败，请重试',
+          )
+        }
+      }
+    }
+
+  void handleDiscordAdminLogin()
+
+  return () => {
+    cancelled = true
+  }
+}, [router])
 
   const handleLogin = async (
     e: FormEvent,
@@ -173,6 +252,17 @@ export default function AdminLoginPage() {
                 ? '登录中...'
                 : '登录后台'}
             </Button>
+            <div className="flex items-center gap-3 py-1">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-[0.65rem] text-muted-foreground">
+              或
+            </span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          <AuthLoginButton
+            redirectTo="/admin/login"
+          />
           </form>
 
           <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
