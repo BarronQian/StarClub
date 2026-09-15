@@ -340,7 +340,9 @@ export function SiteHeader() {
         <div className="flex items-center gap-3">
           <SiteSearch />
 
-          <HeaderUserAuth />
+          <div className="shrink-0 [&_button]:h-10 [&_button]:min-w-16 [&_button]:whitespace-nowrap [&_button]:px-4 [&_button]:py-0 lg:[&_button]:h-auto lg:[&_button]:min-w-0 lg:[&_button]:px-5 lg:[&_button]:py-2.5">
+            <HeaderUserAuth />
+          </div>
           
           <a
             href={DISCORD_URL}
