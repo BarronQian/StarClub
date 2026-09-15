@@ -115,6 +115,13 @@ export default function PublicProfilePage() {
   ] = useState(true)
 
   const [
+    showAllProfilePosts,
+    setShowAllProfilePosts,
+  ] = useState(false)
+
+  const PROFILE_POSTS_PREVIEW_LIMIT = 10
+
+  const [
   currentUserId,
   setCurrentUserId,
 ] = useState<string | null>(
@@ -954,28 +961,10 @@ const toggleFollow =
           <div className="flex flex-col gap-6">
 
             <section className="overflow-hidden rounded-2xl border border-border bg-white">
-              <div className="flex items-center gap-8 border-b border-border px-6">
-                {[
-                  '动态',
-                  '帖子',
-                  '评论',
-                  '点赞',
-                  '收藏',
-                ].map(
-                  (tab, i) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      className={`border-b-2 py-5 text-sm transition-colors ${
-                        i === 0
-                          ? 'border-primary text-foreground'
-                          : 'border-transparent text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  )
-                )}
+              <div className="flex items-center border-b border-border px-6">
+                <div className="border-b-2 border-primary py-5 text-sm text-foreground">
+                  动态
+                </div>
               </div>
 
                 {profilePostsLoading ? (
@@ -986,12 +975,22 @@ const toggleFollow =
                   </div>
                 ) : profilePosts.length > 0 ? (
                   <div className="divide-y divide-border">
-                    {profilePosts.map(
-                      (post) => (
-                        <article
-                          key={post.id}
-                          className="px-6 py-6"
-                        >
+                    {profilePosts
+                      .slice(
+                        0,
+                        showAllProfilePosts
+                          ? profilePosts.length
+                          : PROFILE_POSTS_PREVIEW_LIMIT,
+                      )
+                      .map(
+                        (post) => (
+                          <Link
+                            key={post.id}
+                            href={`/community?post=${encodeURIComponent(
+                              post.id,
+                            )}`}
+                            className="block px-6 py-6 transition-colors hover:bg-muted/30"
+                          >
                           <div className="flex items-center justify-between gap-4">
                             <span className="text-xs text-muted-foreground">
                               发布了动态
@@ -1019,8 +1018,28 @@ const toggleFollow =
                           <div className="mt-4 text-xs text-muted-foreground">
                             ♥ {post.like_count ?? 0}
                           </div>
-                        </article>
+                        </Link>
                       ),
+                    )}
+
+                    {profilePosts.length >
+                      PROFILE_POSTS_PREVIEW_LIMIT && (
+                      <div className="flex justify-center border-t border-border px-6 py-4">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowAllProfilePosts(
+                              (current) =>
+                                !current,
+                            )
+                          }
+                          className="text-sm font-medium text-[#a66700] transition-colors hover:text-[#8f5900]"
+                        >
+                          {showAllProfilePosts
+                            ? '收起'
+                            : `查看更多动态（${profilePosts.length - PROFILE_POSTS_PREVIEW_LIMIT}）`}
+                        </button>
+                      </div>
                     )}
                   </div>
                 ) : (
