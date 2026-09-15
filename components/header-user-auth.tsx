@@ -4,16 +4,11 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
-  Bookmark,
   ChevronRight,
-  Heart,
   LogOut,
-  MessageCircle,
   Settings,
-  Ship,
   UserRound,
   X,
-  FileText,
 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { AuthLoginButton } from '@/components/auth-login-button'
@@ -104,31 +99,6 @@ export function HeaderUserAuth() {
       label: '个人主页',
       icon: UserRound,
       href: '/profile',
-    },
-    {
-      label: '我的点赞',
-      icon: Heart,
-      href: '/profile/likes',
-    },
-    {
-      label: '我的收藏',
-      icon: Bookmark,
-      href: '/profile/favorites',
-    },
-    {
-      label: '我的评论',
-      icon: MessageCircle,
-      href: '/profile/comments',
-    },
-    {
-      label: '我的帖子',
-      icon: FileText,
-      href: '/profile/posts',
-    },
-    {
-      label: '我的舰队',
-      icon: Ship,
-      href: '/profile/fleet',
     },
   ]
 
