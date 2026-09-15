@@ -76,6 +76,13 @@ export default function PublicProfilePage() {
   const [visitors, setVisitors] =
     useState<ProfileVisitor[]>([])
 
+  const [
+    showAllVisitors,
+    setShowAllVisitors,
+  ] = useState(false)
+
+  const VISITORS_PREVIEW_LIMIT = 10
+
   const [discordRoles, setDiscordRoles] =
     useState<string[]>([])
 
@@ -986,9 +993,9 @@ const toggleFollow =
                         (post) => (
                           <Link
                             key={post.id}
-                            href={`/community?post=${encodeURIComponent(
-                              post.id,
-                            )}`}
+                              href={`/community?postId=${encodeURIComponent(
+                                post.id,
+                              )}`}
                             className="block px-6 py-6 transition-colors hover:bg-muted/30"
                           >
                           <div className="flex items-center justify-between gap-4">
@@ -1137,8 +1144,15 @@ const toggleFollow =
 
               {visitors.length > 0 ? (
                 <div className="mt-5 space-y-4">
-                  {visitors.map(
-                    (visitor) => {
+                  {visitors
+                    .slice(
+                      0,
+                      showAllVisitors
+                        ? visitors.length
+                        : VISITORS_PREVIEW_LIMIT,
+                    )
+                    .map(
+                      (visitor) => {
                       const visitorId =
                         visitor.profileSlug &&
                         visitor.memberNumber !==
@@ -1210,6 +1224,25 @@ const toggleFollow =
                         </Link>
                       )
                     }
+                  )}
+                                    {visitors.length >
+                    VISITORS_PREVIEW_LIMIT && (
+                    <div className="flex justify-center border-t border-border pt-4">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowAllVisitors(
+                            (current) =>
+                              !current,
+                          )
+                        }
+                        className="text-xs font-medium text-[#a66700] transition-colors hover:text-[#8f5900]"
+                      >
+                        {showAllVisitors
+                          ? '收起'
+                          : `查看更多（${visitors.length - VISITORS_PREVIEW_LIMIT}）`}
+                      </button>
+                    </div>
                   )}
                 </div>
               ) : (

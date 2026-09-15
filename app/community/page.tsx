@@ -1755,6 +1755,98 @@ useEffect(() => {
   ])
 
   useEffect(() => {
+  const openPostFromUrl =
+    async () => {
+      const params =
+        new URLSearchParams(
+          window.location.search,
+        )
+
+      const postId =
+        params.get('postId')
+
+      if (!postId) {
+        return
+      }
+
+      try {
+        setError(null)
+
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession()
+
+        const response =
+          await fetch(
+            `/api/community/posts?postId=${encodeURIComponent(
+              postId,
+            )}`,
+            {
+              cache: 'no-store',
+
+              ...(session
+                ?.access_token
+                ? {
+                    headers: {
+                      Authorization:
+                        `Bearer ${session.access_token}`,
+                    },
+                  }
+                : {}),
+            },
+          )
+
+        const data =
+          await response.json()
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+              '读取动态失败',
+          )
+        }
+
+        const post:
+          CommunityPost | null =
+          data.post ??
+          (Array.isArray(
+            data.posts,
+          )
+            ? data.posts[0] ??
+              null
+            : null)
+
+        if (!post) {
+          setError(
+            '这条动态已不存在',
+          )
+
+          return
+        }
+
+        setCommentPost(post)
+      } catch (error) {
+        console.error(
+          'Failed to open post from URL:',
+          error,
+        )
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : '打开动态失败',
+        )
+      }
+    }
+
+  void openPostFromUrl()
+}, [])
+
+  useEffect(() => {
     void loadNews()
   }, [loadNews])
 
