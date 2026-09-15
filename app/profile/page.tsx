@@ -13,11 +13,10 @@ import {
   CircleCheck,
   FileText,
   Heart,
-  ImageIcon,
-  MessageCircle,
   Pencil,
   ShieldCheck,
   Ship,
+  UserPlus,
   Users,
   Clock3,
 } from 'lucide-react'
@@ -132,6 +131,12 @@ export default function ProfilePage() {
     useState<ProfileVisitor[]>([])
 
   const [
+    showAllVisitors,
+    setShowAllVisitors,
+  ] = useState(false)
+
+  const VISITORS_PREVIEW_LIMIT = 10
+  const [
     coverUploading,
     setCoverUploading,
   ] = useState(false)
@@ -160,6 +165,23 @@ export default function ProfilePage() {
     profilePostsLoading,
     setProfilePostsLoading,
   ] = useState(true)
+
+  const [
+    showAllProfilePosts,
+    setShowAllProfilePosts,
+  ] = useState(false)
+
+  const PROFILE_POSTS_PREVIEW_LIMIT = 10
+
+  const [
+    followingCount,
+    setFollowingCount,
+  ] = useState(0)
+
+  const [
+    followerCount,
+    setFollowerCount,
+  ] = useState(0)
 
   useEffect(() => {
   if (!user?.id) {
@@ -213,6 +235,59 @@ export default function ProfilePage() {
 
   void loadProfilePosts()
 }, [user?.id])
+
+  useEffect(() => {
+  if (!user?.id || !accessToken) {
+    return
+  }
+
+  const loadFollowCounts = async () => {
+    try {
+      const response = await fetch(
+        `/api/community/follows?profileId=${encodeURIComponent(
+          user.id,
+        )}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          cache: 'no-store',
+        },
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || '读取关注数据失败',
+        )
+      }
+
+      setFollowingCount(
+        typeof data.followingCount === 'number'
+          ? data.followingCount
+          : 0,
+      )
+
+      setFollowerCount(
+        typeof data.followerCount === 'number'
+          ? data.followerCount
+          : 0,
+      )
+    } catch (error) {
+      console.error(
+        'Failed to load follow counts:',
+        error,
+      )
+
+      setFollowingCount(0)
+      setFollowerCount(0)
+    }
+  }
+
+  void loadFollowCounts()
+}, [user?.id, accessToken])
 
   useEffect(() => {
     const supabase =
@@ -648,26 +723,48 @@ useEffect(() => {
     user.email?.split('@')[0] ||
     'StarClub User'
 
+  const totalLikes =
+    profilePosts.reduce(
+      (total, post) =>
+        total + (post.like_count ?? 0),
+      0,
+    )
+  const visibleVisitors =
+  showAllVisitors
+    ? visitors
+    : visitors.slice(
+        0,
+        VISITORS_PREVIEW_LIMIT,
+      )
+
+  const visibleProfilePosts =
+  showAllProfilePosts
+    ? profilePosts
+    : profilePosts.slice(
+        0,
+        PROFILE_POSTS_PREVIEW_LIMIT,
+      )
+
   const stats = [
     {
-      label: '作品',
-      value: 0,
-      icon: ImageIcon,
+      label: '动态',
+      value: profilePosts.length,
+      icon: FileText,
     },
     {
       label: '获赞',
-      value: 0,
+      value: totalLikes,
       icon: Heart,
     },
     {
-      label: '评论',
-      value: 0,
-      icon: MessageCircle,
+      label: '关注',
+      value: followingCount,
+      icon: UserPlus,
     },
     {
-      label: '帖子',
-      value: 0,
-      icon: FileText,
+      label: '粉丝',
+      value: followerCount,
+      icon: Users,
     },
     {
       label: '收藏',
@@ -1569,31 +1666,10 @@ useEffect(() => {
           <div className="flex flex-col gap-6">
 
             <section className="overflow-hidden rounded-2xl border border-border bg-white">
-              <div className="flex items-center gap-8 border-b border-border px-6">
-                {[
-                  '动态',
-                  '帖子',
-                  '评论',
-                  '点赞',
-                  '收藏',
-                ].map(
-                  (
-                    tab,
-                    i
-                  ) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      className={`border-b-2 py-5 text-sm transition-colors ${
-                        i === 0
-                          ? 'border-primary text-foreground'
-                          : 'border-transparent text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  )
-                )}
+              <div className="flex items-center border-b border-border px-6">
+                <div className="border-b-2 border-primary py-5 text-sm text-foreground">
+                  动态
+                </div>
               </div>
 
                 {profilePostsLoading ? (
@@ -1602,13 +1678,17 @@ useEffect(() => {
                       正在加载动态...
                     </p>
                   </div>
-                ) : profilePosts.length > 0 ? (
-                  <div className="divide-y divide-border">
-                    {profilePosts.map(
+                  ) : profilePosts.length > 0 ? (
+                    <>
+                      <div className="divide-y divide-border">
+                   {visibleProfilePosts.map(
                       (post) => (
-                        <article
+                        <Link
                           key={post.id}
-                          className="px-6 py-6"
+                          href={`/community?postId=${encodeURIComponent(
+                            post.id,
+                          )}`}
+                          className="block px-6 py-6 transition-colors hover:bg-neutral-50/70"
                         >
                           <div className="flex items-center justify-between gap-4">
                             <span className="text-xs text-muted-foreground">
@@ -1639,12 +1719,32 @@ useEffect(() => {
                               ♥ {post.like_count ?? 0}
                             </span>
                           </div>
-                        </article>
+                        </Link>
                       ),
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex min-h-96 items-center justify-center px-6 py-16">
+              )}
+            </div>
+
+            {profilePosts.length >
+              PROFILE_POSTS_PREVIEW_LIMIT && (
+              <div className="border-t border-border px-6 py-4 text-center">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowAllProfilePosts(
+                      (current) => !current,
+                    )
+                  }
+                  className="text-xs font-medium text-primary transition-opacity hover:opacity-70"
+                >
+                  {showAllProfilePosts
+                    ? '收起动态'
+                    : `查看全部动态（${profilePosts.length}）`}
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+            <div className="flex min-h-96 items-center justify-center px-6 py-16">
                     <div className="text-center">
                       <p className="text-base font-medium">
                         还没有动态
@@ -1749,7 +1849,7 @@ useEffect(() => {
               {visitors.length >
               0 ? (
                 <div className="mt-5 space-y-4">
-                  {visitors.map(
+                  {visibleVisitors.map(
                     (
                       visitor
                     ) => {
@@ -1832,6 +1932,25 @@ useEffect(() => {
                         </Link>
                       )
                     }
+                  )}
+
+                  {visitors.length >
+                    VISITORS_PREVIEW_LIMIT && (
+                    <div className="pt-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowAllVisitors(
+                            (current) => !current,
+                          )
+                        }
+                        className="text-xs font-medium text-primary transition-opacity hover:opacity-70"
+                      >
+                        {showAllVisitors
+                          ? '收起访客'
+                          : `查看全部访客（${visitors.length}）`}
+                      </button>
+                    </div>
                   )}
                 </div>
               ) : (
