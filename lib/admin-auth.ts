@@ -191,34 +191,28 @@ async function verifyAdminToken(
 ): Promise<AdminSession | null> {
   if (!token) return null
 
-  const supabase =
-    getAnonClient()
+  const supabase = getAnonClient()
+  if (!supabase) return null
 
-  if (!supabase) {
-    return null
-  }
+  const { data, error } =
+    await supabase.auth.getUser(token)
 
-  const {
-    data,
-    error,
-  } =
-    await supabase.auth.getUser(
-      token,
-    )
+  const user = data.user
 
   if (
     error ||
-    !data.user?.email ||
-    !isAdminEmail(
-      data.user.email,
+    !user ||
+    !isAdminIdentity(
+      user.id,
+      user.email,
     )
   ) {
     return null
   }
 
   return {
-    id: data.user.id,
-    email: data.user.email,
+    id: user.id,
+    email: user.email ?? '',
   }
 }
 
