@@ -1,10 +1,8 @@
 'use client'
 
 import {
-  Ban,
   MoreHorizontal,
   Pencil,
-  ShieldAlert,
   Trash2,
   VolumeX,
 } from 'lucide-react'
@@ -26,8 +24,6 @@ type CommunityPostMenuProps = {
 
   onAdminDelete?: () => void
   onMuteUser?: () => void
-  onCommunityBan?: () => void
-  onGlobalBan?: () => void
 }
 
 const EDIT_WINDOW_MS =
@@ -41,8 +37,6 @@ export function CommunityPostMenu({
   onDelete,
   onAdminDelete,
   onMuteUser,
-  onCommunityBan,
-  onGlobalBan,
 }: CommunityPostMenuProps) {
   const [
     open,
@@ -247,38 +241,6 @@ export function CommunityPostMenu({
                   />
 
                   禁言用户
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(false)
-                    onCommunityBan?.()
-                  }}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-orange-600 transition-colors hover:bg-orange-500/10"
-                >
-                  <Ban
-                    className="size-4"
-                    strokeWidth={1.8}
-                  />
-
-                  社区封禁
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(false)
-                    onGlobalBan?.()
-                  }}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-500/10"
-                >
-                  <ShieldAlert
-                    className="size-4"
-                    strokeWidth={1.8}
-                  />
-
-                  全站封禁
                 </button>
               </>
             )}

@@ -3389,14 +3389,6 @@ const pageDescription =
                               )
                             }}
 
-                          onGlobalBan={(
-                            targetPost,
-                          ) => {
-                            console.log(
-                              'global ban',
-                              targetPost.author_id,
-                            )
-                          }}
                         />
                       ),
                     )
