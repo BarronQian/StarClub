@@ -493,6 +493,27 @@ export async function POST(
 
       const {
         error:
+          notificationsError,
+      } =
+        await admin
+          .from(
+            'community_notifications',
+          )
+          .delete()
+          .eq(
+            'actor_id',
+            userId,
+          )
+
+      if (notificationsError) {
+        console.error(
+          '[ADMIN USERS BAN] Delete notifications after global ban failed:',
+          notificationsError,
+        )
+      }
+
+      const {
+        error:
           listingsError,
       } =
         await admin
