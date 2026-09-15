@@ -13,6 +13,7 @@ import {
   Heart,
   ShieldCheck,
   Ship,
+  TriangleAlert,
   UserPlus,
   Users,
 } from 'lucide-react'
@@ -33,6 +34,7 @@ type PublicProfile = {
   cover_url: string | null
   member_number: number | null
   profile_slug: string | null
+  banned_at: string | null
 }
 
 type ProfileVisitor = {
@@ -228,8 +230,16 @@ useEffect(() => {
           )
         }
 
-          setFollowing(
-            data.following === true,
+          const nextFollowing =
+            data.following === true
+
+          setFollowing(nextFollowing)
+
+          setFollowerCount(
+            (current) =>
+              nextFollowing
+                ? current + 1
+                : Math.max(0, current - 1),
           )
 
           setFollowingCount(
@@ -388,7 +398,8 @@ const toggleFollow =
               bio,
               cover_url,
               member_number,
-              profile_slug
+              profile_slug,
+              banned_at
             `)
             .ilike(
               'profile_slug',
@@ -832,6 +843,25 @@ const stats = [
                     {profile.bio ||
                       '这个酒友还没有填写个人简介。'}
                   </p>
+
+                      {profile.banned_at && (
+                        <div className="mt-4 flex max-w-3xl items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+                          <TriangleAlert
+                            className="mt-0.5 size-4 shrink-0"
+                            strokeWidth={1.8}
+                          />
+
+                          <div>
+                            <p className="text-sm font-medium">
+                              此用户已被全站封禁
+                            </p>
+
+                            <p className="mt-1 text-xs leading-5 text-red-600">
+                              因违反社区条例，此用户已被全站封禁。
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
                     </div>
 

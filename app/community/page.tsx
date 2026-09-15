@@ -37,6 +37,8 @@ import EmojiPicker, {
   Theme,
 } from 'emoji-picker-react'
 
+import { AuthLoginButton } from '@/components/auth-login-button'
+
 type FeedMode =
   | 'community'
   | 'following'
@@ -2871,15 +2873,14 @@ const pageDescription =
                   </div>
                 ) : (
                   <div className="flex min-h-28 flex-col items-center justify-center text-center">
-
                     <p className="text-sm font-medium">
-                      登录后参与社区
+                      <AuthLoginButton variant="text" />
+                      <span> 后参与社区</span>
                     </p>
 
                     <p className="mt-1 text-xs text-muted-foreground">
-                      登录 StarClub 账号后可以发布动态。
+                      登录 星际酒馆StarClub 账号后可以发布动态。
                     </p>
-
                   </div>
                 )}
 

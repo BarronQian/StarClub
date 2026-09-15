@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { readJsonResponse } from '@/lib/read-json-response'
 
 type AdminNewsItem = {
-  id: number
+  id: string
   source: string | null
   title_original: string | null
   title_zh: string | null
@@ -55,11 +55,11 @@ export function NewsAdminList({
 }) {
   const router = useRouter()
 
-  const [deletingId, setDeletingId] =
-    useState<number | null>(null)
-
   const [editingId, setEditingId] =
-    useState<number | null>(null)
+    useState<string | null>(null)
+
+  const [deletingId, setDeletingId] =
+    useState<string | null>(null)
 
   const [isSaving, setIsSaving] =
     useState(false)

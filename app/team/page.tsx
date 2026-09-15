@@ -102,6 +102,13 @@ const TEAM_MEMBERS = [
   description: '贴吧运营',
   image: '/images/team/bideninspace.png',
 },
+{
+  name: 'MR-STEVEN',
+  cnRole: '技术专员',
+  enRole: 'Technician',
+  description: '视觉设计',
+  image: '/images/team/mr-steven.png',
+},
 ]
 
 export default function TeamPage() {
@@ -205,7 +212,7 @@ export default function TeamPage() {
       </article>
     ))}
 
-{Array.from({ length: 3 }).map((_, index) => (
+{Array.from({ length: 2 }).map((_, index) => (
   <article key={`recruit-${index}`} className="group">
     <div className="relative flex aspect-[1.45/1] items-center justify-center overflow-hidden rounded-lg border border-dashed border-border/70 bg-[#f7f7f8]">
       <div className="flex flex-col items-center gap-3 text-center">
