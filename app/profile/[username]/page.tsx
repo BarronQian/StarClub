@@ -763,6 +763,18 @@ const stats = [
 
           {/* Banner */}
           <div className="relative h-44 overflow-hidden bg-[#ece8e1] lg:h-56">
+
+          {currentUserId === profile.id && (
+            <div className="absolute right-4 top-4 z-20 lg:right-5 lg:top-5">
+              <Link
+                href="/profile"
+                 className="inline-flex items-center rounded-full border border-white/60 bg-white/90 px-4 py-2 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow-md"
+              >
+                ← 返回个人主页
+              </Link>
+            </div>
+          )}
+
             {profile.cover_url ? (
               <img
                 src={profile.cover_url}

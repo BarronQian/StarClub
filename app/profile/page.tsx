@@ -13,11 +13,10 @@ import {
   CircleCheck,
   FileText,
   Heart,
-  ImageIcon,
-  MessageCircle,
   Pencil,
   ShieldCheck,
   Ship,
+  UserPlus,
   Users,
   Clock3,
 } from 'lucide-react'
@@ -161,6 +160,16 @@ export default function ProfilePage() {
     setProfilePostsLoading,
   ] = useState(true)
 
+  const [
+    followingCount,
+    setFollowingCount,
+  ] = useState(0)
+
+  const [
+    followerCount,
+    setFollowerCount,
+  ] = useState(0)
+
   useEffect(() => {
   if (!user?.id) {
     setProfilePosts([])
@@ -213,6 +222,59 @@ export default function ProfilePage() {
 
   void loadProfilePosts()
 }, [user?.id])
+
+  useEffect(() => {
+  if (!user?.id || !accessToken) {
+    return
+  }
+
+  const loadFollowCounts = async () => {
+    try {
+      const response = await fetch(
+        `/api/community/follows?profileId=${encodeURIComponent(
+          user.id,
+        )}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          cache: 'no-store',
+        },
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || '读取关注数据失败',
+        )
+      }
+
+      setFollowingCount(
+        typeof data.followingCount === 'number'
+          ? data.followingCount
+          : 0,
+      )
+
+      setFollowerCount(
+        typeof data.followerCount === 'number'
+          ? data.followerCount
+          : 0,
+      )
+    } catch (error) {
+      console.error(
+        'Failed to load follow counts:',
+        error,
+      )
+
+      setFollowingCount(0)
+      setFollowerCount(0)
+    }
+  }
+
+  void loadFollowCounts()
+}, [user?.id, accessToken])
 
   useEffect(() => {
     const supabase =
@@ -648,26 +710,33 @@ useEffect(() => {
     user.email?.split('@')[0] ||
     'StarClub User'
 
+  const totalLikes =
+    profilePosts.reduce(
+      (total, post) =>
+        total + (post.like_count ?? 0),
+      0,
+    )
+
   const stats = [
     {
-      label: '作品',
-      value: 0,
-      icon: ImageIcon,
+      label: '动态',
+      value: profilePosts.length,
+      icon: FileText,
     },
     {
       label: '获赞',
-      value: 0,
+      value: totalLikes,
       icon: Heart,
     },
     {
-      label: '评论',
-      value: 0,
-      icon: MessageCircle,
+      label: '关注',
+      value: followingCount,
+      icon: UserPlus,
     },
     {
-      label: '帖子',
-      value: 0,
-      icon: FileText,
+      label: '粉丝',
+      value: followerCount,
+      icon: Users,
     },
     {
       label: '收藏',
@@ -1569,31 +1638,10 @@ useEffect(() => {
           <div className="flex flex-col gap-6">
 
             <section className="overflow-hidden rounded-2xl border border-border bg-white">
-              <div className="flex items-center gap-8 border-b border-border px-6">
-                {[
-                  '动态',
-                  '帖子',
-                  '评论',
-                  '点赞',
-                  '收藏',
-                ].map(
-                  (
-                    tab,
-                    i
-                  ) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      className={`border-b-2 py-5 text-sm transition-colors ${
-                        i === 0
-                          ? 'border-primary text-foreground'
-                          : 'border-transparent text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  )
-                )}
+              <div className="flex items-center border-b border-border px-6">
+                <div className="border-b-2 border-primary py-5 text-sm text-foreground">
+                  动态
+                </div>
               </div>
 
                 {profilePostsLoading ? (
