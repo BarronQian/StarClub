@@ -342,11 +342,7 @@ export function GuideContentBlocks({
                       aria-label="点击放大图片"
                     >
                       <Image
-                        src={getSupabasePreviewUrl(
-                          src,
-                          1600,
-                          78,
-                        )}
+                        src={src}
                         alt={alt}
                         width={1600}
                         height={1200}
@@ -751,11 +747,7 @@ function GuideGallery({
         >
           <div className="relative flex min-h-65 items-center justify-center sm:min-h-105">
             <Image
-              src={getSupabasePreviewUrl(
-                activeImage.src,
-                1600,
-                78,
-              )}
+              src={activeImage.src}
               alt={
                 activeImage.alt
               }
@@ -832,11 +824,7 @@ function GuideGallery({
                 }`}
               >
                 <Image
-                  src={getSupabasePreviewUrl(
-                    image.src,
-                    240,
-                    68,
-                  )}
+                src={image.src}
                   alt={
                     image.alt
                   }
