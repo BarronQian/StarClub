@@ -62,7 +62,7 @@ export function UserVerificationBadges({
           )}
 
           <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 translate-y-1 whitespace-nowrap rounded-lg bg-neutral-950 px-2.5 py-1.5 text-[10px] font-medium text-white opacity-0 shadow-lg transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100">
-            该 Star Citizen RSI Handle 已完成身份认证
+            该 Star Citizen RSI Handle 已完成官网身份认证
           </div>
         </button>
         )}
