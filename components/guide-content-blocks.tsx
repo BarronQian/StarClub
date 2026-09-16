@@ -75,6 +75,72 @@ function getSupabasePreviewUrl(
   }
 }
 
+type GuidePreviewImageProps = {
+  src: string
+  alt: string
+  previewWidth: number
+  previewQuality?: number
+  fill?: boolean
+  width?: number
+  height?: number
+  className?: string
+}
+
+function GuidePreviewImage({
+  src,
+  alt,
+  previewWidth,
+  previewQuality = 72,
+  fill = false,
+  width,
+  height,
+  className,
+}: GuidePreviewImageProps) {
+  const [useOriginal, setUseOriginal] =
+    useState(false)
+
+  const imageSrc = useOriginal
+    ? src
+    : getSupabasePreviewUrl(
+        src,
+        previewWidth,
+        previewQuality,
+      )
+
+  if (fill) {
+    return (
+      <Image
+        src={imageSrc}
+        alt={alt}
+        fill
+        unoptimized
+        className={className}
+        onError={() => {
+          if (!useOriginal) {
+            setUseOriginal(true)
+          }
+        }}
+      />
+    )
+  }
+
+  return (
+    <Image
+      src={imageSrc}
+      alt={alt}
+      width={width ?? 1600}
+      height={height ?? 1000}
+      unoptimized
+      className={className}
+      onError={() => {
+        if (!useOriginal) {
+          setUseOriginal(true)
+        }
+      }}
+    />
+  )
+}
+
 export function GuideContentBlocks({
   blocks,
 }: Props) {
@@ -829,15 +895,12 @@ function GuideGallery({
                     : 'border-transparent opacity-55 hover:opacity-90'
                 }`}
               >
-                <Image
-                  src={getSupabasePreviewUrl(
-                    image.src,
-                    320,
-                    60,
-                  )}
+                <GuidePreviewImage
+                  src={image.src}
                   alt={image.alt}
+                  previewWidth={320}
+                  previewQuality={60}
                   fill
-                  unoptimized
                   className="object-cover"
                 />
               </button>
