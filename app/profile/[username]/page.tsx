@@ -20,6 +20,9 @@ import {
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import { DISCORD_ROLE_IDENTITIES } from '@/lib/discord-identities'
 import { ProfileGuestbook } from '@/components/profile-guestbook'
+import {
+  UserVerificationBadges,
+} from '@/components/user-verification-badges'
 
 type PublicProfile = {
   id: string
@@ -91,6 +94,11 @@ export default function PublicProfilePage() {
     discordMembership,
     setDiscordMembership,
   ] = useState<boolean | null>(null)
+
+  const [
+    discordVerified,
+    setDiscordVerified,
+  ] = useState(false)
 
   const [
     orgMembership,
@@ -583,6 +591,7 @@ const toggleFollow =
           )
 
           setDiscordMembership(false)
+          setDiscordVerified(false)
           setDiscordRoles([])
           setOrgMembership(false)
 
@@ -594,6 +603,10 @@ const toggleFollow =
 
         setDiscordMembership(
           data.discordMembership === true
+        )
+
+        setDiscordVerified(
+          data.discordVerified === true
         )
 
         setDiscordRoles(
@@ -612,6 +625,7 @@ const toggleFollow =
         )
 
         setDiscordMembership(false)
+        setDiscordVerified(false)
         setDiscordRoles([])
         setOrgMembership(false)
       }
@@ -819,30 +833,6 @@ const stats = [
                       {displayName}
                     </h1>
 
-                    {/* RSI verified */}
-                    {profile.rsi_verified &&
-                      profile.star_citizen_handle && (
-                        <div
-                          title="RSI Handle 已认证"
-                          className="group relative mb-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[#b87300] text-white shadow-[0_2px_7px_rgba(184,115,0,0.28)]"
-                        >
-                          <Check
-                            className="size-3.5"
-                            strokeWidth={2.7}
-                          />
-
-                          <span className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 w-max max-w-56 -translate-x-1/2 translate-y-1 rounded-xl border border-black/5 bg-neutral-950 px-3 py-2 text-left text-[11px] font-normal leading-5 text-white opacity-0 shadow-xl transition-all group-hover:translate-y-0 group-hover:opacity-100">
-                            RSI Handle 已认证
-
-                            <span className="block text-white/60">
-                              {
-                                profile.star_citizen_handle
-                              }
-                            </span>
-                          </span>
-                        </div>
-                      )}
-
                     {starClubId && (
                       <span className="mb-1 text-sm text-muted-foreground">
                         @{starClubId}
@@ -904,86 +894,22 @@ const stats = [
 
                 {/* Trust / identity status */}
                 <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
-
-                  {/* Discord */}
-                  <div
-                    className={`inline-flex items-center gap-2 text-xs ${
-                      profile.discord_id
-                        ? 'text-foreground/75'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    <CircleCheck
-                      className={`size-4 ${
-                        profile.discord_id
-                          ? 'text-[#a66700]'
-                          : 'text-neutral-300'
-                      }`}
-                      strokeWidth={1.8}
-                    />
-
-                    <span>
-                      Discord
-                    </span>
-                  </div>
-
-                  {/* StarClub community */}
-                  <div
-                    className={`inline-flex items-center gap-2 text-xs ${
-                      discordMembership === true
-                        ? 'text-foreground/75'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    <Users
-                      className={`size-4 ${
-                        discordMembership === true
-                          ? 'text-[#a66700]'
-                          : 'text-neutral-300'
-                      }`}
-                      strokeWidth={1.8}
-                    />
-
-                    <span>
-                      酒馆社区
-                    </span>
-
-                    {discordMembership === true && (
-                      <Check
-                        className="size-3 text-[#a66700]"
-                        strokeWidth={2.3}
-                      />
-                    )}
-                  </div>
-
-                  {/* StarClub ORG */}
-                  <div
-                    className={`inline-flex items-center gap-2 text-xs ${
+                  <UserVerificationBadges
+                    rsiVerified={
+                      profile.rsi_verified === true
+                    }
+                    handle={
+                      profile.star_citizen_handle
+                    }
+                    discordVerified={
+                      discordVerified
+                    }
+                    orgVerified={
                       orgMembership === true
-                        ? 'text-foreground/75'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    <ShieldCheck
-                      className={`size-4 ${
-                        orgMembership === true
-                          ? 'text-[#a66700]'
-                          : 'text-neutral-300'
-                      }`}
-                      strokeWidth={1.8}
-                    />
-
-                    <span>
-                      STARCLUB ORG
-                    </span>
-
-                    {orgMembership === true && (
-                      <Check
-                        className="size-3 text-[#a66700]"
-                        strokeWidth={2.3}
-                      />
-                    )}
-                  </div>
+                    }
+                    size="md"
+                    showLabels
+                  />
                 </div>
 
                 {/* Timezone */}

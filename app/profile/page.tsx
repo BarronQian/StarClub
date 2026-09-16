@@ -27,6 +27,9 @@ import {
 
 import { ProfileGuestbook } from '@/components/profile-guestbook'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
+import {
+  UserVerificationBadges,
+} from '@/components/user-verification-badges'
 
 type Profile = {
   id: string
@@ -128,6 +131,11 @@ export default function ProfilePage() {
     orgMembership,
     setOrgMembership,
   ] = useState<boolean | null>(null)
+
+  const [
+    discordVerified,
+    setDiscordVerified,
+  ] = useState(false)
 
   const [discordRoles, setDiscordRoles] =
     useState<string[]>([])
@@ -581,17 +589,17 @@ useEffect(() => {
 }, [profile, accessToken])
 
   useEffect(() => {
-      if (
-          !user ||
-          !accessToken
-        ) {
-          return
-        }
+    if (
+      !user ||
+      !accessToken
+    ) {
+      setDiscordVerified(false)
+      return
+    }
 
     const checkDiscordMembership =
       async () => {
         try {
-
           const response =
             await fetch(
               '/api/discord/membership',
@@ -613,22 +621,13 @@ useEffect(() => {
               data
             )
 
-            setDiscordMembership(
-              false
-            )
-
-            setDiscordRoles([])
+            setDiscordVerified(false)
             return
           }
 
-          setDiscordMembership(
-            data.isMember === true
-          )
-
-          setDiscordRoles(
-            Array.isArray(data.roles)
-              ? data.roles
-              : []
+          setDiscordVerified(
+            data.isMember === true &&
+            data.isVerified === true
           )
         } catch (error) {
           console.error(
@@ -636,8 +635,7 @@ useEffect(() => {
             error
           )
 
-          setDiscordMembership(false)
-          setDiscordRoles([])
+          setDiscordVerified(false)
         }
       }
 
@@ -2120,40 +2118,6 @@ const handleConfirmCoverUpload =
                         {username}
                       </h1>
 
-                      {profile?.rsi_verified &&
-                        profile?.star_citizen_handle && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setRsiVerificationError(
-                                ''
-                              )
-                              setRsiBinding(
-                                true
-                              )
-                            }}
-                            title="RSI Handle 已认证 · 点击管理"
-                            className="group relative mb-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[#b87300] text-white shadow-[0_2px_7px_rgba(184,115,0,0.28)] transition-all hover:scale-105 hover:bg-[#a66700]"
-                          >
-                            <Check
-                              className="size-3.5"
-                              strokeWidth={
-                                2.7
-                              }
-                            />
-
-                            <span className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 w-max max-w-56 -translate-x-1/2 translate-y-1 rounded-xl border border-black/5 bg-neutral-950 px-3 py-2 text-left text-[11px] font-normal leading-5 text-white opacity-0 shadow-xl transition-all group-hover:translate-y-0 group-hover:opacity-100">
-                              RSI Handle
-                              已认证
-                              <span className="block text-white/60">
-                                {
-                                  profile.star_citizen_handle
-                                }
-                              </span>
-                            </span>
-                          </button>
-                        )}
-
                       {starClubId && (
                         <span className="mb-1 text-sm text-muted-foreground">
                           @{starClubId}
@@ -2191,118 +2155,38 @@ const handleConfirmCoverUpload =
 
                 {/* Trust / identity status */}
                 <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
-
-                  <div
-                    className={`inline-flex items-center gap-2 text-xs ${
-                      user
-                        ? 'text-foreground/75'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    <CircleCheck
-                      className={`size-4 ${
-                        user
-                          ? 'text-[#a66700]'
-                          : 'text-neutral-300'
-                      }`}
-                      strokeWidth={
-                        1.8
-                      }
-                    />
-
-                    <span>
-                      Discord
-                    </span>
-                  </div>
-
-                  <div
-                    className={`inline-flex items-center gap-2 text-xs ${
-                      discordMembership ===
-                      true
-                        ? 'text-foreground/75'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    <Users
-                      className={`size-4 ${
-                        discordMembership ===
-                        true
-                          ? 'text-[#a66700]'
-                          : 'text-neutral-300'
-                      }`}
-                      strokeWidth={
-                        1.8
-                      }
-                    />
-
-                    <span>
-                      酒馆社区
-                    </span>
-
-                    {discordMembership ===
-                      true && (
-                      <Check
-                        className="size-3 text-[#a66700]"
-                        strokeWidth={
-                          2.3
-                        }
-                      />
-                    )}
-                  </div>
-
-                  <div
-                    className={`inline-flex items-center gap-2 text-xs ${
-                      orgMembership ===
-                      true
-                        ? 'text-foreground/75'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    <ShieldCheck
-                      className={`size-4 ${
-                        orgMembership ===
-                        true
-                          ? 'text-[#a66700]'
-                          : 'text-neutral-300'
-                      }`}
-                      strokeWidth={
-                        1.8
-                      }
-                    />
-
-                    <span>
-                      STARCLUB ORG
-                    </span>
-
-                    {orgMembership ===
-                      true && (
-                      <Check
-                        className="size-3 text-[#a66700]"
-                        strokeWidth={
-                          2.3
-                        }
-                      />
-                    )}
-                  </div>
+                  <UserVerificationBadges
+                    rsiVerified={
+                      profile?.rsi_verified === true
+                    }
+                    handle={
+                      profile?.star_citizen_handle
+                    }
+                    discordVerified={
+                      discordVerified
+                    }
+                    orgVerified={
+                      orgMembership === true
+                    }
+                    size="md"
+                    showLabels
+                    onRsiClick={() => {
+                      setRsiVerificationError('')
+                      setRsiBinding(true)
+                    }}
+                  />
 
                   {!profile?.rsi_verified && (
                     <button
                       type="button"
                       onClick={() => {
-                        setRsiHandleInput(
-                          ''
-                        )
-                        setRsiVerificationCode(
-                          ''
-                        )
-                        setRsiBinding(
-                          true
-                        )
+                        setRsiHandleInput('')
+                        setRsiVerificationCode('')
+                        setRsiBinding(true)
                       }}
                       className="inline-flex items-center gap-1.5 text-xs text-primary transition-opacity hover:opacity-70"
                     >
-                      RSI Handle
-                      未认证
+                      RSI Handle 未认证
                       <span>→</span>
                     </button>
                   )}

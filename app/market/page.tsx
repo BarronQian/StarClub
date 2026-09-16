@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import {
-  BadgeCheck,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -20,6 +19,11 @@ import {
 import {
   MarketListingDialog,
 } from '@/components/market-listing-dialog'
+
+import {
+  UserVerificationBadges,
+} from '@/components/user-verification-badges'
+
 import {
   ARMOR_PARTS,
   ARMOR_WEIGHTS,
@@ -1311,13 +1315,17 @@ export default function MarketPage() {
                                   'StarClub 玩家'}
                             </span>
 
-                            {listing.profiles
-                              ?.rsi_verified && (
-                              <BadgeCheck
-                                className="size-3.5 shrink-0 text-sky-500"
-                                aria-label="RSI 已认证"
-                              />
-                            )}
+                            <UserVerificationBadges
+                              rsiVerified={
+                                listing.profiles
+                                  ?.rsi_verified === true
+                              }
+                              handle={
+                                listing.profiles
+                                  ?.rsi_handle
+                              }
+                              size="sm"
+                            />
                           </div>
                         </div>
                       </Link>
