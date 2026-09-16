@@ -96,6 +96,86 @@ export function GuideContentBlocks({
               block.content ?? {}
 
             switch (block.block_type) {
+                            case 'section': {
+                const title =
+                  typeof content.title ===
+                  'string'
+                    ? content.title
+                    : ''
+
+                const author =
+                  typeof content.author ===
+                  'string'
+                    ? content.author
+                    : ''
+
+                const authorUrl =
+                  typeof content.author_url ===
+                  'string'
+                    ? content.author_url
+                    : ''
+
+                const description =
+                  typeof content.description ===
+                  'string'
+                    ? content.description
+                    : ''
+
+                if (
+                  !title &&
+                  !author &&
+                  !description
+                ) {
+                  return null
+                }
+
+                return (
+                  <header
+                    key={block.id}
+                    className="border-t border-border pt-10 first:border-t-0 first:pt-0"
+                  >
+                    <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+                      <span className="font-display text-[0.62rem] tracking-[0.3em] text-primary">
+                        GUIDE SECTION
+                      </span>
+
+                      {title && (
+                        <h2 className="mt-3 font-display text-2xl tracking-tight text-foreground sm:text-3xl">
+                          {title}
+                        </h2>
+                      )}
+
+                      {description && (
+                        <p className="mt-4 whitespace-pre-line text-sm leading-7 text-muted-foreground sm:text-base">
+                          {description}
+                        </p>
+                      )}
+
+                      {author && (
+                        <div className="mt-5 flex items-center gap-2 border-t border-border pt-4 text-sm">
+                          <span className="text-muted-foreground">
+                            作者
+                          </span>
+
+                          {authorUrl ? (
+                            <a
+                              href={authorUrl}
+                              className="font-medium text-foreground transition-colors hover:text-primary"
+                            >
+                              {author}
+                            </a>
+                          ) : (
+                            <span className="font-medium text-foreground">
+                              {author}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </header>
+                )
+              }
+
               case 'heading': {
                 const text =
                   typeof content.text ===

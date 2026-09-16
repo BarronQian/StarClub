@@ -29,9 +29,11 @@ type IncomingBlock = {
 
 const ALLOWED_BLOCK_TYPES =
   new Set([
+    'section',
     'heading',
     'paragraph',
     'image',
+    'gallery',
     'list',
     'callout',
     'video',
