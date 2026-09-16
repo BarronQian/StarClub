@@ -26,6 +26,12 @@ type LightboxImage = {
   alt: string
 } | null
 
+type GalleryImage = {
+  src: string
+  alt: string
+  caption: string
+}
+
 export function GuideContentBlocks({
   blocks,
 }: Props) {
@@ -292,6 +298,81 @@ export function GuideContentBlocks({
                   </figure>
                 )
               }
+              
+                            case 'gallery': {
+                const images =
+                  Array.isArray(
+                    content.images,
+                  )
+                    ? content.images
+                        .filter(
+                          (
+                            image,
+                          ): image is Record<
+                            string,
+                            unknown
+                          > =>
+                            Boolean(
+                              image &&
+                                typeof image ===
+                                  'object',
+                            ),
+                        )
+                        .map(
+                          (
+                            image,
+                          ): GalleryImage => ({
+                            src:
+                              typeof image.src ===
+                              'string'
+                                ? image.src
+                                : '',
+
+                            alt:
+                              typeof image.alt ===
+                              'string'
+                                ? image.alt
+                                : '',
+
+                            caption:
+                              typeof image.caption ===
+                              'string'
+                                ? image.caption
+                                : '',
+                          }),
+                        )
+                        .filter(
+                          (image) =>
+                            Boolean(
+                              image.src,
+                            ),
+                        )
+                    : []
+
+                if (
+                  images.length ===
+                  0
+                ) {
+                  return null
+                }
+
+                return (
+                  <GuideGallery
+                    key={block.id}
+                    images={images}
+                    onOpenImage={(
+                      image,
+                    ) =>
+                      setLightboxImage({
+                        src:
+                          image.src,
+                        alt:
+                          image.alt,
+                      })
+                    }
+                  />
+                )
+              }
 
               case 'list': {
                 const items =
@@ -470,5 +551,235 @@ export function GuideContentBlocks({
         </div>
       )}
     </>
+  )
+}
+
+function GuideGallery({
+  images,
+  onOpenImage,
+}: {
+  images: GalleryImage[]
+  onOpenImage: (
+    image: GalleryImage,
+  ) => void
+}) {
+  const [
+    activeIndex,
+    setActiveIndex,
+  ] = useState(0)
+
+  const [
+    touchStart,
+    setTouchStart,
+  ] = useState<
+    number | null
+  >(null)
+
+  const [
+    touchEnd,
+    setTouchEnd,
+  ] = useState<
+    number | null
+  >(null)
+
+  const activeImage =
+    images[activeIndex] ??
+    images[0]
+
+  const hasMultiple =
+    images.length > 1
+
+  function previous() {
+    setActiveIndex(
+      (current) =>
+        current === 0
+          ? images.length - 1
+          : current - 1,
+    )
+  }
+
+  function next() {
+    setActiveIndex(
+      (current) =>
+        current ===
+        images.length - 1
+          ? 0
+          : current + 1,
+    )
+  }
+
+  function handleTouchStart(
+    event: React.TouchEvent,
+  ) {
+    setTouchEnd(null)
+
+    setTouchStart(
+      event.targetTouches[0]
+        .clientX,
+    )
+  }
+
+  function handleTouchMove(
+    event: React.TouchEvent,
+  ) {
+    setTouchEnd(
+      event.targetTouches[0]
+        .clientX,
+    )
+  }
+
+  function handleTouchEnd() {
+    if (
+      touchStart === null ||
+      touchEnd === null
+    ) {
+      return
+    }
+
+    const distance =
+      touchStart - touchEnd
+
+    const minimumSwipe =
+      50
+
+    if (
+      distance >
+      minimumSwipe
+    ) {
+      next()
+    }
+
+    if (
+      distance <
+      -minimumSwipe
+    ) {
+      previous()
+    }
+
+    setTouchStart(null)
+    setTouchEnd(null)
+  }
+
+  return (
+    <figure className="space-y-4">
+      <div
+        className="group relative overflow-hidden rounded-2xl border border-border bg-black"
+        onTouchStart={
+          handleTouchStart
+        }
+        onTouchMove={
+          handleTouchMove
+        }
+        onTouchEnd={
+          handleTouchEnd
+        }
+      >
+        <button
+          type="button"
+          onClick={() =>
+            onOpenImage(
+              activeImage,
+            )
+          }
+          className="block w-full cursor-zoom-in"
+          aria-label="点击放大图片"
+        >
+          <div className="relative flex min-h-65 items-center justify-center sm:min-h-105">
+            <Image
+              src={
+                activeImage.src
+              }
+              alt={
+                activeImage.alt
+              }
+              width={1600}
+              height={1000}
+              sizes="(min-width: 1024px) 896px, 100vw"
+              className="max-h-[70vh] h-auto w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
+            />
+          </div>
+        </button>
+
+        {hasMultiple && (
+          <>
+            <button
+              type="button"
+              onClick={
+                previous
+              }
+              aria-label="上一张图片"
+              className="absolute left-3 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-xl text-white backdrop-blur-sm transition-all hover:bg-black/75 sm:left-4 sm:size-11"
+            >
+              ‹
+            </button>
+
+            <button
+              type="button"
+              onClick={next}
+              aria-label="下一张图片"
+              className="absolute right-3 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-xl text-white backdrop-blur-sm transition-all hover:bg-black/75 sm:right-4 sm:size-11"
+            >
+              ›
+            </button>
+
+            <div className="absolute right-3 top-3 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
+              {activeIndex + 1}
+              {' / '}
+              {images.length}
+            </div>
+          </>
+        )}
+      </div>
+
+      {activeImage.caption && (
+        <figcaption className="text-center text-xs leading-6 text-muted-foreground">
+          {
+            activeImage.caption
+          }
+        </figcaption>
+      )}
+
+      {hasMultiple && (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {images.map(
+            (
+              image,
+              index,
+            ) => (
+              <button
+                key={`${image.src}-${index}`}
+                type="button"
+                onClick={() =>
+                  setActiveIndex(
+                    index,
+                  )
+                }
+                aria-label={`查看第 ${
+                  index + 1
+                } 张图片`}
+                className={`relative h-16 w-24 shrink-0 overflow-hidden rounded-lg border-2 transition-all sm:h-18 sm:w-28 ${
+                  index ===
+                  activeIndex
+                    ? 'border-primary opacity-100'
+                    : 'border-transparent opacity-55 hover:opacity-90'
+                }`}
+              >
+                <Image
+                  src={
+                    image.src
+                  }
+                  alt={
+                    image.alt
+                  }
+                  fill
+                  sizes="112px"
+                  className="object-cover"
+                />
+              </button>
+            ),
+          )}
+        </div>
+      )}
+    </figure>
   )
 }
