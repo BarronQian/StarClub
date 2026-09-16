@@ -404,7 +404,7 @@ export default async function GuidePage({
               <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
                 {guide.author && (
                   <span>
-                    作者：
+                    主编：
                     <strong className="font-medium text-foreground">
                       {
                         guide.author
@@ -513,7 +513,7 @@ export default async function GuidePage({
               <p className="mt-2 text-sm text-muted-foreground">
                 {guide.author && (
                   <>
-                    作者：
+                    主编：
                     <span className="text-foreground">
                       {guide.author}
                     </span>

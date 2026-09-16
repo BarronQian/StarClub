@@ -95,9 +95,22 @@ export function GuideContentBlocks({
 
   return (
     <>
-      <article className="mx-auto max-w-4xl">
-        <div className="space-y-10">
+      <article className="mx-auto w-full max-w-6xl">
+        <div className="space-y-12 lg:space-y-14">
           {blocks.map((block) => {
+            const sectionNumber =
+              block.block_type === 'section'
+                ? blocks
+                    .slice(
+                      0,
+                      blocks.indexOf(block) + 1,
+                    )
+                    .filter(
+                      (item) =>
+                        item.block_type ===
+                        'section',
+                    ).length
+                : 0
             const content =
               block.content ?? {}
 
@@ -138,27 +151,30 @@ export function GuideContentBlocks({
                 return (
                   <header
                     key={block.id}
-                    className="border-t border-border pt-10 first:border-t-0 first:pt-0"
+                    className="border-t border-border/60 pt-12 first:border-t-0 first:pt-0 lg:pt-14"
                   >
-                    <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-                      <span className="font-display text-[0.62rem] tracking-[0.3em] text-primary">
-                        GUIDE SECTION
-                      </span>
+                    <div className="mx-auto max-w-4xl">
+                      <div className="flex items-center gap-4">
+                        <span className="font-display text-[0.62rem] tracking-[0.32em] text-primary">
+                          GUIDE SECTION {String(sectionNumber).padStart(2, '0')}
+                        </span>
+                        <span className="h-px flex-1 bg-border/70" />
+                      </div>
 
                       {title && (
-                        <h2 className="mt-3 font-display text-2xl tracking-tight text-foreground sm:text-3xl">
+                        <h2 className="mt-5 font-display text-3xl leading-tight tracking-tight text-foreground sm:text-4xl">
                           {title}
                         </h2>
                       )}
 
                       {description && (
-                        <p className="mt-4 whitespace-pre-line text-sm leading-7 text-muted-foreground sm:text-base">
+                        <p className="mt-6 whitespace-pre-line text-[0.95rem] leading-8 text-muted-foreground sm:text-[1.05rem] sm:leading-9">
                           {description}
                         </p>
                       )}
 
                       {author && (
-                        <div className="mt-5 flex items-center gap-2 border-t border-border pt-4 text-sm">
+                        <div className="mt-8 flex items-center gap-3 border-t border-border/70 pt-5 text-sm">
                           <span className="text-muted-foreground">
                             作者
                           </span>
@@ -203,7 +219,7 @@ export function GuideContentBlocks({
                   return (
                     <h3
                       key={block.id}
-                      className="pt-3 font-display text-xl tracking-tight sm:text-2xl"
+                      className="mx-auto max-w-4xl pt-2 font-display text-2xl tracking-tight sm:text-3xl"
                     >
                       {text}
                     </h3>
@@ -213,7 +229,7 @@ export function GuideContentBlocks({
                 return (
                   <h2
                     key={block.id}
-                    className="pt-4 font-display text-2xl tracking-tight sm:text-3xl"
+                    className="mx-auto max-w-4xl pt-3 font-display text-3xl tracking-tight sm:text-4xl"
                   >
                     {text}
                   </h2>
@@ -234,7 +250,7 @@ export function GuideContentBlocks({
                 return (
                   <p
                     key={block.id}
-                    className="whitespace-pre-line text-sm leading-8 text-muted-foreground sm:text-base"
+                    className="mx-auto max-w-4xl whitespace-pre-line text-[0.95rem] leading-8 text-muted-foreground sm:text-[1.05rem] sm:leading-9"
                   >
                     {text}
                   </p>
@@ -267,7 +283,7 @@ export function GuideContentBlocks({
                 return (
                   <figure
                     key={block.id}
-                    className="space-y-3"
+                    className="mx-auto w-full max-w-6xl space-y-3"
                   >
                     <button
                       type="button"
@@ -285,7 +301,7 @@ export function GuideContentBlocks({
                         alt={alt}
                         width={1600}
                         height={1200}
-                        sizes="(min-width: 1024px) 896px, 100vw"
+                        sizes="(min-width: 1280px) 1152px, (min-width: 1024px) 90vw, 100vw"
                         className="mx-auto h-auto max-h-[75vh] w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
                       />
                     </button>
@@ -399,7 +415,7 @@ export function GuideContentBlocks({
                 return (
                   <ListTag
                     key={block.id}
-                    className={`space-y-2 pl-6 text-sm leading-7 text-muted-foreground sm:text-base ${
+                    className={`mx-auto max-w-4xl space-y-3 pl-6 text-[0.95rem] leading-8 text-muted-foreground sm:text-[1.05rem] ${
                       ordered
                         ? 'list-decimal'
                         : 'list-disc'
@@ -436,7 +452,7 @@ export function GuideContentBlocks({
                 return (
                   <div
                     key={block.id}
-                    className="rounded-2xl border border-primary/20 bg-primary/5 p-5 sm:p-6"
+                    className="mx-auto max-w-4xl rounded-2xl border border-primary/20 bg-primary/5 p-6 sm:p-7"
                   >
                     {title && (
                       <h3 className="font-medium text-foreground">
@@ -480,7 +496,7 @@ export function GuideContentBlocks({
                 return (
                   <figure
                     key={block.id}
-                    className="space-y-3"
+                    className="mx-auto w-full max-w-6xl space-y-3"
                   >
                     <div className="overflow-hidden rounded-2xl bg-black">
                       <div className="relative aspect-video">
@@ -661,7 +677,7 @@ function GuideGallery({
   }
 
   return (
-    <figure className="space-y-4">
+    <figure className="mx-auto w-full max-w-6xl space-y-4">
       <div
         className="group relative overflow-hidden rounded-2xl border border-border bg-black"
         onTouchStart={
@@ -694,7 +710,7 @@ function GuideGallery({
               }
               width={1600}
               height={1000}
-              sizes="(min-width: 1024px) 896px, 100vw"
+              sizes="(min-width: 1280px) 1152px, (min-width: 1024px) 90vw, 100vw"
               className="max-h-[70vh] h-auto w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
             />
           </div>

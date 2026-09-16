@@ -9,6 +9,10 @@ import {
   getVideoEmbedUrl,
 } from '@/lib/video-embed'
 
+import {
+  getSupabaseBrowser,
+} from '@/lib/supabase-browser'
+
 type BlockType =
   | 'section'
   | 'heading'
@@ -498,69 +502,115 @@ export function AdminGuideBlockEditor({
     setSuccess(null)
   }
 
-  async function uploadBlockImage(
-  file: File,
-  blockIndex: number,
-) {
-  setError(null)
-
-  try {
-    const formData =
-      new FormData()
-
-    formData.append(
-      'file',
-      file,
-    )
-
-    const response =
+  async function uploadGuideImage(
+    file: File,
+  ) {
+    const signResponse =
       await fetch(
         '/api/admin/guides/upload',
         {
           method: 'POST',
-          body: formData,
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify({
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+          }),
         },
       )
 
-    const data =
-      await response
+    const signData =
+      await signResponse
         .json()
         .catch(() => ({}))
 
-    if (!response.ok) {
+    if (!signResponse.ok) {
       throw new Error(
-        data.error ??
-          '上传图片失败',
+        signData.error ??
+          `无法准备上传 ${file.name}`,
       )
     }
 
     if (
-      typeof data.url !==
-      'string'
+      typeof signData.path !==
+        'string' ||
+      typeof signData.token !==
+        'string' ||
+      typeof signData.publicUrl !==
+        'string'
     ) {
       throw new Error(
-        '上传成功，但没有返回图片地址',
+        '服务器没有返回完整的上传信息',
       )
     }
 
-    updateBlockContent(
-      blockIndex,
-      'src',
-      data.url,
-    )
-  } catch (err) {
-    console.error(
-      '[ADMIN GUIDE BLOCK IMAGE] Upload failed:',
-      err,
-    )
+    const supabase =
+      getSupabaseBrowser()
 
-    setError(
-      err instanceof Error
-        ? err.message
-        : '上传图片失败',
-    )
+    const {
+      error: uploadError,
+    } =
+      await supabase.storage
+        .from('guide-images')
+        .uploadToSignedUrl(
+          signData.path,
+          signData.token,
+          file,
+          {
+            contentType:
+              file.type,
+          },
+        )
+
+    if (uploadError) {
+      throw new Error(
+        uploadError.message ||
+          `上传 ${file.name} 失败`,
+      )
+    }
+
+    return signData.publicUrl
   }
-}
+
+  async function uploadBlockImage(
+    file: File,
+    blockIndex: number,
+  ) {
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const publicUrl =
+        await uploadGuideImage(
+          file,
+        )
+
+      updateBlockContent(
+        blockIndex,
+        'src',
+        publicUrl,
+      )
+
+      setSuccess(
+        `图片 ${file.name} 上传成功`,
+      )
+    } catch (err) {
+      console.error(
+        '[ADMIN GUIDE BLOCK IMAGE] Upload failed:',
+        err,
+      )
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : '上传图片失败',
+      )
+    }
+  }
+
   async function uploadGalleryImages(
     files: File[],
     blockIndex: number,
@@ -570,60 +620,59 @@ export function AdminGuideBlockEditor({
     }
 
     setError(null)
+    setSuccess(
+      `正在上传 0 / ${files.length} 张图片…`,
+    )
 
-    try {
-      const uploadedImages: {
-        src: string
-        alt: string
-        caption: string
-      }[] = []
+    const uploadedImages: {
+      src: string
+      alt: string
+      caption: string
+    }[] = []
 
-      for (const file of files) {
-        const formData =
-          new FormData()
+    const failedFiles: string[] = []
 
-        formData.append(
-          'file',
-          file,
-        )
+    for (
+      let i = 0;
+      i < files.length;
+      i++
+    ) {
+      const file = files[i]
 
-        const response =
-          await fetch(
-            '/api/admin/guides/upload',
-            {
-              method: 'POST',
-              body: formData,
-            },
+      try {
+        const publicUrl =
+          await uploadGuideImage(
+            file,
           )
-
-        const data =
-          await response
-            .json()
-            .catch(() => ({}))
-
-        if (!response.ok) {
-          throw new Error(
-            data.error ??
-              `上传 ${file.name} 失败`,
-          )
-        }
-
-        if (
-          typeof data.url !==
-          'string'
-        ) {
-          throw new Error(
-            `${file.name} 上传成功，但没有返回图片地址`,
-          )
-        }
 
         uploadedImages.push({
-          src: data.url,
+          src: publicUrl,
           alt: '',
           caption: '',
         })
-      }
 
+        setSuccess(
+          `正在上传 ${i + 1} / ${files.length} 张图片…`,
+        )
+      } catch (err) {
+        console.error(
+          `[ADMIN GUIDE GALLERY] ${file.name} upload failed:`,
+          err,
+        )
+
+        failedFiles.push(
+          `${file.name}: ${
+            err instanceof Error
+              ? err.message
+              : '上传失败'
+          }`,
+        )
+      }
+    }
+
+    if (
+      uploadedImages.length > 0
+    ) {
       setBlocks((current) =>
         current.map(
           (block, index) => {
@@ -654,24 +703,29 @@ export function AdminGuideBlockEditor({
           },
         ),
       )
+    }
 
-      setSuccess(
-        `成功上传 ${uploadedImages.length} 张图片`,
-      )
-    } catch (err) {
-      console.error(
-        '[ADMIN GUIDE GALLERY] Upload failed:',
-        err,
-      )
-
+    if (
+      failedFiles.length > 0
+    ) {
       setError(
-        err instanceof Error
-          ? err.message
-          : '批量上传图片失败',
+        `有 ${failedFiles.length} 张图片上传失败：${failedFiles.join(
+          '；',
+        )}`,
       )
     }
+
+    if (
+      uploadedImages.length > 0
+    ) {
+      setSuccess(
+        `成功上传 ${uploadedImages.length} / ${files.length} 张图片`,
+      )
+    } else {
+      setSuccess(null)
+    }
   }
-  
+
     function updateGalleryImage(
     blockIndex: number,
     imageIndex: number,
