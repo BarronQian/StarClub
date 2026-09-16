@@ -16,6 +16,13 @@ const BUCKET = 'guide-images'
 const MAX_FILE_SIZE =
   30 * 1024 * 1024
 
+const ALLOWED_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+]
+
 function getAdminSupabase() {
   const supabaseUrl =
     process.env.SUPABASE_URL
@@ -59,16 +66,17 @@ function sanitizeFileName(
 }
 
 function getExtension(
-  file: File,
+  fileName: string,
+  fileType: string,
 ) {
-  const name =
+  const cleanName =
     sanitizeFileName(
-      file.name,
+      fileName,
     )
 
   const extension =
-    name.includes('.')
-      ? name
+    cleanName.includes('.')
+      ? cleanName
           .split('.')
           .pop()
           ?.toLowerCase()
@@ -78,7 +86,7 @@ function getExtension(
     return extension
   }
 
-  switch (file.type) {
+  switch (fileType) {
     case 'image/png':
       return 'png'
 
@@ -95,20 +103,20 @@ function getExtension(
 }
 
 function getBaseName(
-  file: File,
+  fileName: string,
 ) {
-  const name =
+  const cleanName =
     sanitizeFileName(
-      file.name,
+      fileName,
     )
 
   return (
-    name
+    cleanName
       .replace(
         /\.[^.]+$/,
         '',
       )
-      .slice(0, 80) ||
+      .slice(0, 60) ||
     'guide-image'
   )
 }
@@ -124,19 +132,32 @@ export async function POST(
   }
 
   try {
-    const formData =
-      await request.formData()
+    const body =
+      await request.json()
 
-    const file =
-      formData.get('file')
+    const fileName =
+      typeof body.fileName ===
+      'string'
+        ? body.fileName
+        : ''
 
-    if (
-      !(file instanceof File)
-    ) {
+    const fileType =
+      typeof body.fileType ===
+      'string'
+        ? body.fileType
+        : ''
+
+    const fileSize =
+      typeof body.fileSize ===
+      'number'
+        ? body.fileSize
+        : 0
+
+    if (!fileName) {
       return NextResponse.json(
         {
           error:
-            '请选择图片文件',
+            '缺少文件名称',
         },
         {
           status: 400,
@@ -145,14 +166,14 @@ export async function POST(
     }
 
     if (
-      !file.type.startsWith(
-        'image/',
+      !ALLOWED_TYPES.includes(
+        fileType,
       )
     ) {
       return NextResponse.json(
         {
           error:
-            '只能上传图片文件',
+            '不支持这种图片格式',
         },
         {
           status: 400,
@@ -161,8 +182,9 @@ export async function POST(
     }
 
     if (
-      file.size >
-      MAX_FILE_SIZE
+      fileSize <= 0 ||
+      fileSize >
+        MAX_FILE_SIZE
     ) {
       return NextResponse.json(
         {
@@ -175,83 +197,44 @@ export async function POST(
       )
     }
 
+    const extension =
+      getExtension(
+        fileName,
+        fileType,
+      )
+
+    const baseName =
+      getBaseName(
+        fileName,
+      )
+
+    const filePath =
+      `guides/${Date.now()}-${crypto.randomUUID()}-${baseName}.${extension}`
+
     const supabase =
       getAdminSupabase()
 
-    const extension =
-      getExtension(file)
-
-    const baseName =
-      getBaseName(file)
-
-    const uniqueId =
-      crypto.randomUUID()
-
-    const filePath =
-      `guides/${Date.now()}-${uniqueId}-${baseName}.${extension}`
-
-    console.log(
-      '[GUIDE UPLOAD] Starting:',
-      {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        sizeMB:
-          (
-            file.size /
-            1024 /
-            1024
-          ).toFixed(2),
-        path: filePath,
-      },
-    )
-
-    const arrayBuffer =
-      await file.arrayBuffer()
-
     const {
-      data: uploadData,
-      error: uploadError,
+      data,
+      error,
     } =
       await supabase.storage
         .from(BUCKET)
-        .upload(
+        .createSignedUploadUrl(
           filePath,
-          arrayBuffer,
-          {
-            contentType:
-              file.type ||
-              'application/octet-stream',
-
-            cacheControl:
-              '31536000',
-
-            upsert: false,
-          },
         )
 
-    if (uploadError) {
+    if (error) {
       console.error(
-        '[GUIDE UPLOAD] Supabase upload failed:',
-        uploadError,
+        '[GUIDE SIGNED UPLOAD] Failed:',
+        error,
       )
 
       return NextResponse.json(
         {
           error:
-            uploadError.message
-              ? `上传失败：${uploadError.message}`
-              : '上传图片失败',
-
-          details: {
-            name:
-              uploadError.name ??
-              null,
-
-            message:
-              uploadError.message ??
-              null,
-          },
+            error.message ||
+            '创建上传地址失败',
         },
         {
           status: 500,
@@ -268,45 +251,19 @@ export async function POST(
           filePath,
         )
 
-    console.log(
-      '[GUIDE UPLOAD] Success:',
-      {
-        path:
-          uploadData.path,
-
-        sizeMB:
-          (
-            file.size /
-            1024 /
-            1024
-          ).toFixed(2),
-      },
-    )
-
     return NextResponse.json({
       ok: true,
-
-      path:
-        uploadData.path,
-
-      url:
-        publicUrlData
-          .publicUrl,
-
-      file: {
-        name:
-          file.name,
-
-        type:
-          file.type,
-
-        size:
-          file.size,
-      },
+      bucket: BUCKET,
+      path: filePath,
+      token: data.token,
+      signedUrl:
+        data.signedUrl,
+      publicUrl:
+        publicUrlData.publicUrl,
     })
   } catch (error) {
     console.error(
-      '[GUIDE UPLOAD] POST failed:',
+      '[GUIDE SIGNED UPLOAD] POST failed:',
       error,
     )
 
@@ -314,8 +271,8 @@ export async function POST(
       {
         error:
           error instanceof Error
-            ? `上传失败：${error.message}`
-            : '上传图片失败',
+            ? error.message
+            : '创建上传地址失败',
       },
       {
         status: 500,
