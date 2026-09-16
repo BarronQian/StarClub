@@ -14,6 +14,98 @@ import type { User } from '@supabase/supabase-js'
 import { AuthLoginButton } from '@/components/auth-login-button'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
+async function syncDiscordProfile(user: User) {
+  const supabase = getSupabaseBrowser()
+
+  const discordAvatar =
+    user.user_metadata?.avatar_url ||
+    user.user_metadata?.picture ||
+    null
+
+  const discordUsername =
+    user.user_metadata?.preferred_username ||
+    user.user_metadata?.user_name ||
+    user.user_metadata?.name ||
+    null
+
+  const discordDisplayName =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    discordUsername ||
+    null
+
+  const { data: profile, error } =
+    await supabase
+      .from('profiles')
+      .select(
+        'avatar_url, username, display_name',
+      )
+      .eq('id', user.id)
+      .maybeSingle()
+
+  if (error || !profile) {
+    if (error) {
+      console.error(
+        'Failed to load profile for Discord sync:',
+        error,
+      )
+    }
+
+    return
+  }
+
+  const updates: {
+    avatar_url?: string
+    username?: string
+    display_name?: string
+    updated_at?: string
+  } = {}
+
+  if (
+    discordAvatar &&
+    profile.avatar_url !== discordAvatar
+  ) {
+    updates.avatar_url = discordAvatar
+  }
+
+  if (
+    discordUsername &&
+    profile.username !== discordUsername
+  ) {
+    updates.username = discordUsername
+  }
+
+  if (
+    discordDisplayName &&
+    profile.display_name !== discordDisplayName
+  ) {
+    updates.display_name =
+      discordDisplayName
+  }
+
+  if (
+    Object.keys(updates).length === 0
+  ) {
+    return
+  }
+
+  updates.updated_at =
+    new Date().toISOString()
+
+  const { error: updateError } =
+    await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', user.id)
+
+  if (updateError) {
+    console.error(
+      'Failed to sync Discord profile:',
+      updateError,
+    )
+  }
+}
+
 export function HeaderUserAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
