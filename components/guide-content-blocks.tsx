@@ -816,16 +816,13 @@ function GuideGallery({
           aria-label="点击放大图片"
         >
           <div className="relative flex min-h-65 items-center justify-center sm:min-h-105">
-            <Image
-              src={getSupabasePreviewUrl(
-                activeImage.src,
-                1600,
-                72,
-              )}
+            <GuidePreviewImage
+              src={activeImage.src}
               alt={activeImage.alt}
+              previewWidth={1600}
+              previewQuality={72}
               width={1600}
               height={1000}
-              unoptimized
               className="max-h-[70vh] h-auto w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
             />
           </div>
