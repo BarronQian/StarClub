@@ -342,11 +342,15 @@ export function GuideContentBlocks({
                       aria-label="点击放大图片"
                     >
                       <Image
-                        src={src}
+                        src={getSupabasePreviewUrl(
+                          src,
+                          1600,
+                          72,
+                        )}
                         alt={alt}
                         width={1600}
                         height={1200}
-                        sizes="(min-width: 1280px) 1152px, (min-width: 1024px) 90vw, 100vw"
+                        unoptimized
                         className="mx-auto h-auto max-h-[75vh] w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
                       />
                     </button>
@@ -747,13 +751,15 @@ function GuideGallery({
         >
           <div className="relative flex min-h-65 items-center justify-center sm:min-h-105">
             <Image
-              src={activeImage.src}
-              alt={
-                activeImage.alt
-              }
+              src={getSupabasePreviewUrl(
+                activeImage.src,
+                1600,
+                72,
+              )}
+              alt={activeImage.alt}
               width={1600}
               height={1000}
-              sizes="(min-width: 1280px) 1152px, (min-width: 1024px) 90vw, 100vw"
+              unoptimized
               className="max-h-[70vh] h-auto w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
             />
           </div>
@@ -824,12 +830,14 @@ function GuideGallery({
                 }`}
               >
                 <Image
-                src={image.src}
-                  alt={
-                    image.alt
-                  }
+                  src={getSupabasePreviewUrl(
+                    image.src,
+                    320,
+                    60,
+                  )}
+                  alt={image.alt}
                   fill
-                  sizes="112px"
+                  unoptimized
                   className="object-cover"
                 />
               </button>
