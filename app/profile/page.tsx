@@ -1,7 +1,11 @@
 'use client'
 
 import { DISCORD_ROLE_IDENTITIES } from '@/lib/discord-identities'
-import { useEffect, useState } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -41,6 +45,7 @@ type Profile = {
   timezone: string | null
   bio: string | null
   cover_url: string | null
+  cover_updated_at: string | null
 
   member_number: number | null
   profile_slug: string | null
@@ -140,6 +145,67 @@ export default function ProfilePage() {
     coverUploading,
     setCoverUploading,
   ] = useState(false)
+
+  const [
+    coverRulesOpen,
+    setCoverRulesOpen,
+  ] = useState(false)
+
+  const coverInputRef =
+    useRef<HTMLInputElement | null>(
+      null
+    )
+
+  const [
+    coverCropOpen,
+    setCoverCropOpen,
+  ] = useState(false)
+
+  const [
+    coverCropUrl,
+    setCoverCropUrl,
+  ] = useState('')
+
+  const [
+    coverSelectedFile,
+    setCoverSelectedFile,
+  ] = useState<File | null>(
+    null
+  )
+
+  const [
+    coverCropPosition,
+    setCoverCropPosition,
+  ] = useState({
+    x: 50,
+    y: 50,
+  })
+
+  const [
+    coverCropZoom,
+    setCoverCropZoom,
+  ] = useState(1)
+
+  const [
+    coverDragging,
+    setCoverDragging,
+  ] = useState(false)
+
+  const [
+    coverDragStart,
+    setCoverDragStart,
+  ] = useState({
+    x: 0,
+    y: 0,
+  })
+
+  const [
+    coverPositionStart,
+    setCoverPositionStart,
+  ] = useState({
+    x: 50,
+    y: 50,
+  })
 
   const unlockedIdentities =
     DISCORD_ROLE_IDENTITIES.filter(
@@ -329,6 +395,7 @@ export default function ProfilePage() {
             timezone,
             bio,
             cover_url,
+            cover_updated_at,
             member_number,
             profile_slug
           `)
@@ -863,7 +930,644 @@ useEffect(() => {
         setRsiStarting(false)
       }
     }
+  
+  const handleCoverFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file =
+      event.target.files?.[0]
 
+    event.target.value = ''
+
+    if (!file) return
+
+    const requirements =
+      '图片不符合封面要求。\n\n' +
+      '封面图片要求：\n' +
+      '• 支持 JPG、JPEG、PNG\n' +
+      '• 文件大小不超过 5MB\n' +
+      '• 图片宽度至少 1600px\n' +
+      '• 上传后可移动、缩放并裁剪\n' +
+      '• 最终封面比例为 6:1'
+
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+    ]
+
+    if (
+      !allowedTypes.includes(
+        file.type
+      ) ||
+      file.size >
+        5 * 1024 * 1024
+    ) {
+      alert(requirements)
+      return
+    }
+
+    try {
+      const dimensions =
+        await new Promise<{
+          width: number
+          height: number
+        }>((resolve, reject) => {
+          const image =
+            new window.Image()
+
+          const objectUrl =
+            URL.createObjectURL(
+              file
+            )
+
+          image.onload = () => {
+            const result = {
+              width:
+                image.naturalWidth,
+              height:
+                image.naturalHeight,
+            }
+
+            URL.revokeObjectURL(
+              objectUrl
+            )
+
+            resolve(result)
+          }
+
+          image.onerror = () => {
+            URL.revokeObjectURL(
+              objectUrl
+            )
+
+            reject(
+              new Error(
+                '无法读取图片'
+              )
+            )
+          }
+
+          image.src =
+            objectUrl
+        })
+
+      if (
+        dimensions.width <
+        1600
+      ) {
+        alert(requirements)
+        return
+      }
+
+      const cropUrl =
+        URL.createObjectURL(file)
+
+      setCoverSelectedFile(file)
+      setCoverCropUrl(cropUrl)
+
+      setCoverCropPosition({
+        x: 50,
+        y: 50,
+      })
+
+      setCoverCropZoom(1)
+
+      setCoverRulesOpen(false)
+      setCoverCropOpen(true)
+    } catch (error) {
+      console.error(
+        'Cover image validation failed:',
+        error
+      )
+
+      alert(requirements)
+    }
+  }
+
+const handleConfirmCoverUpload =
+  async () => {
+    if (
+      !coverSelectedFile ||
+      !coverCropUrl ||
+      !user
+    ) {
+      return
+    }
+
+    const supabase =
+      getSupabaseBrowser()
+
+    let newFilePath:
+      | string
+      | null = null
+
+    try {
+      setCoverUploading(true)
+
+      /*
+       * 再检查一次 7 天冷却。
+       * 这里只负责用户体验，
+       * 真正无法绕过的限制由数据库 Trigger 负责。
+       */
+      if (
+        profile?.cover_updated_at
+      ) {
+        const lastUpdated =
+          new Date(
+            profile.cover_updated_at
+          )
+
+        const nextAvailable =
+          new Date(
+            lastUpdated.getTime() +
+              7 *
+                24 *
+                60 *
+                60 *
+                1000
+          )
+
+        if (
+          Date.now() <
+          nextAvailable.getTime()
+        ) {
+          alert(
+            `每 7 天仅可更换一次封面。\n\n下次可更换时间：${nextAvailable.toLocaleString(
+              'zh-CN',
+              {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              }
+            )}`
+          )
+
+          return
+        }
+      }
+
+      /*
+       * 读取原图
+       */
+      const image =
+        await new Promise<HTMLImageElement>(
+          (resolve, reject) => {
+            const img =
+              new window.Image()
+
+            img.onload = () =>
+              resolve(img)
+
+            img.onerror = () =>
+              reject(
+                new Error(
+                  '无法读取裁剪图片'
+                )
+              )
+
+            img.src =
+              coverCropUrl
+          }
+        )
+
+      /*
+       * 输出固定 2400 × 400
+       */
+      const OUTPUT_WIDTH =
+        2400
+
+      const OUTPUT_HEIGHT =
+        400
+
+      const OUTPUT_RATIO =
+        OUTPUT_WIDTH /
+        OUTPUT_HEIGHT
+
+      const sourceWidth =
+        image.naturalWidth
+
+      const sourceHeight =
+        image.naturalHeight
+
+      const sourceRatio =
+        sourceWidth /
+        sourceHeight
+
+      let baseCropWidth: number
+      let baseCropHeight: number
+
+      if (
+        sourceRatio >
+        OUTPUT_RATIO
+      ) {
+        baseCropHeight =
+          sourceHeight
+
+        baseCropWidth =
+          sourceHeight *
+          OUTPUT_RATIO
+      } else {
+        baseCropWidth =
+          sourceWidth
+
+        baseCropHeight =
+          sourceWidth /
+          OUTPUT_RATIO
+      }
+
+      const cropWidth =
+        baseCropWidth /
+        coverCropZoom
+
+      const cropHeight =
+        baseCropHeight /
+        coverCropZoom
+
+      const maxOffsetX =
+        Math.max(
+          0,
+          sourceWidth -
+            cropWidth
+        )
+
+      const maxOffsetY =
+        Math.max(
+          0,
+          sourceHeight -
+            cropHeight
+        )
+
+      const sourceX =
+        maxOffsetX *
+        (coverCropPosition.x /
+          100)
+
+      const sourceY =
+        maxOffsetY *
+        (coverCropPosition.y /
+          100)
+
+      /*
+       * Canvas 裁剪
+       */
+      const canvas =
+        document.createElement(
+          'canvas'
+        )
+
+      canvas.width =
+        OUTPUT_WIDTH
+
+      canvas.height =
+        OUTPUT_HEIGHT
+
+      const context =
+        canvas.getContext('2d')
+
+      if (!context) {
+        throw new Error(
+          '无法创建图片裁剪画布'
+        )
+      }
+
+      context.drawImage(
+        image,
+        sourceX,
+        sourceY,
+        cropWidth,
+        cropHeight,
+        0,
+        0,
+        OUTPUT_WIDTH,
+        OUTPUT_HEIGHT
+      )
+
+      const blob =
+        await new Promise<Blob>(
+          (
+            resolve,
+            reject
+          ) => {
+            canvas.toBlob(
+              (result) => {
+                if (result) {
+                  resolve(result)
+                } else {
+                  reject(
+                    new Error(
+                      '封面图片生成失败'
+                    )
+                  )
+                }
+              },
+              'image/jpeg',
+              0.9
+            )
+          }
+        )
+
+      /*
+       * 上传新封面
+       */
+      newFilePath =
+        `${user.id}/cover-${Date.now()}.jpg`
+
+      const {
+        error: uploadError,
+      } =
+        await supabase.storage
+          .from(
+            'profile-covers'
+          )
+          .upload(
+            newFilePath,
+            blob,
+            {
+              contentType:
+                'image/jpeg',
+              cacheControl:
+                '3600',
+              upsert: false,
+            }
+          )
+
+      if (uploadError) {
+        throw uploadError
+      }
+
+      const {
+        data: { publicUrl },
+      } =
+        supabase.storage
+          .from(
+            'profile-covers'
+          )
+          .getPublicUrl(
+            newFilePath
+          )
+
+      /*
+       * 记住旧封面 URL。
+       * 必须等数据库更新成功以后才能删除。
+       */
+      const oldCoverUrl =
+        profile?.cover_url ||
+        null
+
+      const now =
+        new Date().toISOString()
+
+      /*
+       * 更新数据库。
+       *
+       * 数据库 Trigger 会再次检查
+       * 7 天冷却，并使用数据库时间
+       * 写入 cover_updated_at。
+       */
+      const {
+        data: updatedProfile,
+        error: updateError,
+      } =
+        await supabase
+          .from('profiles')
+          .update({
+            cover_url:
+              publicUrl,
+            updated_at:
+              now,
+          })
+          .eq(
+            'id',
+            user.id
+          )
+          .select(
+            'cover_url, cover_updated_at'
+          )
+          .single()
+
+      /*
+       * 数据库拒绝更新：
+       * 立即删除刚才上传的新文件。
+       */
+      if (updateError) {
+        if (newFilePath) {
+          const {
+            error:
+              cleanupError,
+          } =
+            await supabase.storage
+              .from(
+                'profile-covers'
+              )
+              .remove([
+                newFilePath,
+              ])
+
+          if (cleanupError) {
+            console.error(
+              'Failed to cleanup new cover:',
+              cleanupError
+            )
+          }
+        }
+
+        newFilePath = null
+
+        if (
+          updateError.message.includes(
+            'COVER_COOLDOWN_ACTIVE'
+          )
+        ) {
+          throw new Error(
+            'COVER_COOLDOWN_ACTIVE'
+          )
+        }
+
+        throw updateError
+      }
+
+      /*
+       * 数据库已经成功切换到新封面。
+       * 现在才安全删除旧封面。
+       */
+      if (
+        oldCoverUrl &&
+        oldCoverUrl !==
+          publicUrl
+      ) {
+        try {
+          const marker =
+            '/profile-covers/'
+
+          const markerIndex =
+            oldCoverUrl.indexOf(
+              marker
+            )
+
+          if (
+            markerIndex !== -1
+          ) {
+            const oldFilePath =
+              decodeURIComponent(
+                oldCoverUrl.slice(
+                  markerIndex +
+                    marker.length
+                )
+              )
+
+            if (
+              oldFilePath &&
+              oldFilePath !==
+                newFilePath
+            ) {
+              const {
+                error:
+                  deleteOldError,
+              } =
+                await supabase.storage
+                  .from(
+                    'profile-covers'
+                  )
+                  .remove([
+                    oldFilePath,
+                  ])
+
+              if (
+                deleteOldError
+              ) {
+                console.error(
+                  'Failed to delete old cover:',
+                  deleteOldError
+                )
+              }
+            }
+          }
+        } catch (error) {
+          /*
+           * 删除旧图失败不能影响
+           * 已经成功的新封面。
+           */
+          console.error(
+            'Old cover cleanup failed:',
+            error
+          )
+        }
+      }
+
+      /*
+       * 更新本地状态
+       */
+      setProfile(
+        (current) =>
+          current
+            ? {
+                ...current,
+                cover_url:
+                  updatedProfile.cover_url,
+                cover_updated_at:
+                  updatedProfile.cover_updated_at,
+              }
+            : current
+      )
+
+      URL.revokeObjectURL(
+        coverCropUrl
+      )
+
+      setCoverCropUrl('')
+      setCoverSelectedFile(
+        null
+      )
+
+      setCoverCropOpen(false)
+
+      /*
+       * 自动刷新个人主页
+       */
+      window.location.reload()
+    } catch (error) {
+      console.error(
+        'Cover crop upload failed:',
+        error
+      )
+
+      if (
+        error instanceof Error &&
+        error.message ===
+          'COVER_COOLDOWN_ACTIVE'
+      ) {
+        const nextAvailable =
+          profile?.cover_updated_at
+            ? new Date(
+                new Date(
+                  profile.cover_updated_at
+                ).getTime() +
+                  7 *
+                    24 *
+                    60 *
+                    60 *
+                    1000
+              )
+            : null
+
+        alert(
+          nextAvailable
+            ? `每 7 天仅可更换一次封面。\n\n下次可更换时间：${nextAvailable.toLocaleString(
+                'zh-CN',
+                {
+                  year:
+                    'numeric',
+                  month:
+                    'long',
+                  day:
+                    'numeric',
+                  hour:
+                    '2-digit',
+                  minute:
+                    '2-digit',
+                }
+              )}`
+            : '每 7 天仅可更换一次封面，请稍后再试。'
+        )
+
+        return
+      }
+
+      /*
+       * 如果错误发生在上传以后、
+       * 数据库更新以前，再尝试清理新图。
+       */
+      if (newFilePath) {
+        const {
+          error:
+            cleanupError,
+        } =
+          await supabase.storage
+            .from(
+              'profile-covers'
+            )
+            .remove([
+              newFilePath,
+            ])
+
+        if (cleanupError) {
+          console.error(
+            'Failed to cleanup failed cover upload:',
+            cleanupError
+          )
+        }
+      }
+
+      alert(
+        '封面上传失败，请稍后再试。'
+      )
+    } finally {
+      setCoverUploading(false)
+    }
+  }
+  
   const handleCoverUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -1368,29 +2072,22 @@ useEffect(() => {
                 </Link>
               )}
 
-              <label
+              <button
+                type="button"
+                disabled={coverUploading}
+                onClick={() => {
+                  setCoverRulesOpen(true)
+                }}
                 className={`rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-medium text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-white ${
                   coverUploading
                     ? 'cursor-wait opacity-60'
-                    : 'cursor-pointer'
+                    : ''
                 }`}
               >
                 {coverUploading
                   ? '上传中...'
                   : '更换封面'}
-
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png"
-                  onChange={
-                    handleCoverUpload
-                  }
-                  disabled={
-                    coverUploading
-                  }
-                  className="hidden"
-                />
-              </label>
+              </button>
             </div>
           </div>
 
@@ -2156,6 +2853,343 @@ useEffect(() => {
           </div>
         </div>
       )}
+
+      {coverRulesOpen && (() => {
+        const lastUpdated =
+          profile?.cover_updated_at
+            ? new Date(
+                profile.cover_updated_at
+              )
+            : null
+
+        const nextAvailable =
+          lastUpdated
+            ? new Date(
+                lastUpdated.getTime() +
+                  7 *
+                    24 *
+                    60 *
+                    60 *
+                    1000
+              )
+            : null
+
+        const canChangeCover =
+          !nextAvailable ||
+          Date.now() >=
+            nextAvailable.getTime()
+
+        return (
+          <div
+            className="fixed inset-0 z-100 flex items-center justify-center bg-black/45 px-4 backdrop-blur-[2px]"
+            onMouseDown={() => {
+              setCoverRulesOpen(false)
+            }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              onMouseDown={(event) => {
+                event.stopPropagation()
+              }}
+              className="w-full max-w-md rounded-3xl border border-black/5 bg-white p-6 shadow-2xl"
+            >
+              {canChangeCover ? (
+                <>
+                  <h2 className="text-lg font-semibold">
+                    更换个人封面
+                  </h2>
+
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    每 7 天仅可更换一次封面。上传成功后将开始计算新的 7 天更换周期。
+                  </p>
+
+                  <div className="mt-5 rounded-2xl bg-[#f7f7f5] p-4">
+                    <p className="text-xs font-semibold text-foreground">
+                      图片要求
+                    </p>
+
+                    <div className="mt-3 space-y-2 text-xs leading-5 text-muted-foreground">
+                      <p>
+                        • 支持 JPG、JPEG、PNG
+                      </p>
+
+                      <p>
+                        • 文件大小不超过 5MB
+                      </p>
+
+                      <p>
+                        • 图片宽度至少 1600px
+                      </p>
+
+                      <p>
+                        • 上传后可移动、缩放并裁剪
+                      </p>
+
+                      <p>
+                        • 最终封面比例为 6:1
+                      </p>
+                    </div>
+                  </div>
+
+                  <input
+                    ref={coverInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png"
+                    onChange={
+                      handleCoverFileSelect
+                    }
+                    className="hidden"
+                  />
+
+                  <div className="mt-6 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCoverRulesOpen(
+                          false
+                        )
+                      }}
+                      className="rounded-full border border-border px-5 py-2.5 text-xs font-medium transition-colors hover:bg-neutral-50"
+                    >
+                      取消
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        coverInputRef.current?.click()
+                      }}
+                      className="rounded-full bg-neutral-950 px-5 py-2.5 text-xs font-medium text-white transition-colors hover:bg-neutral-800"
+                    >
+                      选择图片
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-lg font-semibold">
+                    暂时无法更换封面
+                  </h2>
+
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    为避免频繁更换个人主页封面，每位用户每 7 天仅可更换一次。
+                  </p>
+
+                  <div className="mt-5 rounded-2xl bg-[#f7f7f5] p-4">
+                    <p className="text-xs text-muted-foreground">
+                      下次可更换时间
+                    </p>
+
+                    <p className="mt-1.5 text-sm font-semibold text-foreground">
+                      {nextAvailable?.toLocaleString(
+                        'zh-CN',
+                        {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        }
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCoverRulesOpen(
+                          false
+                        )
+                      }}
+                      className="rounded-full bg-neutral-950 px-5 py-2.5 text-xs font-medium text-white transition-colors hover:bg-neutral-800"
+                    >
+                      知道了
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )
+      })()}
+
+    {/* Cover crop modal */}
+{coverCropOpen &&
+  coverCropUrl && (
+    <div className="fixed inset-0 z-150 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-5xl rounded-3xl bg-white p-6 shadow-2xl">
+        <div>
+          <h2 className="text-xl font-semibold">
+            调整封面
+          </h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            拖动图片调整显示位置，并使用下方滑杆缩放图片。
+          </p>
+        </div>
+
+        {/* 6:1 crop preview */}
+        <div
+          className={`relative mt-6 aspect-6/1 w-full select-none overflow-hidden rounded-2xl bg-neutral-950 ${
+            coverDragging
+              ? 'cursor-grabbing'
+              : 'cursor-grab'
+          }`}
+          onMouseDown={(event) => {
+            event.preventDefault()
+
+            setCoverDragging(true)
+
+            setCoverDragStart({
+              x: event.clientX,
+              y: event.clientY,
+            })
+
+            setCoverPositionStart(
+              coverCropPosition
+            )
+          }}
+          onMouseMove={(event) => {
+            if (!coverDragging) {
+              return
+            }
+
+            const rect =
+              event.currentTarget.getBoundingClientRect()
+
+            const deltaX =
+              ((event.clientX -
+                coverDragStart.x) /
+                rect.width) *
+              100
+
+            const deltaY =
+              ((event.clientY -
+                coverDragStart.y) /
+                rect.height) *
+              100
+
+            setCoverCropPosition({
+              x: Math.max(
+                0,
+                Math.min(
+                  100,
+                  coverPositionStart.x +
+                    deltaX
+                )
+              ),
+              y: Math.max(
+                0,
+                Math.min(
+                  100,
+                  coverPositionStart.y +
+                    deltaY
+                )
+              ),
+            })
+          }}
+          onMouseUp={() => {
+            setCoverDragging(false)
+          }}
+          onMouseLeave={() => {
+            setCoverDragging(false)
+          }}
+        >
+          <img
+            src={coverCropUrl}
+            alt="封面裁剪预览"
+            draggable={false}
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            style={{
+              objectPosition: `${coverCropPosition.x}% ${coverCropPosition.y}%`,
+              transform: `scale(${coverCropZoom})`,
+            }}
+          />
+
+          <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/20" />
+        </div>
+
+        {/* Zoom */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium">
+              图片缩放
+            </span>
+
+            <span className="text-xs text-muted-foreground">
+              {Math.round(
+                coverCropZoom * 100
+              )}
+              %
+            </span>
+          </div>
+
+          <input
+            type="range"
+            min="1"
+            max="3"
+            step="0.01"
+            value={coverCropZoom}
+            onChange={(event) => {
+              setCoverCropZoom(
+                Number(
+                  event.target.value
+                )
+              )
+            }}
+            className="mt-3 w-full accent-neutral-950"
+          />
+        </div>
+
+        <p className="mt-4 text-xs leading-5 text-muted-foreground">
+          最终封面将按照 6:1
+          比例保存，当前预览区域显示的内容就是最终封面效果。
+        </p>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setCoverCropOpen(false)
+
+              if (coverCropUrl) {
+                URL.revokeObjectURL(
+                  coverCropUrl
+                )
+              }
+
+              setCoverCropUrl('')
+              setCoverSelectedFile(
+                null
+              )
+            }}
+            className="rounded-full border border-border px-5 py-2.5 text-xs font-medium transition-colors hover:bg-neutral-50"
+          >
+            取消
+          </button>
+
+          <button
+            type="button"
+            onClick={
+              handleConfirmCoverUpload
+            }
+            disabled={
+              !coverSelectedFile ||
+              coverUploading
+            }
+            className="rounded-full bg-neutral-950 px-5 py-2.5 text-xs font-medium text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {coverUploading
+            ? '正在上传...'
+            : '确认并上传'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+
     </main>
   )
 }
