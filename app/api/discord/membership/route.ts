@@ -31,12 +31,16 @@ export async function GET(request: Request) {
     const discordGuildId =
       process.env.DISCORD_GUILD_ID
 
+    const verifiedRoleId =
+      process.env.STARCLUB_DISCORD_VERIFIED_ROLE_ID
+
     if (
       !supabaseUrl ||
       !supabaseAnonKey ||
       !serviceRoleKey ||
       !discordBotToken ||
-      !discordGuildId
+      !discordGuildId ||
+      !verifiedRoleId
     ) {
       console.error('Missing Discord membership environment variables')
 
@@ -145,14 +149,28 @@ export async function GET(request: Request) {
       )
     }
 
-    const member = await discordResponse.json()
+    const member =
+      await discordResponse.json()
+
+    const roles =
+      Array.isArray(member.roles)
+        ? member.roles
+        : []
+
+    const isVerified =
+      roles.includes(
+        verifiedRoleId
+      )
 
     return NextResponse.json({
       isMember: true,
-      discordId: profile.discord_id,
-      joinedAt: member.joined_at ?? null,
-      roles: Array.isArray(member.roles) ? member.roles : [],
+      isVerified,
+      discordId:
+        profile.discord_id,
+      joinedAt:
+        member.joined_at ?? null,
     })
+    
   } catch (error) {
     console.error(
       'Discord membership check error:',
