@@ -10,9 +10,11 @@ import {
 } from '@/lib/video-embed'
 
 type BlockType =
+  | 'section'
   | 'heading'
   | 'paragraph'
   | 'image'
+  | 'gallery'
   | 'list'
   | 'callout'
   | 'video'
@@ -29,6 +31,12 @@ type Props = {
   initialBlocks?: EditableGuideBlock[]
 }
 
+type GalleryImage = {
+  src: string
+  alt: string
+  caption: string
+}
+
 function createBlock(
   type: BlockType,
   order: number,
@@ -39,6 +47,19 @@ function createBlock(
       .slice(2)}`
 
   switch (type) {
+    case 'section':
+      return {
+        id,
+        block_type: type,
+        block_order: order,
+        content: {
+          title: '',
+          author: '',
+          author_url: '',
+          description: '',
+        },
+      }
+
     case 'heading':
       return {
         id,
@@ -69,6 +90,16 @@ function createBlock(
           src: '',
           alt: '',
           caption: '',
+        },
+      }
+    
+    case 'gallery':
+      return {
+        id,
+        block_type: type,
+        block_order: order,
+        content: {
+          images: [],
         },
       }
 
@@ -433,6 +464,258 @@ export function AdminGuideBlockEditor({
     )
   }
 }
+  async function uploadGalleryImages(
+    files: File[],
+    blockIndex: number,
+  ) {
+    if (files.length === 0) {
+      return
+    }
+
+    setError(null)
+
+    try {
+      const uploadedImages: {
+        src: string
+        alt: string
+        caption: string
+      }[] = []
+
+      for (const file of files) {
+        const formData =
+          new FormData()
+
+        formData.append(
+          'file',
+          file,
+        )
+
+        const response =
+          await fetch(
+            '/api/admin/guides/upload',
+            {
+              method: 'POST',
+              body: formData,
+            },
+          )
+
+        const data =
+          await response
+            .json()
+            .catch(() => ({}))
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ??
+              `上传 ${file.name} 失败`,
+          )
+        }
+
+        if (
+          typeof data.url !==
+          'string'
+        ) {
+          throw new Error(
+            `${file.name} 上传成功，但没有返回图片地址`,
+          )
+        }
+
+        uploadedImages.push({
+          src: data.url,
+          alt: '',
+          caption: '',
+        })
+      }
+
+      setBlocks((current) =>
+        current.map(
+          (block, index) => {
+            if (
+              index !==
+              blockIndex
+            ) {
+              return block
+            }
+
+            const currentImages =
+              Array.isArray(
+                block.content.images,
+              )
+                ? block.content.images
+                : []
+
+            return {
+              ...block,
+              content: {
+                ...block.content,
+                images: [
+                  ...currentImages,
+                  ...uploadedImages,
+                ],
+              },
+            }
+          },
+        ),
+      )
+
+      setSuccess(
+        `成功上传 ${uploadedImages.length} 张图片`,
+      )
+    } catch (err) {
+      console.error(
+        '[ADMIN GUIDE GALLERY] Upload failed:',
+        err,
+      )
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : '批量上传图片失败',
+      )
+    }
+  }
+  
+    function updateGalleryImage(
+    blockIndex: number,
+    imageIndex: number,
+    key: keyof GalleryImage,
+    value: string,
+  ) {
+    setBlocks((current) =>
+      current.map(
+        (block, index) => {
+          if (
+            index !== blockIndex
+          ) {
+            return block
+          }
+
+          const images =
+            Array.isArray(
+              block.content.images,
+            )
+              ? [
+                  ...block.content.images,
+                ] as GalleryImage[]
+              : []
+
+          images[imageIndex] = {
+            ...images[imageIndex],
+            [key]: value,
+          }
+
+          return {
+            ...block,
+            content: {
+              ...block.content,
+              images,
+            },
+          }
+        },
+      ),
+    )
+
+    setSuccess(null)
+  }
+
+  function removeGalleryImage(
+    blockIndex: number,
+    imageIndex: number,
+  ) {
+    setBlocks((current) =>
+      current.map(
+        (block, index) => {
+          if (
+            index !== blockIndex
+          ) {
+            return block
+          }
+
+          const images =
+            Array.isArray(
+              block.content.images,
+            )
+              ? (
+                  block.content.images as GalleryImage[]
+                ).filter(
+                  (_, index) =>
+                    index !==
+                    imageIndex,
+                )
+              : []
+
+          return {
+            ...block,
+            content: {
+              ...block.content,
+              images,
+            },
+          }
+        },
+      ),
+    )
+
+    setSuccess(null)
+  }
+
+  function moveGalleryImage(
+    blockIndex: number,
+    imageIndex: number,
+    direction: 'left' | 'right',
+  ) {
+    setBlocks((current) =>
+      current.map(
+        (block, index) => {
+          if (
+            index !== blockIndex
+          ) {
+            return block
+          }
+
+          const images =
+            Array.isArray(
+              block.content.images,
+            )
+              ? [
+                  ...block.content.images,
+                ] as GalleryImage[]
+              : []
+
+          const targetIndex =
+            direction === 'left'
+              ? imageIndex - 1
+              : imageIndex + 1
+
+          if (
+            targetIndex < 0 ||
+            targetIndex >=
+              images.length
+          ) {
+            return block
+          }
+
+          const currentImage =
+            images[imageIndex]
+
+          images[imageIndex] =
+            images[targetIndex]
+
+          images[targetIndex] =
+            currentImage
+
+          return {
+            ...block,
+            content: {
+              ...block.content,
+              images,
+            },
+          }
+        },
+      ),
+    )
+
+    setSuccess(null)
+  }
 
   async function saveBlocks() {
     setError(null)
@@ -535,6 +818,15 @@ export function AdminGuideBlockEditor({
       </div>
 
       <div className="mt-6 flex flex-wrap gap-2">
+        <BlockAddButton
+          label="新建正文"
+          onClick={() =>
+            addBlock(
+              'section',
+            )
+          }
+        />
+
         <BlockAddButton
           label="标题"
           onClick={() =>
@@ -683,8 +975,20 @@ export function AdminGuideBlockEditor({
                     updateBlockContent={
                       updateBlockContent
                     }
-                      uploadBlockImage={
+                    uploadBlockImage={
                       uploadBlockImage
+                    }
+                    uploadGalleryImages={
+                      uploadGalleryImages
+                    }
+                    updateGalleryImage={
+                      updateGalleryImage
+                    }
+                    removeGalleryImage={
+                      removeGalleryImage
+                    }
+                    moveGalleryImage={
+                      moveGalleryImage
                     }
                     updateListItem={
                       updateListItem
@@ -762,6 +1066,9 @@ function getBlockLabel(
   type: BlockType,
 ) {
   switch (type) {
+    case 'section':
+      return '正文'
+
     case 'heading':
       return '标题'
 
@@ -805,7 +1112,29 @@ type FieldProps = {
   uploadBlockImage: (
   file: File,
   blockIndex: number,
-) => Promise<void>
+  ) => Promise<void>
+    uploadGalleryImages: (
+    files: File[],
+    blockIndex: number,
+  ) => Promise<void>
+
+  updateGalleryImage: (
+    blockIndex: number,
+    imageIndex: number,
+    key: keyof GalleryImage,
+    value: string,
+  ) => void
+
+  removeGalleryImage: (
+    blockIndex: number,
+    imageIndex: number,
+  ) => void
+
+  moveGalleryImage: (
+    blockIndex: number,
+    imageIndex: number,
+    direction: 'left' | 'right',
+  ) => void
 }
 
 function BlockEditorFields({
@@ -813,12 +1142,361 @@ function BlockEditorFields({
   index,
   updateBlockContent,
   uploadBlockImage,
+  uploadGalleryImages,
+  updateGalleryImage,
+  removeGalleryImage,
+  moveGalleryImage,
   updateListItem,
   addListItem,
   removeListItem,
 }: FieldProps) {
+  
   const content =
     block.content ?? {}
+
+    if (
+    block.block_type ===
+    'section'
+  ) {
+    return (
+      <div className="grid gap-5">
+        <div className="rounded-2xl border border-primary/20 bg-primary/3 p-5">
+          <div className="mb-5">
+            <span className="font-display text-[0.6rem] tracking-[0.28em] text-primary">
+              ARTICLE SECTION
+            </span>
+
+            <h3 className="mt-2 text-base font-medium">
+              正文信息
+            </h3>
+
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              从这里开始视为一篇新的独立正文。后续的段落、图片组、列表、提示框和视频，都属于这篇正文，直到下一个「正文」区块出现。
+            </p>
+          </div>
+
+          <div className="grid gap-5">
+            <div>
+              <label className="text-sm font-medium">
+                正文标题
+              </label>
+
+              <input
+                value={
+                  typeof content.title ===
+                  'string'
+                    ? content.title
+                    : ''
+                }
+                onChange={(e) =>
+                  updateBlockContent(
+                    index,
+                    'title',
+                    e.target.value,
+                  )
+                }
+                placeholder="例如：Checkmate 死局行政机库开启攻略"
+                className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+              />
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium">
+                  作者
+                </label>
+
+                <input
+                  value={
+                    typeof content.author ===
+                    'string'
+                      ? content.author
+                      : ''
+                  }
+                  onChange={(e) =>
+                    updateBlockContent(
+                      index,
+                      'author',
+                      e.target.value,
+                    )
+                  }
+                  placeholder="例如：Furysoulfy"
+                  className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">
+                  作者主页链接
+                </label>
+
+                <input
+                  value={
+                    typeof content.author_url ===
+                    'string'
+                      ? content.author_url
+                      : ''
+                  }
+                  onChange={(e) =>
+                    updateBlockContent(
+                      index,
+                      'author_url',
+                      e.target.value,
+                    )
+                  }
+                  placeholder="/profile/xxx 或外部链接"
+                  className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">
+                正文简介
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  可选
+                </span>
+              </label>
+
+              <textarea
+                rows={3}
+                value={
+                  typeof content.description ===
+                  'string'
+                    ? content.description
+                    : ''
+                }
+                onChange={(e) =>
+                  updateBlockContent(
+                    index,
+                    'description',
+                    e.target.value,
+                  )
+                }
+                placeholder="简单介绍这篇攻略的内容、路线或作者说明……"
+                className="mt-2 w-full resize-y rounded-xl border border-border bg-background px-4 py-3 text-sm leading-6 outline-none focus:border-primary"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+    if (
+    block.block_type ===
+    'gallery'
+  ) {
+    const images =
+      Array.isArray(
+        content.images,
+      )
+        ? (
+            content.images as GalleryImage[]
+          )
+        : []
+
+    return (
+      <div className="grid gap-5">
+        <div className="flex flex-col gap-4 rounded-2xl border border-dashed border-border bg-muted/20 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h4 className="text-sm font-medium">
+              多图组
+            </h4>
+
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              一次可以选择多张图片。
+              前台将作为同一个图片组左右切换显示。
+            </p>
+
+            <p className="mt-1 text-xs text-muted-foreground">
+              当前 {images.length} 张图片
+            </p>
+          </div>
+
+          <label className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full border border-border bg-background px-4 py-2 text-xs font-medium transition-colors hover:border-primary/40 hover:text-primary">
+            + 批量添加图片
+
+            <input
+              type="file"
+              multiple
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={(e) => {
+                const files =
+                  Array.from(
+                    e.target.files ??
+                      [],
+                  )
+
+                if (
+                  files.length >
+                  0
+                ) {
+                  uploadGalleryImages(
+                    files,
+                    index,
+                  )
+                }
+
+                e.target.value =
+                  ''
+              }}
+            />
+          </label>
+        </div>
+
+        {images.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border px-6 py-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              这个图片组还没有图片
+            </p>
+
+            <p className="mt-1 text-xs text-muted-foreground">
+              点击「批量添加图片」可以一次选择多张截图。
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {images.map(
+              (
+                image,
+                imageIndex,
+              ) => (
+                <div
+                  key={`${image.src}-${imageIndex}`}
+                  className="overflow-hidden rounded-2xl border border-border bg-background"
+                >
+                  <div className="relative aspect-video overflow-hidden bg-muted">
+                    <img
+                      src={
+                        image.src
+                      }
+                      alt={
+                        image.alt ||
+                        `图片 ${
+                          imageIndex +
+                          1
+                        }`
+                      }
+                      className="size-full object-cover"
+                    />
+
+                    <div className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm">
+                      {imageIndex +
+                        1}{' '}
+                      /{' '}
+                      {images.length}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 p-4">
+                    <div>
+                      <label className="text-xs font-medium">
+                        Alt
+                      </label>
+
+                      <input
+                        value={
+                          image.alt ??
+                          ''
+                        }
+                        onChange={(e) =>
+                          updateGalleryImage(
+                            index,
+                            imageIndex,
+                            'alt',
+                            e.target
+                              .value,
+                          )
+                        }
+                        placeholder="图片内容说明"
+                        className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium">
+                        图片说明
+                      </label>
+
+                      <input
+                        value={
+                          image.caption ??
+                          ''
+                        }
+                        onChange={(e) =>
+                          updateGalleryImage(
+                            index,
+                            imageIndex,
+                            'caption',
+                            e.target
+                              .value,
+                          )
+                        }
+                        placeholder="可选"
+                        className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
+                      <div className="flex gap-2">
+                        <SmallButton
+                          disabled={
+                            imageIndex ===
+                            0
+                          }
+                          onClick={() =>
+                            moveGalleryImage(
+                              index,
+                              imageIndex,
+                              'left',
+                            )
+                          }
+                        >
+                          ←
+                        </SmallButton>
+
+                        <SmallButton
+                          disabled={
+                            imageIndex ===
+                            images.length -
+                              1
+                          }
+                          onClick={() =>
+                            moveGalleryImage(
+                              index,
+                              imageIndex,
+                              'right',
+                            )
+                          }
+                        >
+                          →
+                        </SmallButton>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          removeGalleryImage(
+                            index,
+                            imageIndex,
+                          )
+                        }
+                        className="rounded-full border border-destructive/30 px-3 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/5"
+                      >
+                        删除
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   if (
     block.block_type ===
