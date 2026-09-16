@@ -179,6 +179,54 @@ export function AdminGuideBlockEditor({
       () => blocks.length,
       [blocks],
     )
+  
+      const sectionGroups =
+    useMemo(() => {
+      const groups: {
+        sectionIndex: number
+        section: EditableGuideBlock
+        children: {
+          block: EditableGuideBlock
+          index: number
+        }[]
+      }[] = []
+
+      let currentGroup:
+        | (typeof groups)[number]
+        | null = null
+
+      blocks.forEach(
+        (block, index) => {
+          if (
+            block.block_type ===
+            'section'
+          ) {
+            currentGroup = {
+              sectionIndex:
+                index,
+              section:
+                block,
+              children: [],
+            }
+
+            groups.push(
+              currentGroup,
+            )
+
+            return
+          }
+
+          if (currentGroup) {
+            currentGroup.children.push({
+              block,
+              index,
+            })
+          }
+        },
+      )
+
+      return groups
+    }, [blocks])
 
   function addBlock(
     type: BlockType,
@@ -193,6 +241,55 @@ export function AdminGuideBlockEditor({
         ),
       ]),
     )
+
+    setSuccess(null)
+  }
+
+    function addBlockToSection(
+    sectionIndex: number,
+    type: Exclude<
+      BlockType,
+      'section'
+    >,
+  ) {
+    setBlocks((current) => {
+      let insertIndex =
+        current.length
+
+      for (
+        let i =
+          sectionIndex + 1;
+        i < current.length;
+        i++
+      ) {
+        if (
+          current[i]
+            .block_type ===
+          'section'
+        ) {
+          insertIndex = i
+          break
+        }
+      }
+
+      const next = [
+        ...current,
+      ]
+
+      next.splice(
+        insertIndex,
+        0,
+        createBlock(
+          type,
+          (insertIndex + 1) *
+            10,
+        ),
+      )
+
+      return normalizeOrders(
+        next,
+      )
+    })
 
     setSuccess(null)
   }
@@ -821,63 +918,7 @@ export function AdminGuideBlockEditor({
         <BlockAddButton
           label="新建正文"
           onClick={() =>
-            addBlock(
-              'section',
-            )
-          }
-        />
-
-        <BlockAddButton
-          label="标题"
-          onClick={() =>
-            addBlock(
-              'heading',
-            )
-          }
-        />
-
-        <BlockAddButton
-          label="段落"
-          onClick={() =>
-            addBlock(
-              'paragraph',
-            )
-          }
-        />
-
-        <BlockAddButton
-          label="图片"
-          onClick={() =>
-            addBlock(
-              'image',
-            )
-          }
-        />
-
-        <BlockAddButton
-          label="列表"
-          onClick={() =>
-            addBlock(
-              'list',
-            )
-          }
-        />
-
-        <BlockAddButton
-          label="提示框"
-          onClick={() =>
-            addBlock(
-              'callout',
-            )
-          }
-        />
-
-        <BlockAddButton
-          label="视频"
-          onClick={() =>
-            addBlock(
-              'video',
-            )
+            addBlock('section')
           }
         />
       </div>
@@ -886,120 +927,262 @@ export function AdminGuideBlockEditor({
         <div className="mt-8 rounded-2xl border border-dashed border-border px-6 py-14 text-center text-sm text-muted-foreground">
           还没有正文内容。
           <br />
-          从上方选择一种
-          Block 开始添加。
+          点击上方「新建正文」开始添加第一篇正文。
         </div>
       ) : (
-        <div className="mt-8 space-y-5">
-          {blocks.map(
-            (
-              block,
-              index,
-            ) => (
+        <div className="mt-8 space-y-8">
+          {sectionGroups.map(
+            (group, groupIndex) => (
               <div
-                key={
-                  block.id
-                }
-                className="rounded-2xl border border-border bg-background p-5"
+                key={group.section.id}
+                className="overflow-hidden rounded-2xl border border-border bg-background"
               >
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary">
-                      {
-                        index +
-                        1
-                      }
-                    </span>
+                <div className="border-b border-border bg-muted/20 p-5 sm:p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary">
+                        正文 {groupIndex + 1}
+                      </span>
 
-                    <span className="text-sm font-medium">
-                      {getBlockLabel(
-                        block.block_type,
-                      )}
-                    </span>
+                      <span className="text-sm font-medium">
+                        {typeof group.section.content.title === 'string' &&
+                        group.section.content.title
+                          ? group.section.content.title
+                          : '未命名正文'}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <SmallButton
+                        disabled={group.sectionIndex === 0}
+                        onClick={() =>
+                          moveBlock(
+                            group.sectionIndex,
+                            'up',
+                          )
+                        }
+                      >
+                        上移
+                      </SmallButton>
+
+                      <SmallButton
+                        disabled={
+                          group.sectionIndex ===
+                          blocks.length - 1
+                        }
+                        onClick={() =>
+                          moveBlock(
+                            group.sectionIndex,
+                            'down',
+                          )
+                        }
+                      >
+                        下移
+                      </SmallButton>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          removeBlock(
+                            group.sectionIndex,
+                          )
+                        }
+                        className="rounded-full border border-destructive/30 px-3 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/5"
+                      >
+                        删除正文
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <SmallButton
-                      disabled={
-                        index ===
-                        0
-                      }
-                      onClick={() =>
-                        moveBlock(
-                          index,
-                          'up',
-                        )
-                      }
-                    >
-                      上移
-                    </SmallButton>
-
-                    <SmallButton
-                      disabled={
-                        index ===
-                        blocks.length -
-                          1
-                      }
-                      onClick={() =>
-                        moveBlock(
-                          index,
-                          'down',
-                        )
-                      }
-                    >
-                      下移
-                    </SmallButton>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        removeBlock(
-                          index,
-                        )
-                      }
-                      className="rounded-full border border-destructive/30 px-3 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/5"
-                    >
-                      删除
-                    </button>
+                  <div className="mt-5">
+                    <BlockEditorFields
+                      block={group.section}
+                      index={group.sectionIndex}
+                      updateBlockContent={updateBlockContent}
+                      uploadBlockImage={uploadBlockImage}
+                      uploadGalleryImages={uploadGalleryImages}
+                      updateGalleryImage={updateGalleryImage}
+                      removeGalleryImage={removeGalleryImage}
+                      moveGalleryImage={moveGalleryImage}
+                      updateListItem={updateListItem}
+                      addListItem={addListItem}
+                      removeListItem={removeListItem}
+                    />
                   </div>
                 </div>
 
-                <div className="mt-5">
-                  <BlockEditorFields
-                    block={
-                      block
-                    }
-                    index={
-                      index
-                    }
-                    updateBlockContent={
-                      updateBlockContent
-                    }
-                    uploadBlockImage={
-                      uploadBlockImage
-                    }
-                    uploadGalleryImages={
-                      uploadGalleryImages
-                    }
-                    updateGalleryImage={
-                      updateGalleryImage
-                    }
-                    removeGalleryImage={
-                      removeGalleryImage
-                    }
-                    moveGalleryImage={
-                      moveGalleryImage
-                    }
-                    updateListItem={
-                      updateListItem
-                    }
-                    addListItem={
-                      addListItem
-                    }
-                    removeListItem={
-                      removeListItem
-                    }
-                  />
+                <div className="p-5 sm:p-6">
+                  <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium">
+                        正文内容
+                      </h3>
+
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        下面添加的标题、段落、图片、多图组、列表、提示框和视频都只属于这一篇正文。
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <BlockAddButton
+                        label="标题"
+                        onClick={() =>
+                          addBlockToSection(
+                            group.sectionIndex,
+                            'heading',
+                          )
+                        }
+                      />
+
+                      <BlockAddButton
+                        label="段落"
+                        onClick={() =>
+                          addBlockToSection(
+                            group.sectionIndex,
+                            'paragraph',
+                          )
+                        }
+                      />
+
+                      <BlockAddButton
+                        label="图片"
+                        onClick={() =>
+                          addBlockToSection(
+                            group.sectionIndex,
+                            'image',
+                          )
+                        }
+                      />
+
+                      <BlockAddButton
+                        label="多图组"
+                        onClick={() =>
+                          addBlockToSection(
+                            group.sectionIndex,
+                            'gallery',
+                          )
+                        }
+                      />
+
+                      <BlockAddButton
+                        label="列表"
+                        onClick={() =>
+                          addBlockToSection(
+                            group.sectionIndex,
+                            'list',
+                          )
+                        }
+                      />
+
+                      <BlockAddButton
+                        label="提示框"
+                        onClick={() =>
+                          addBlockToSection(
+                            group.sectionIndex,
+                            'callout',
+                          )
+                        }
+                      />
+
+                      <BlockAddButton
+                        label="视频"
+                        onClick={() =>
+                          addBlockToSection(
+                            group.sectionIndex,
+                            'video',
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {group.children.length === 0 ? (
+                    <div className="mt-5 rounded-2xl border border-dashed border-border px-6 py-10 text-center text-sm text-muted-foreground">
+                      这篇正文还没有内容。
+                      <br />
+                      使用上方按钮添加标题、段落、图片或视频。
+                    </div>
+                  ) : (
+                    <div className="mt-5 space-y-4">
+                      {group.children.map(
+                        ({ block, index }, childIndex) => (
+                          <div
+                            key={block.id}
+                            className="rounded-2xl border border-border bg-card p-5"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+                              <div className="flex items-center gap-3">
+                                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary">
+                                  {childIndex + 1}
+                                </span>
+
+                                <span className="text-sm font-medium">
+                                  {getBlockLabel(
+                                    block.block_type,
+                                  )}
+                                </span>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2">
+                                <SmallButton
+                                  disabled={childIndex === 0}
+                                  onClick={() =>
+                                    moveBlock(
+                                      index,
+                                      'up',
+                                    )
+                                  }
+                                >
+                                  上移
+                                </SmallButton>
+
+                                <SmallButton
+                                  disabled={
+                                    childIndex ===
+                                    group.children.length - 1
+                                  }
+                                  onClick={() =>
+                                    moveBlock(
+                                      index,
+                                      'down',
+                                    )
+                                  }
+                                >
+                                  下移
+                                </SmallButton>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    removeBlock(index)
+                                  }
+                                  className="rounded-full border border-destructive/30 px-3 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/5"
+                                >
+                                  删除
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="mt-5">
+                              <BlockEditorFields
+                                block={block}
+                                index={index}
+                                updateBlockContent={updateBlockContent}
+                                uploadBlockImage={uploadBlockImage}
+                                uploadGalleryImages={uploadGalleryImages}
+                                updateGalleryImage={updateGalleryImage}
+                                removeGalleryImage={removeGalleryImage}
+                                moveGalleryImage={moveGalleryImage}
+                                updateListItem={updateListItem}
+                                addListItem={addListItem}
+                                removeListItem={removeListItem}
+                              />
+                            </div>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ),
@@ -1078,6 +1261,9 @@ function getBlockLabel(
     case 'image':
       return '图片'
 
+    case 'gallery':
+      return '多图组'
+
     case 'list':
       return '列表'
 
@@ -1150,7 +1336,7 @@ function BlockEditorFields({
   addListItem,
   removeListItem,
 }: FieldProps) {
-  
+
   const content =
     block.content ?? {}
 
