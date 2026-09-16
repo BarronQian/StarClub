@@ -142,7 +142,18 @@ export function HeaderUserAuth() {
         session?.user ?? null
 
       setUser(currentUser)
+      
+      if (currentUser) {
+  console.log(
+    'Discord Supabase User:',
+    currentUser
+  )
 
+  console.log(
+    'Discord User Metadata:',
+    currentUser.user_metadata
+  )
+}
       if (currentUser) {
         void syncDiscordProfile(
           currentUser,
