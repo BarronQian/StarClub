@@ -27,6 +27,9 @@ import {
 
 import { ProfileGuestbook } from '@/components/profile-guestbook'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
+import {
+  UserVerificationBadges,
+} from '@/components/user-verification-badges'
 
 type Profile = {
   id: string
@@ -128,6 +131,11 @@ export default function ProfilePage() {
     orgMembership,
     setOrgMembership,
   ] = useState<boolean | null>(null)
+
+  const [
+    discordVerified,
+    setDiscordVerified,
+  ] = useState(false)
 
   const [discordRoles, setDiscordRoles] =
     useState<string[]>([])
@@ -581,17 +589,17 @@ useEffect(() => {
 }, [profile, accessToken])
 
   useEffect(() => {
-      if (
-          !user ||
-          !accessToken
-        ) {
-          return
-        }
+    if (
+      !user ||
+      !accessToken
+    ) {
+      setDiscordVerified(false)
+      return
+    }
 
     const checkDiscordMembership =
       async () => {
         try {
-
           const response =
             await fetch(
               '/api/discord/membership',
@@ -613,22 +621,13 @@ useEffect(() => {
               data
             )
 
-            setDiscordMembership(
-              false
-            )
-
-            setDiscordRoles([])
+            setDiscordVerified(false)
             return
           }
 
-          setDiscordMembership(
-            data.isMember === true
-          )
-
-          setDiscordRoles(
-            Array.isArray(data.roles)
-              ? data.roles
-              : []
+          setDiscordVerified(
+            data.isMember === true &&
+            data.isVerified === true
           )
         } catch (error) {
           console.error(
@@ -636,8 +635,7 @@ useEffect(() => {
             error
           )
 
-          setDiscordMembership(false)
-          setDiscordRoles([])
+          setDiscordVerified(false)
         }
       }
 
