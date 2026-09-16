@@ -138,7 +138,17 @@ export function HeaderUserAuth() {
         data: { session },
       } = await supabase.auth.getSession()
 
-      setUser(session?.user ?? null)
+      const currentUser =
+        session?.user ?? null
+
+      setUser(currentUser)
+
+      if (currentUser) {
+        void syncDiscordProfile(
+          currentUser,
+        )
+      }
+
       setLoading(false)
     }
 
@@ -146,10 +156,22 @@ export function HeaderUserAuth() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        const currentUser =
+          session?.user ?? null
+
+        setUser(currentUser)
+
+        if (currentUser) {
+          void syncDiscordProfile(
+            currentUser,
+          )
+        }
+
+        setLoading(false)
+      },
+    )
 
     return () => {
       subscription.unsubscribe()
