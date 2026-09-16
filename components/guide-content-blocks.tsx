@@ -75,6 +75,72 @@ function getSupabasePreviewUrl(
   }
 }
 
+type GuidePreviewImageProps = {
+  src: string
+  alt: string
+  previewWidth: number
+  previewQuality?: number
+  fill?: boolean
+  width?: number
+  height?: number
+  className?: string
+}
+
+function GuidePreviewImage({
+  src,
+  alt,
+  previewWidth,
+  previewQuality = 72,
+  fill = false,
+  width,
+  height,
+  className,
+}: GuidePreviewImageProps) {
+  const [useOriginal, setUseOriginal] =
+    useState(false)
+
+  const imageSrc = useOriginal
+    ? src
+    : getSupabasePreviewUrl(
+        src,
+        previewWidth,
+        previewQuality,
+      )
+
+  if (fill) {
+    return (
+      <Image
+        src={imageSrc}
+        alt={alt}
+        fill
+        unoptimized
+        className={className}
+        onError={() => {
+          if (!useOriginal) {
+            setUseOriginal(true)
+          }
+        }}
+      />
+    )
+  }
+
+  return (
+    <Image
+      src={imageSrc}
+      alt={alt}
+      width={width ?? 1600}
+      height={height ?? 1000}
+      unoptimized
+      className={className}
+      onError={() => {
+        if (!useOriginal) {
+          setUseOriginal(true)
+        }
+      }}
+    />
+  )
+}
+
 export function GuideContentBlocks({
   blocks,
 }: Props) {
@@ -341,16 +407,13 @@ export function GuideContentBlocks({
                       className="group block w-full cursor-zoom-in overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                       aria-label="点击放大图片"
                     >
-                      <Image
-                        src={getSupabasePreviewUrl(
-                          src,
-                          1600,
-                          78,
-                        )}
+                      <GuidePreviewImage
+                        src={src}
                         alt={alt}
+                        previewWidth={1600}
+                        previewQuality={72}
                         width={1600}
                         height={1200}
-                        sizes="(min-width: 1280px) 1152px, (min-width: 1024px) 90vw, 100vw"
                         className="mx-auto h-auto max-h-[75vh] w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
                       />
                     </button>
@@ -750,18 +813,13 @@ function GuideGallery({
           aria-label="点击放大图片"
         >
           <div className="relative flex min-h-65 items-center justify-center sm:min-h-105">
-            <Image
-              src={getSupabasePreviewUrl(
-                activeImage.src,
-                1600,
-                78,
-              )}
-              alt={
-                activeImage.alt
-              }
+            <GuidePreviewImage
+              src={activeImage.src}
+              alt={activeImage.alt}
+              previewWidth={1600}
+              previewQuality={72}
               width={1600}
               height={1000}
-              sizes="(min-width: 1280px) 1152px, (min-width: 1024px) 90vw, 100vw"
               className="max-h-[70vh] h-auto w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
             />
           </div>
@@ -831,17 +889,12 @@ function GuideGallery({
                     : 'border-transparent opacity-55 hover:opacity-90'
                 }`}
               >
-                <Image
-                  src={getSupabasePreviewUrl(
-                    image.src,
-                    240,
-                    68,
-                  )}
-                  alt={
-                    image.alt
-                  }
+                <GuidePreviewImage
+                  src={image.src}
+                  alt={image.alt}
+                  previewWidth={320}
+                  previewQuality={60}
                   fill
-                  sizes="112px"
                   className="object-cover"
                 />
               </button>
