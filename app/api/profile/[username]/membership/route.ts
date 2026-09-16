@@ -141,13 +141,13 @@ export async function GET(
         STARCLUB_DISCORD_VERIFIED_ROLE_ID
       )
 
-    // 3. Discord 人工确认的酒馆俱乐部 Role
+    // 4. Discord 人工确认的酒馆俱乐部 Role
     const discordOrgMembership =
       roles.includes(STARCLUB_ORG_ROLE_ID)
 
     let rsiOrgMembership = false
 
-    // 4. RSI 官网公开 ORG 查询
+    // 5. RSI 官网公开 ORG 查询
     if (
       profile.rsi_verified === true &&
       profile.star_citizen_handle
@@ -189,7 +189,7 @@ export async function GET(
       }
     }
 
-    // 5. 官网自动认证 OR Discord 人工认证
+    // 6. 官网自动认证 OR Discord 人工认证
     const orgMembership =
       rsiOrgMembership ||
       discordOrgMembership
