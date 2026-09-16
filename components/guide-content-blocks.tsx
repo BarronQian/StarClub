@@ -32,6 +32,49 @@ type GalleryImage = {
   caption: string
 }
 
+function getSupabasePreviewUrl(
+  src: string,
+  width: number,
+  quality = 75,
+) {
+  try {
+    const url = new URL(src)
+
+    if (
+      url.hostname !==
+        'nngrkcavazaypdvwcdbb.supabase.co' ||
+      !url.pathname.includes(
+        '/storage/v1/object/public/',
+      )
+    ) {
+      return src
+    }
+
+    url.pathname =
+      url.pathname.replace(
+        '/storage/v1/object/public/',
+        '/storage/v1/render/image/public/',
+      )
+
+    url.searchParams.set(
+      'width',
+      String(width),
+    )
+    url.searchParams.set(
+      'quality',
+      String(quality),
+    )
+    url.searchParams.set(
+      'resize',
+      'contain',
+    )
+
+    return url.toString()
+  } catch {
+    return src
+  }
+}
+
 export function GuideContentBlocks({
   blocks,
 }: Props) {
@@ -182,6 +225,8 @@ export function GuideContentBlocks({
                           {authorUrl ? (
                             <a
                               href={authorUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
                               className="font-medium text-foreground transition-colors hover:text-primary"
                             >
                               {author}
@@ -297,7 +342,11 @@ export function GuideContentBlocks({
                       aria-label="点击放大图片"
                     >
                       <Image
-                        src={src}
+                        src={getSupabasePreviewUrl(
+                          src,
+                          1600,
+                          78,
+                        )}
                         alt={alt}
                         width={1600}
                         height={1200}
@@ -702,9 +751,11 @@ function GuideGallery({
         >
           <div className="relative flex min-h-65 items-center justify-center sm:min-h-105">
             <Image
-              src={
-                activeImage.src
-              }
+              src={getSupabasePreviewUrl(
+                activeImage.src,
+                1600,
+                78,
+              )}
               alt={
                 activeImage.alt
               }
@@ -781,9 +832,11 @@ function GuideGallery({
                 }`}
               >
                 <Image
-                  src={
-                    image.src
-                  }
+                  src={getSupabasePreviewUrl(
+                    image.src,
+                    240,
+                    68,
+                  )}
                   alt={
                     image.alt
                   }
