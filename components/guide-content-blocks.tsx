@@ -407,16 +407,13 @@ export function GuideContentBlocks({
                       className="group block w-full cursor-zoom-in overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                       aria-label="点击放大图片"
                     >
-                      <Image
-                        src={getSupabasePreviewUrl(
-                          src,
-                          1600,
-                          72,
-                        )}
+                      <GuidePreviewImage
+                        src={src}
                         alt={alt}
+                        previewWidth={1600}
+                        previewQuality={72}
                         width={1600}
                         height={1200}
-                        unoptimized
                         className="mx-auto h-auto max-h-[75vh] w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
                       />
                     </button>
