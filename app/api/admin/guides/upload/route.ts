@@ -104,7 +104,7 @@ export async function POST(
     }
 
     const maxSize =
-      10 * 1024 * 1024
+      30 * 1024 * 1024
 
     if (
       file.size >
@@ -113,7 +113,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            '图片不能超过 10MB',
+            '攻略图片单张不能超过 30MB',
         },
         {
           status: 400,
