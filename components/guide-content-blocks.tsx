@@ -96,8 +96,21 @@ export function GuideContentBlocks({
   return (
     <>
       <article className="mx-auto w-full max-w-6xl">
-        <div className="space-y-12 lg:space-y-16">
+        <div className="space-y-12 lg:space-y-14">
           {blocks.map((block) => {
+            const sectionNumber =
+              block.block_type === 'section'
+                ? blocks
+                    .slice(
+                      0,
+                      blocks.indexOf(block) + 1,
+                    )
+                    .filter(
+                      (item) =>
+                        item.block_type ===
+                        'section',
+                    ).length
+                : 0
             const content =
               block.content ?? {}
 
@@ -138,16 +151,18 @@ export function GuideContentBlocks({
                 return (
                   <header
                     key={block.id}
-                    className="border-t border-border/60 pt-12 first:border-t-0 first:pt-0 lg:pt-16"
+                    className="border-t border-border/60 pt-12 first:border-t-0 first:pt-0 lg:pt-14"
                   >
-                    <div className="rounded-4xl border border-border/60 bg-card/55 px-6 py-8 shadow-sm sm:px-10 sm:py-10 lg:px-14 lg:py-12">
-                      <div className="mx-auto max-w-4xl">
-                      <span className="font-display text-[0.62rem] tracking-[0.34em] text-primary">
-                        GUIDE SECTION
-                      </span>
+                    <div className="mx-auto max-w-4xl">
+                      <div className="flex items-center gap-4">
+                        <span className="font-display text-[0.62rem] tracking-[0.32em] text-primary">
+                          GUIDE SECTION {String(sectionNumber).padStart(2, '0')}
+                        </span>
+                        <span className="h-px flex-1 bg-border/70" />
+                      </div>
 
                       {title && (
-                        <h2 className="mt-4 font-display text-3xl leading-tight tracking-tight text-foreground sm:text-4xl">
+                        <h2 className="mt-5 font-display text-3xl leading-tight tracking-tight text-foreground sm:text-4xl">
                           {title}
                         </h2>
                       )}
@@ -178,7 +193,6 @@ export function GuideContentBlocks({
                           )}
                         </div>
                       )}
-                      </div>
                     </div>
                   </header>
                 )
@@ -205,7 +219,7 @@ export function GuideContentBlocks({
                   return (
                     <h3
                       key={block.id}
-                      className="mx-auto max-w-4xl pt-3 font-display text-2xl tracking-tight sm:text-3xl"
+                      className="mx-auto max-w-4xl pt-2 font-display text-2xl tracking-tight sm:text-3xl"
                     >
                       {text}
                     </h3>
@@ -215,7 +229,7 @@ export function GuideContentBlocks({
                 return (
                   <h2
                     key={block.id}
-                    className="mx-auto max-w-4xl pt-4 font-display text-3xl tracking-tight sm:text-4xl"
+                    className="mx-auto max-w-4xl pt-3 font-display text-3xl tracking-tight sm:text-4xl"
                   >
                     {text}
                   </h2>
@@ -438,7 +452,7 @@ export function GuideContentBlocks({
                 return (
                   <div
                     key={block.id}
-                    className="mx-auto w-full max-w-4xl rounded-2xl border border-primary/20 bg-primary/5 p-6 sm:p-8"
+                    className="mx-auto max-w-4xl rounded-2xl border border-primary/20 bg-primary/5 p-6 sm:p-7"
                   >
                     {title && (
                       <h3 className="font-medium text-foreground">
