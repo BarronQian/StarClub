@@ -11,8 +11,10 @@ import {
   requireAdminApi,
 } from '@/lib/admin-auth'
 
-const BUCKET =
-  'guide-images'
+const BUCKET = 'guide-images'
+
+const MAX_FILE_SIZE =
+  30 * 1024 * 1024
 
 function getAdminSupabase() {
   const supabaseUrl =
@@ -54,6 +56,61 @@ function sanitizeFileName(
       /[^a-z0-9._-]/g,
       '',
     )
+}
+
+function getExtension(
+  file: File,
+) {
+  const name =
+    sanitizeFileName(
+      file.name,
+    )
+
+  const extension =
+    name.includes('.')
+      ? name
+          .split('.')
+          .pop()
+          ?.toLowerCase()
+      : null
+
+  if (extension) {
+    return extension
+  }
+
+  switch (file.type) {
+    case 'image/png':
+      return 'png'
+
+    case 'image/webp':
+      return 'webp'
+
+    case 'image/gif':
+      return 'gif'
+
+    case 'image/jpeg':
+    default:
+      return 'jpg'
+  }
+}
+
+function getBaseName(
+  file: File,
+) {
+  const name =
+    sanitizeFileName(
+      file.name,
+    )
+
+  return (
+    name
+      .replace(
+        /\.[^.]+$/,
+        '',
+      )
+      .slice(0, 80) ||
+    'guide-image'
+  )
 }
 
 export async function POST(
@@ -103,12 +160,9 @@ export async function POST(
       )
     }
 
-    const maxSize =
-      30 * 1024 * 1024
-
     if (
       file.size >
-      maxSize
+      MAX_FILE_SIZE
     ) {
       return NextResponse.json(
         {
@@ -124,57 +178,80 @@ export async function POST(
     const supabase =
       getAdminSupabase()
 
-    const originalName =
-      sanitizeFileName(
-        file.name,
-      )
-
     const extension =
-      originalName.includes('.')
-        ? originalName
-            .split('.')
-            .pop()
-        : 'jpg'
+      getExtension(file)
 
     const baseName =
-      originalName
-        .replace(
-          /\.[^.]+$/,
-          '',
-        )
-        .slice(0, 80) ||
-      'guide-image'
+      getBaseName(file)
+
+    const uniqueId =
+      crypto.randomUUID()
 
     const filePath =
-      `guides/${Date.now()}-${baseName}.${extension}`
+      `guides/${Date.now()}-${uniqueId}-${baseName}.${extension}`
+
+    console.log(
+      '[GUIDE UPLOAD] Starting:',
+      {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        sizeMB:
+          (
+            file.size /
+            1024 /
+            1024
+          ).toFixed(2),
+        path: filePath,
+      },
+    )
 
     const arrayBuffer =
       await file.arrayBuffer()
 
     const {
+      data: uploadData,
       error: uploadError,
-    } = await supabase.storage
-      .from(BUCKET)
-      .upload(
-        filePath,
-        arrayBuffer,
-        {
-          contentType:
-            file.type,
-          upsert: false,
-        },
-      )
+    } =
+      await supabase.storage
+        .from(BUCKET)
+        .upload(
+          filePath,
+          arrayBuffer,
+          {
+            contentType:
+              file.type ||
+              'application/octet-stream',
+
+            cacheControl:
+              '31536000',
+
+            upsert: false,
+          },
+        )
 
     if (uploadError) {
       console.error(
-        '[GUIDE UPLOAD] Upload failed:',
+        '[GUIDE UPLOAD] Supabase upload failed:',
         uploadError,
       )
 
       return NextResponse.json(
         {
           error:
-            '上传图片失败',
+            uploadError.message
+              ? `上传失败：${uploadError.message}`
+              : '上传图片失败',
+
+          details: {
+            name:
+              uploadError.name ??
+              null,
+
+            message:
+              uploadError.message ??
+              null,
+          },
         },
         {
           status: 500,
@@ -183,21 +260,49 @@ export async function POST(
     }
 
     const {
-      data:
-        publicUrlData,
-    } = supabase.storage
-      .from(BUCKET)
-      .getPublicUrl(
-        filePath,
-      )
+      data: publicUrlData,
+    } =
+      supabase.storage
+        .from(BUCKET)
+        .getPublicUrl(
+          filePath,
+        )
+
+    console.log(
+      '[GUIDE UPLOAD] Success:',
+      {
+        path:
+          uploadData.path,
+
+        sizeMB:
+          (
+            file.size /
+            1024 /
+            1024
+          ).toFixed(2),
+      },
+    )
 
     return NextResponse.json({
       ok: true,
+
       path:
-        filePath,
+        uploadData.path,
+
       url:
         publicUrlData
           .publicUrl,
+
+      file: {
+        name:
+          file.name,
+
+        type:
+          file.type,
+
+        size:
+          file.size,
+      },
     })
   } catch (error) {
     console.error(
@@ -209,7 +314,7 @@ export async function POST(
       {
         error:
           error instanceof Error
-            ? error.message
+            ? `上传失败：${error.message}`
             : '上传图片失败',
       },
       {
