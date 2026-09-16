@@ -12,6 +12,7 @@ type Props = {
   handle?: string | null
   size?: 'sm' | 'md'
   showLabels?: boolean
+  onRsiClick?: () => void
 }
 
 export function UserVerificationBadges({
@@ -21,6 +22,7 @@ export function UserVerificationBadges({
   handle = null,
   size = 'sm',
   showLabels = false,
+  onRsiClick,
 }: Props) {
   const iconSize =
     size === 'md'
@@ -35,8 +37,17 @@ export function UserVerificationBadges({
   return (
     <div className="inline-flex flex-wrap items-center gap-x-4 gap-y-2">
       {/* RSI Handle */}
-      {rsiVerified && (
-        <div className="group relative flex shrink-0 items-center gap-1.5">
+        {rsiVerified && (
+          <button
+            type="button"
+            onClick={onRsiClick}
+            disabled={!onRsiClick}
+            className={`group relative flex shrink-0 items-center gap-1.5 ${
+              onRsiClick
+                ? 'cursor-pointer'
+                : 'cursor-default'
+            }`}
+          >
           <BadgeCheck
             className={`${iconSize} fill-[#1689e8] text-white transition-transform duration-150 group-hover:scale-110`}
             strokeWidth={2.5}
@@ -53,8 +64,8 @@ export function UserVerificationBadges({
           <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 translate-y-1 whitespace-nowrap rounded-lg bg-neutral-950 px-2.5 py-1.5 text-[10px] font-medium text-white opacity-0 shadow-lg transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100">
             该 Star Citizen RSI Handle 已完成身份认证
           </div>
-        </div>
-      )}
+        </button>
+        )}
 
       {/* StarClub Discord */}
       {discordVerified && (

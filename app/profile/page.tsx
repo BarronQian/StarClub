@@ -2170,6 +2170,10 @@ const handleConfirmCoverUpload =
                     }
                     size="md"
                     showLabels
+                    onRsiClick={() => {
+                      setRsiVerificationError('')
+                      setRsiBinding(true)
+                    }}
                   />
 
                   {!profile?.rsi_verified && (
