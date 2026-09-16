@@ -1304,7 +1304,7 @@ export default function MarketPage() {
                               </div>
                             )}
 
-                            <span className="min-w-0 flex-1 truncate text-[10px] font-medium text-muted-foreground">
+                            <span className="min-w-0 max-w-[calc(100%-3rem)] truncate text-[10px] font-medium text-muted-foreground">
                               {listing.profiles
                                 ?.rsi_handle
                                 ? `@${listing.profiles.rsi_handle}`

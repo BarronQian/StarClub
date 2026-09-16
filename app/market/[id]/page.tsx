@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import {
   ArrowLeft,
-  BadgeCheck,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -21,6 +20,10 @@ import {
   useEffect,
   useState,
 } from 'react'
+
+import {
+  UserVerificationBadges,
+} from '@/components/user-verification-badges'
 
 type ListingType =
   | 'wts'
@@ -1284,11 +1287,17 @@ async function submitReport() {
                           }
                         </div>
 
-                        {listing
-                          .profiles
-                          ?.rsi_verified && (
-                          <BadgeCheck className="size-4 shrink-0 text-blue-500" />
-                        )}
+                        <UserVerificationBadges
+                          rsiVerified={
+                            listing.profiles
+                              ?.rsi_verified === true
+                          }
+                          handle={
+                            listing.profiles
+                              ?.rsi_handle
+                          }
+                          size="sm"
+                        />
                       </div>
 
                       {listing
@@ -1355,11 +1364,17 @@ async function submitReport() {
                           }
                         </div>
 
-                        {listing
-                          .profiles
-                          ?.rsi_verified && (
-                          <BadgeCheck className="size-4 shrink-0 text-blue-500" />
-                        )}
+                        <UserVerificationBadges
+                          rsiVerified={
+                            listing.profiles
+                              ?.rsi_verified === true
+                          }
+                          handle={
+                            listing.profiles
+                              ?.rsi_handle
+                          }
+                          size="sm"
+                        />
                       </div>
 
                       {listing
