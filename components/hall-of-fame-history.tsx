@@ -38,34 +38,67 @@ export function HallOfFameHistory({
                   {edition.date}
                 </span>
               </div>
-<div className="grid grid-cols-3 gap-8 sm:min-w-[420px]">
-  <div className="flex flex-col gap-1 sm:items-end">
-    <span className="text-[0.6rem] tracking-[0.2em] text-muted-foreground uppercase">
-      冠军
-    </span>
-    <span className="font-display text-lg font-medium text-foreground">
-      {edition.champion}
-    </span>
-  </div>
+                <div className="grid grid-cols-3 gap-6 sm:w-105">
+                  {/* 冠军 */}
+                  <div className="flex min-w-0 flex-col items-center text-center">
+                    <div className="mb-1.5 flex items-center gap-1.5">
+                      <span
+                        className="text-base leading-none"
+                        aria-hidden="true"
+                      >
+                        🥇
+                      </span>
 
-  <div className="flex flex-col gap-1 sm:items-end">
-    <span className="text-[0.6rem] tracking-[0.2em] text-muted-foreground uppercase">
-      亚军
-    </span>
-    <span className="font-display text-lg font-medium text-foreground">
-      {edition.runnerUp}
-    </span>
-  </div>
+                      <span className="text-[0.6rem] tracking-[0.2em] text-muted-foreground uppercase">
+                        冠军
+                      </span>
+                    </div>
 
-  <div className="flex flex-col gap-1 sm:items-end">
-    <span className="text-[0.6rem] tracking-[0.2em] text-muted-foreground uppercase">
-      季军
-    </span>
-    <span className="font-display text-lg font-medium text-foreground">
-      {edition.thirdPlace}
-    </span>
-  </div>
-</div>
+                    <span className="w-full truncate font-display text-lg font-medium text-foreground">
+                      {edition.champion}
+                    </span>
+                  </div>
+
+                  {/* 亚军 */}
+                  <div className="flex min-w-0 flex-col items-center text-center">
+                    <div className="mb-1.5 flex items-center gap-1.5">
+                      <span
+                        className="text-base leading-none"
+                        aria-hidden="true"
+                      >
+                        🥈
+                      </span>
+
+                      <span className="text-[0.6rem] tracking-[0.2em] text-muted-foreground uppercase">
+                        亚军
+                      </span>
+                    </div>
+
+                    <span className="w-full truncate font-display text-lg font-medium text-foreground">
+                      {edition.runnerUp}
+                    </span>
+                  </div>
+
+                  {/* 季军 */}
+                  <div className="flex min-w-0 flex-col items-center text-center">
+                    <div className="mb-1.5 flex items-center gap-1.5">
+                      <span
+                        className="text-base leading-none"
+                        aria-hidden="true"
+                      >
+                        🥉
+                      </span>
+
+                      <span className="text-[0.6rem] tracking-[0.2em] text-muted-foreground uppercase">
+                        季军
+                      </span>
+                    </div>
+
+                    <span className="w-full truncate font-display text-lg font-medium text-foreground">
+                      {edition.thirdPlace}
+                    </span>
+                  </div>
+                </div>
             </Reveal>
           ))}
         </ol>
