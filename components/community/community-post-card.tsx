@@ -11,6 +11,10 @@ import {
   CommunityPostMenu,
 } from '@/components/community-post-menu'
 
+import {
+  UserVerificationBadges,
+} from '@/components/user-verification-badges'
+
 type PostAuthor = {
   username: string | null
   display_name: string | null
@@ -191,17 +195,18 @@ export function CommunityPostCard({
                   </span>
                 )}
 
-                {author
-                  ?.rsi_verified &&
-                  author
-                    ?.star_citizen_handle && (
-                    <span
-                      title="RSI Handle 已认证"
-                      className="inline-flex size-4 items-center justify-center rounded-full bg-[#b87300] text-[9px] font-bold text-white"
-                    >
-                      ✓
-                    </span>
-                  )}
+                <UserVerificationBadges
+                  rsiVerified={
+                    author?.rsi_verified === true &&
+                    Boolean(
+                      author?.star_citizen_handle
+                    )
+                  }
+                  handle={
+                    author?.star_citizen_handle
+                  }
+                  size="sm"
+                />
 
                 <span className="text-xs text-muted-foreground">
                   {formatPostTime(
