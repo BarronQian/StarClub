@@ -885,13 +885,13 @@ async function handleSubmit() {
         </span>
 
         <h2 className="mt-2 font-display text-xl">
-          作者与出品
+          主编与出品
         </h2>
 
         <div className="mt-6 grid gap-6 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium">
-              作者
+              主编
             </label>
 
             <input
