@@ -140,7 +140,7 @@ export function GuideContentBlocks({
                     key={block.id}
                     className="border-t border-border/60 pt-12 first:border-t-0 first:pt-0 lg:pt-16"
                   >
-                    <div className="rounded-[2rem] border border-border/60 bg-card/55 px-6 py-8 shadow-sm sm:px-10 sm:py-10 lg:px-14 lg:py-12">
+                    <div className="rounded-4xl border border-border/60 bg-card/55 px-6 py-8 shadow-sm sm:px-10 sm:py-10 lg:px-14 lg:py-12">
                       <div className="mx-auto max-w-4xl">
                       <span className="font-display text-[0.62rem] tracking-[0.34em] text-primary">
                         GUIDE SECTION
