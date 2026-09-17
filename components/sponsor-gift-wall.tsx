@@ -60,7 +60,9 @@ const SPEED_DURATION = {
   fast: 24,
 } as const
 
-const LANE_COUNT = 8
+const LANE_COUNT = 10
+
+const LANE_GAP_SECONDS = 8.5
 
 function hashString(
   value: string,
@@ -113,15 +115,20 @@ const visualGifts =
       return []
     }
 
-    // 同一时间最多一个轨道一个弹幕。
-    // 从根本上避免同轨追尾和文字覆盖。
-    const visibleGifts =
-      gifts.slice(
-        0,
-        LANE_COUNT,
-      )
+    const laneOrder = [
+      4,
+      8,
+      1,
+      6,
+      3,
+      9,
+      0,
+      7,
+      2,
+      5,
+    ]
 
-    return visibleGifts.map(
+    return gifts.map(
       (gift, index) => {
         const hash =
           hashString(gift.id)
@@ -135,48 +142,67 @@ const visualGifts =
           (hash % 350) /
           100
 
-        // 使用跳跃式轨道分配，
-        // 避免视觉上全部从上到下机械排列。
-        const laneOrder = [
-          3,
-          6,
-          1,
-          5,
-          0,
-          7,
-          2,
-          4,
-        ]
-
-        const lane =
-          laneOrder[index]
-
-        // 每条轨道只有一个动画，
-        // delay 仅负责让进入页面时弹幕分散在不同横向位置。
         const duration =
           baseDuration +
           variation
 
-        const progress =
-          (
+        /*
+         * 65 条记录全部参与。
+         *
+         * 每 10 条为一组：
+         * 第 1 组进入 10 条轨道
+         * 第 2 组继续进入相同 10 条轨道
+         * 第 3 组继续……
+         *
+         * 同一轨道上的下一条弹幕
+         * 至少错开 LANE_GAP_SECONDS。
+         */
+        const group =
+          Math.floor(
             index /
-            visibleGifts.length +
-            (hash % 17) / 100
-          ) % 1
+              LANE_COUNT,
+          )
+
+        const laneIndex =
+          index %
+          LANE_COUNT
+
+        const lane =
+          laneOrder[
+            laneIndex
+          ]
+
+        /*
+         * 不同轨道本身再稍微错开，
+         * 避免所有弹幕同时从右侧进入。
+         */
+        const laneOffset =
+          laneIndex * 0.65
+
+        const cycleLength =
+          Math.ceil(
+            gifts.length /
+              LANE_COUNT,
+          ) *
+          LANE_GAP_SECONDS
+
+        const delay =
+          group *
+            LANE_GAP_SECONDS +
+          laneOffset -
+          cycleLength
 
         return {
           key: gift.id,
           gift,
           lane,
-
-          delay:
-            -(duration * progress),
-
+          delay,
           duration,
         }
       },
     )
   }, [gifts])
+
   if (gifts.length === 0) {
     return (
       <div className="flex min-h-140 items-center justify-center border-y border-[#e8e2d8]">
@@ -292,6 +318,8 @@ const visualGifts =
 
                     animation:
                       `sponsor-danmaku ${duration}s linear ${delay}s infinite`,
+                    animationFillMode:
+                      'both',
                   } as React.CSSProperties
                 }
               >
