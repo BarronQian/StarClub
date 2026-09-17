@@ -54,9 +54,9 @@ const DEPTH_MAP = {
 } as const
 
 const SPEED_DURATION = {
-  slow: 19,
-  normal: 16.5,
-  fast: 14,
+  slow: 16.5,
+  normal: 14,
+  fast: 11.5,
 } as const
 
 const LANE_COUNT = 10
@@ -323,15 +323,15 @@ export function SponsorGiftWall({
 
             const laneVariation = [
               0,
-              5.5,
+              7.5,
               1.2,
-              7,
-              2.8,
-              0.5,
-              6.2,
-              1.8,
-              8,
+              10,
               3.8,
+              0.4,
+              8.5,
+              2.2,
+              11.5,
+              5.5,
             ]
 
             const duration =
