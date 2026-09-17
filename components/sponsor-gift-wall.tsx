@@ -54,9 +54,9 @@ const DEPTH_MAP = {
 } as const
 
 const SPEED_DURATION = {
-  slow: 21,
-  normal: 18,
-  fast: 15.5,
+  slow: 19,
+  normal: 16.5,
+  fast: 14,
 } as const
 
 const LANE_COUNT = 10
