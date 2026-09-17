@@ -17,6 +17,14 @@ import {
   SponsorManager,
 } from '@/components/admin/sponsor-manager'
 
+import {
+  SponsorGiftManager,
+} from '@/components/admin/sponsor-gift-manager'
+
+import type {
+  SponsorGiftRow,
+} from '@/lib/sponsor-gifts-db'
+
 export const metadata: Metadata = {
   title:
     '赞助榜管理 | 星际酒馆 StarClub',
@@ -43,14 +51,13 @@ export default async function AdminSponsorsPage() {
   const supabase =
     createAdminClient()
 
-  const {
-    data,
-    error,
-  } =
-    await supabase
-      .from(
-        'sponsors',
-      )
+const [
+  sponsorsResult,
+  giftsResult,
+] =
+  await Promise.all([
+    supabase
+      .from('sponsors')
       .select(`
         id,
         name,
@@ -73,17 +80,66 @@ export default async function AdminSponsorsPage() {
         {
           ascending: false,
         },
-      )
+      ),
 
-  if (error) {
-    console.error(
-      'Failed to load sponsors:',
-      error,
-    )
-  }
+    supabase
+      .from('sponsor_gifts')
+      .select(`
+        id,
+        sponsor_id,
+        sponsor_name,
+        recipient_name,
+        event_name,
+        gift_name,
+        quantity,
+        gift_value,
+        gifted_at,
+        text_color,
+        font_size,
+        speed,
+        depth,
+        is_visible,
+        sort_order,
+        counts_toward_total,
+        created_at
+      `)
+      .order(
+        'gifted_at',
+        {
+          ascending: false,
+        },
+      )
+      .order(
+        'created_at',
+        {
+          ascending: false,
+        },
+      ),
+  ])
+
+if (
+  sponsorsResult.error
+) {
+  console.error(
+    'Failed to load sponsors:',
+    sponsorsResult.error,
+  )
+}
+
+if (
+  giftsResult.error
+) {
+  console.error(
+    'Failed to load sponsor gifts:',
+    giftsResult.error,
+  )
+}
 
   const sponsors =
-    (data ?? []).map(
+    (
+      sponsorsResult.data ??
+      []
+    ).map(
       (
         sponsor,
         index,
@@ -97,6 +153,31 @@ export default async function AdminSponsorsPage() {
           index + 1,
       }),
     )
+  
+  const gifts =
+  (
+    giftsResult.data ??
+    []
+  ).map(
+    (gift) => ({
+      ...gift,
+
+      quantity:
+        Number(
+          gift.quantity,
+        ),
+
+      gift_value:
+        Number(
+          gift.gift_value,
+        ),
+
+      sort_order:
+        Number(
+          gift.sort_order,
+        ),
+    }),
+  ) as SponsorGiftRow[]
 
   const totalAmount =
     sponsors.reduce(
@@ -134,17 +215,17 @@ return (
           <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <h1 className="font-display text-3xl tracking-tight sm:text-4xl">
-                赞助榜管理
+                社区赞助管理
               </h1>
 
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                管理赞助者、总赞助金额、昵称、荣誉称号、显示状态与排序。
-              </p>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  管理社区赞助者、累计礼物参考价值、赞助记录与公开赞助弹幕。
+                </p>
             </div>
           </div>
         </div>
 
-        <div className="mb-8 grid gap-4 sm:grid-cols-3">
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-2xl border border-border bg-card p-5">
             <p className="text-xs text-muted-foreground">
               赞助者总数
@@ -171,7 +252,7 @@ return (
 
           <div className="rounded-2xl border border-border bg-card p-5">
             <p className="text-xs text-muted-foreground">
-              累计赞助
+              累计礼物参考价值
             </p>
 
             <p className="mt-2 text-2xl font-semibold">
@@ -187,6 +268,16 @@ return (
               )}
             </p>
           </div>
+
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <p className="text-xs text-muted-foreground">
+              赞助记录
+            </p>
+
+            <p className="mt-2 text-2xl font-semibold">
+              {gifts.length}
+            </p>
+          </div>
         </div>
 
         <SponsorManager
@@ -194,6 +285,32 @@ return (
             sponsors
           }
         />
+
+        <div className="my-14 border-t border-border" />
+
+          <SponsorGiftManager
+            initialGifts={
+              gifts
+            }
+            sponsors={
+              sponsors.map(
+                (sponsor) => ({
+                  id:
+                    sponsor.id,
+
+                  name:
+                    sponsor.name,
+
+                  nickname:
+                    sponsor.nickname,
+
+                  amount:
+                    sponsor.amount,
+                }),
+              )
+            }
+          />
+
       </div>
     </main>
   </div>
