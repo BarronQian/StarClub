@@ -54,9 +54,9 @@ const DEPTH_MAP = {
 } as const
 
 const SPEED_DURATION = {
-  slow: 22,
-  normal: 19,
-  fast: 16,
+  slow: 24,
+  normal: 20,
+  fast: 17,
 } as const
 
 const LANE_COUNT = 10
@@ -321,9 +321,25 @@ export function SponsorGiftWall({
               laneHeight /
                 2
 
+            const laneVariation = [
+              0,
+              2.8,
+              1.1,
+              4.2,
+              2,
+              0.7,
+              3.5,
+              1.6,
+              4.8,
+              2.4,
+            ]
+
             const duration =
               SPEED_DURATION[
                 gift.speed
+              ] +
+              laneVariation[
+                laneIndex
               ]
 
             /*
@@ -334,16 +350,16 @@ export function SponsorGiftWall({
              * 当前弹幕跑完立即切换下一条。
              */
               const initialProgress = [
-                0.05,
-                0.28,
+                0.04,
+                0.34,
                 0.12,
-                0.38,
-                0.2,
+                0.46,
+                0.22,
                 0.08,
-                0.32,
-                0.16,
-                0.42,
-                0.24,
+                0.40,
+                0.17,
+                0.50,
+                0.28,
               ]
 
             const delay =
