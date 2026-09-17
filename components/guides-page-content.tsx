@@ -46,6 +46,23 @@ const categories: GuideCategory[] = [
   '其他',
 ]
 
+function getGuideCoverPreviewUrl(
+  src: string,
+) {
+  if (
+    !src.includes(
+      'supabase.co/storage/v1/object/public/',
+    )
+  ) {
+    return src
+  }
+
+  return src.replace(
+    '/storage/v1/object/public/',
+    '/storage/v1/render/image/public/',
+  ) + '?width=800&quality=72&resize=cover'
+}
+
 function getTagsForCategory(
   guides: GuideListItem[],
   category: GuideCategory,
@@ -315,10 +332,13 @@ export function GuidesPageContent({
               {guide.image && (
                 <div className="relative aspect-video overflow-hidden rounded-lg bg-muted">
                   <Image
-                    src={guide.image}
+                    src={getGuideCoverPreviewUrl(
+                      guide.image,
+                    )}
                     alt={guide.title}
                     fill
                     sizes="(min-width: 768px) 400px, 100vw"
+                    unoptimized
                     className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                   />
 
