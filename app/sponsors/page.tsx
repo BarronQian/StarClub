@@ -203,39 +203,88 @@ export default async function SponsorsPage() {
   />
 </section>
   
-  {/* 社区赞助说明 */}
-<Reveal className="relative mx-auto max-w-4xl px-5 pt-12 lg:px-10 lg:pt-16">
-  <div className="rounded-2xl border border-[#e4ded4] bg-white/60 px-6 py-6 sm:px-8 sm:py-7">
-    <span className="font-display text-[0.58rem] tracking-[0.26em] text-[#a66716]">
-      COMMUNITY GIFT NOTICE
-    </span>
+{/* 社区赞助说明 */}
+<Reveal className="relative border-t border-[#e4ded4]">
+  <section className="mx-auto max-w-6xl px-5 py-16 lg:px-10 lg:py-20">
+    <div className="text-center">
+      <span className="font-display text-[0.58rem] tracking-[0.28em] text-[#a66716]">
+        COMMUNITY GIFT NOTICE
+      </span>
 
-    <h2 className="mt-2 font-display text-lg text-[#2a2621]">
-      社区赞助与礼物说明
-    </h2>
+      <h2 className="mt-3 font-display text-2xl tracking-tight text-[#2a2621]">
+        社区赞助与礼物说明
+      </h2>
 
-    <div className="mt-4 space-y-3 text-xs leading-6 text-[#81796e] sm:text-sm sm:leading-7">
-      <p>
-        本页面记录的赞助均为社区酒友自愿提供的
-        <strong className="font-medium text-[#5f574d]">
-          非现金礼物赞助
-        </strong>
-        。赞助者使用其个人账号直接将礼物赠送至获奖者或接收者账号，星际酒馆及管理组不代收、不保管、不转交任何赞助资金或礼物。
-      </p>
-
-      <p>
-        礼物完成赠送后，不支持通过星际酒馆要求撤回、退还或退款。因账号、赠送、领取或其他相关问题产生的争议，由赠送人与接收人自行处理，星际酒馆及管理组不承担相关赠送或交易责任。
-      </p>
-
-      <p>
-        网站展示的累计金额仅用于记录社区赞助礼物的
-        <strong className="font-medium text-[#5f574d]">
-          参考价值
-        </strong>
-        ，不代表星际酒馆收到相应现金。任何赞助金额、次数或礼物价值均不会赋予赞助者任何管理权限、社区职务、活动优势、决策权、特殊待遇或其他利益。
-      </p>
+      <div className="mx-auto mt-5 h-px w-16 bg-[#b87922]/35" />
     </div>
-  </div>
+
+    <div className="mt-12 grid gap-10 md:grid-cols-2 lg:grid-cols-4 lg:gap-0">
+      <div className="lg:border-r lg:border-[#e4ded4] lg:pr-8">
+        <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
+          01 · DIRECT GIFT
+        </span>
+
+        <h3 className="mt-3 text-sm font-semibold text-[#3b352e]">
+          礼物直赠赞助
+        </h3>
+
+        <p className="mt-3 text-xs leading-6 text-[#81796e]">
+          本页面记录的赞助均由社区酒友自愿提供。
+          赞助内容可能包含通过 Star Citizen 官网以现金购买的数字商品，
+          但赞助者不会向星际酒馆或管理组支付、转交任何现金。
+          所有赞助礼物均由赞助者使用其个人账号直接赠送至获奖者或接收者账号，
+          星际酒馆及管理组不代收、不保管、不转交相关资金或礼物。
+        </p>
+      </div>
+
+      <div className="lg:border-r lg:border-[#e4ded4] lg:px-8">
+        <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
+          02 · FINAL GIFT
+        </span>
+
+        <h3 className="mt-3 text-sm font-semibold text-[#3b352e]">
+          赠送完成后不经酒馆退还
+        </h3>
+
+        <p className="mt-3 text-xs leading-6 text-[#81796e]">
+          礼物完成赠送后，不支持通过星际酒馆要求撤回、退还或退款。
+          因账号、赠送、领取等问题产生的争议，由赠送人与接收人自行处理，
+          星际酒馆及管理组不承担相关赠送或交易责任。
+        </p>
+      </div>
+
+      <div className="lg:border-r lg:border-[#e4ded4] lg:px-8">
+        <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
+          03 · REFERENCE VALUE
+        </span>
+
+        <h3 className="mt-3 text-sm font-semibold text-[#3b352e]">
+          金额仅为赞助礼物参考价值
+        </h3>
+
+        <p className="mt-3 text-xs leading-6 text-[#81796e]">
+          网站展示的累计金额用于记录赞助礼物的购买价格或参考价值，
+          不代表星际酒馆或管理组实际收到相应现金，
+          也不代表任何形式的投资、入股、会员费用或社区权益。
+        </p>
+      </div>
+
+      <div className="lg:pl-8">
+        <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
+          04 · NO PRIVILEGES
+        </span>
+
+        <h3 className="mt-3 text-sm font-semibold text-[#3b352e]">
+          赞助不产生任何社区特权
+        </h3>
+
+        <p className="mt-3 text-xs leading-6 text-[#81796e]">
+          任何赞助金额、次数或礼物价值均不会赋予赞助者管理权限、
+          社区职务、活动优势、决策权、特殊待遇或其他利益。
+        </p>
+      </div>
+    </div>
+  </section>
 </Reveal>
 
       <Reveal className="relative mx-auto max-w-4xl px-5 pt-16 text-center lg:px-10">

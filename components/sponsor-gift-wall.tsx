@@ -329,7 +329,7 @@ export function SponsorGiftWall({
         </div>
 
         <span className="hidden text-[0.58rem] tracking-[0.18em] text-[#b1a89b] sm:block">
-          NON-CASH COMMUNITY GIFTS
+          DIRECT COMMUNITY GIFTS
         </span>
       </div>
     </div>
