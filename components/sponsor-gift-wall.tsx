@@ -54,9 +54,9 @@ const DEPTH_MAP = {
 } as const
 
 const SPEED_DURATION = {
-  slow: 30,
-  normal: 27,
-  fast: 24,
+  slow: 22,
+  normal: 19,
+  fast: 16,
 } as const
 
 const LANE_COUNT = 10
@@ -236,7 +236,7 @@ export function SponsorGiftWall({
           from {
             transform:
               translate3d(
-                calc(100vw + 100%),
+                100vw,
                 0,
                 0
               );
@@ -245,7 +245,7 @@ export function SponsorGiftWall({
           to {
             transform:
               translate3d(
-                calc(-100vw - 100%),
+                -100%,
                 0,
                 0
               );
@@ -333,14 +333,27 @@ export function SponsorGiftWall({
              * 后续 cycle > 0 后，
              * 当前弹幕跑完立即切换下一条。
              */
-            const initialDelay =
-              laneIndex *
-              0.7
+            const initialProgress = [
+              0.12,
+              0.58,
+              0.32,
+              0.76,
+              0.44,
+              0.2,
+              0.68,
+              0.38,
+              0.84,
+              0.52,
+            ]
 
             const delay =
-              state.cycle ===
-              0
-                ? initialDelay
+              state.cycle === 0
+                ? -(
+                    duration *
+                    initialProgress[
+                      laneIndex
+                    ]
+                  )
                 : 0
 
             return (
