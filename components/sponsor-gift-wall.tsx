@@ -20,10 +20,14 @@ type GiftVisual = {
 }
 
 const FONT_SIZE_MAP = {
-  small: 'text-sm sm:text-base',
-  medium: 'text-base sm:text-xl',
-  large: 'text-xl sm:text-2xl',
-  xlarge: 'text-2xl sm:text-4xl',
+  small:
+    'text-xs sm:text-sm',
+  medium:
+    'text-sm sm:text-base lg:text-lg',
+  large:
+    'text-base sm:text-xl lg:text-2xl',
+  xlarge:
+    'text-xl sm:text-2xl lg:text-3xl',
 } as const
 
 const DEPTH_MAP = {
@@ -53,7 +57,7 @@ const SPEED_DURATION = {
   fast: 17,
 } as const
 
-const LANE_COUNT = 9
+const LANE_COUNT = 12
 
 function hashString(
   value: string,
@@ -118,14 +122,16 @@ export function SponsorGiftWall({
           return {
             gift,
 
+            // 顺序分配轨道，避免少量记录随机撞进同一条轨道
             lane:
-              (hash + index * 3) %
+              index %
               LANE_COUNT,
 
+            // 每条弹幕错开运动阶段
             delay:
               -(
-                (hash % 1800) /
-                100
+                index * 4.8 +
+                (hash % 240) / 100
               ),
 
             duration:
@@ -138,7 +144,7 @@ export function SponsorGiftWall({
 
   if (gifts.length === 0) {
     return (
-      <div className="flex min-h-[560px] items-center justify-center border-y border-[#e8e2d8]">
+      <div className="flex min-h-140 items-center justify-center border-y border-[#e8e2d8]">
         <div className="text-center">
           <span className="font-display text-[0.62rem] tracking-[0.3em] text-[#a66716]">
             COMMUNITY SUPPORT STREAM
@@ -197,7 +203,7 @@ export function SponsorGiftWall({
         className="pointer-events-none absolute inset-y-0 right-0 z-40 w-24 bg-linear-to-l from-[#f7f4ef] to-transparent sm:w-44"
       />
 
-      <div className="relative h-[620px] sm:h-[680px]">
+      <div className="relative h-[85vh] min-h-190 lg:h-[calc(100vh-72px)] lg:min-h-220">
         {visualGifts.map(
           ({
             gift,
@@ -215,10 +221,15 @@ export function SponsorGiftWall({
                 gift,
               )
 
+            const usableTop = 8
+            const usableHeight = 84
+
             const laneHeight =
-              100 / LANE_COUNT
+              usableHeight /
+              LANE_COUNT
 
             const top =
+              usableTop +
               lane *
                 laneHeight +
               laneHeight / 2
