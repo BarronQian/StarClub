@@ -6,7 +6,9 @@ import Image from 'next/image'
 
 import { ArchiveBreadcrumb } from '@/components/archive-breadcrumb'
 import { Reveal } from '@/components/reveal'
-import { PageCompanion } from '@/components/page-companion'
+import {
+  GuidesCompanion,
+} from '@/components/guides-companion'
 
 import type {
   GuideCategory,
@@ -451,7 +453,7 @@ export function GuidesPageContent({
         </div>
       </section>
 
-      <PageCompanion companion="asrcwww" />
+      <GuidesCompanion />
     </div>
   )
 }
