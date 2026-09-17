@@ -449,13 +449,35 @@ export function SponsorGiftManager({
           },
         )
 
-      const data =
-        await response.json()
+      const responseText =
+        await response.text()
+
+      let data: any = null
+
+      try {
+        data =
+          responseText
+            ? JSON.parse(
+                responseText,
+              )
+            : null
+      } catch {
+        console.error(
+          'Sponsor gift API returned non-JSON:',
+          responseText,
+        )
+
+        throw new Error(
+          response.ok
+            ? '服务器返回了无法识别的数据'
+            : `服务器错误 (${response.status})，请查看 Logs`,
+        )
+      }
 
       if (!response.ok) {
         throw new Error(
-          data.error ||
-            '保存失败',
+          data?.error ||
+            `保存失败 (${response.status})`,
         )
       }
 
@@ -726,7 +748,7 @@ export function SponsorGiftManager({
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
-            <label className="space-y-2">
+            <div className="space-y-3">
               <span className="text-xs font-medium">
                 赞助者
               </span>
@@ -739,15 +761,13 @@ export function SponsorGiftManager({
                   event,
                 ) =>
                   selectSponsor(
-                    event
-                      .target
-                      .value,
+                    event.target.value,
                   )
                 }
                 className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
               >
                 <option value="">
-                  请选择赞助者
+                  手动输入 / 新赞助者
                 </option>
 
                 {sponsors.map(
@@ -760,9 +780,7 @@ export function SponsorGiftManager({
                         sponsor.id
                       }
                     >
-                      {
-                        sponsor.name
-                      }
+                      {sponsor.name}
                       {sponsor.nickname
                         ? ` · ${sponsor.nickname}`
                         : ''}
@@ -770,7 +788,34 @@ export function SponsorGiftManager({
                   ),
                 )}
               </select>
-            </label>
+
+              <input
+                value={
+                  form.sponsorName
+                }
+                onChange={(
+                  event,
+                ) => {
+                  setForm(
+                    (current) => ({
+                      ...current,
+
+                      sponsorId:
+                        '',
+
+                      sponsorName:
+                        event.target.value,
+                    }),
+                  )
+                }}
+                placeholder="或手动输入赞助者游戏 ID / 名称"
+                className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
+              />
+
+              <p className="text-[0.7rem] leading-5 text-muted-foreground">
+                可以从现有赞助者中选择，也可以直接输入新的赞助者名称。
+              </p>
+            </div>
 
             <label className="space-y-2">
               <span className="text-xs font-medium">
