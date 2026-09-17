@@ -164,6 +164,50 @@ async function getGuideBlocks(
   ) as GuideContentBlock[]
 }
 
+function getGuideCoverPreviewUrl(
+  src: string,
+) {
+  try {
+    const url = new URL(src)
+
+    if (
+      !url.hostname.endsWith(
+        'supabase.co',
+      ) ||
+      !url.pathname.includes(
+        '/storage/v1/object/public/',
+      )
+    ) {
+      return src
+    }
+
+    url.pathname =
+      url.pathname.replace(
+        '/storage/v1/object/public/',
+        '/storage/v1/render/image/public/',
+      )
+
+    url.searchParams.set(
+      'width',
+      '1600',
+    )
+
+    url.searchParams.set(
+      'quality',
+      '75',
+    )
+
+    url.searchParams.set(
+      'resize',
+      'cover',
+    )
+
+    return url.toString()
+  } catch {
+    return src
+  }
+}
+
 function formatDate(
   value: string | null
 ) {
@@ -440,14 +484,13 @@ export default async function GuidePage({
             {guide.image && (
               <div className="relative aspect-video overflow-hidden rounded-2xl border border-border bg-muted">
                 <Image
-                  src={
-                    guide.image
-                  }
-                  alt={
-                    guide.title
-                  }
+                  src={getGuideCoverPreviewUrl(
+                    guide.image,
+                  )}
+                  alt={guide.title}
                   fill
                   priority
+                  unoptimized
                   sizes="(min-width: 1024px) 45vw, 100vw"
                   className="object-cover"
                 />
