@@ -333,18 +333,18 @@ export function SponsorGiftWall({
              * 后续 cycle > 0 后，
              * 当前弹幕跑完立即切换下一条。
              */
-            const initialProgress = [
-              0.12,
-              0.58,
-              0.32,
-              0.76,
-              0.44,
-              0.2,
-              0.68,
-              0.38,
-              0.84,
-              0.52,
-            ]
+              const initialProgress = [
+                0.05,
+                0.28,
+                0.12,
+                0.38,
+                0.2,
+                0.08,
+                0.32,
+                0.16,
+                0.42,
+                0.24,
+              ]
 
             const delay =
               state.cycle === 0
