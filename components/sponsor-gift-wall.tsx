@@ -22,32 +22,34 @@ type GiftVisual = {
 
 const FONT_SIZE_MAP = {
   small:
-    'text-xs sm:text-sm',
+    'text-sm sm:text-base lg:text-[17px]',
   medium:
-    'text-sm sm:text-base lg:text-lg',
+    'text-base sm:text-lg lg:text-xl',
   large:
-    'text-base sm:text-xl lg:text-2xl',
+    'text-lg sm:text-xl lg:text-2xl',
   xlarge:
     'text-xl sm:text-2xl lg:text-3xl',
 } as const
 
 const DEPTH_MAP = {
   back: {
-    opacity: 0.26,
-    blur: 0.7,
-    scale: 0.78,
+    opacity: 0.48,
+    blur: 0.25,
+    scale: 0.86,
     zIndex: 10,
   },
+
   middle: {
-    opacity: 0.68,
+    opacity: 0.76,
     blur: 0,
-    scale: 0.94,
+    scale: 0.96,
     zIndex: 20,
   },
+
   front: {
     opacity: 1,
     blur: 0,
-    scale: 1.06,
+    scale: 1.05,
     zIndex: 30,
   },
 } as const
@@ -201,7 +203,7 @@ const visualGifts =
   }
 
   return (
-    <div className="relative overflow-hidden border-y border-[#e8e2d8] bg-[#f7f4ef]">
+    <div className="relative overflow-hidden border-y border-[#eeeae4] bg-white">
       <style jsx>{`
         @keyframes sponsor-danmaku {
           from {
@@ -228,21 +230,12 @@ const visualGifts =
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage:
-            'radial-gradient(circle at 50% 50%, rgba(184,121,34,0.07), transparent 58%)',
-        }}
+        className="pointer-events-none absolute inset-y-0 left-0 z-40 w-24 bg-linear-to-r from-white to-transparent sm:w-44"
       />
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 left-0 z-40 w-24 bg-linear-to-r from-[#f7f4ef] to-transparent sm:w-44"
-      />
-
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 right-0 z-40 w-24 bg-linear-to-l from-[#f7f4ef] to-transparent sm:w-44"
+        className="pointer-events-none absolute inset-y-0 right-0 z-40 w-24 bg-linear-to-l from-white to-transparent sm:w-44"
       />
 
       <div className="relative h-[85vh] min-h-190 lg:h-[calc(100vh-72px)] lg:min-h-220">
