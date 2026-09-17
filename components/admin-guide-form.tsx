@@ -270,46 +270,78 @@ export function AdminGuideForm({
     )
   }
 
-  async function handleImageUpload(
+async function handleImageUpload(
   file: File,
 ) {
   setImageUploadError(null)
   setIsUploadingImage(true)
 
   try {
-    const formData =
-      new FormData()
-
-    formData.append(
-      'file',
-      file,
-    )
-
-    const response =
+    const signResponse =
       await fetch(
         '/api/admin/guides/upload',
         {
           method: 'POST',
-          body: formData,
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify({
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+          }),
         },
       )
 
-    const data =
-      await response
+    const signData =
+      await signResponse
         .json()
-        .catch(
-          () => ({}),
-        )
+        .catch(() => ({}))
 
-    if (!response.ok) {
+    if (!signResponse.ok) {
       throw new Error(
-        data.error ??
-          '上传图片失败',
+        signData.error ??
+          '创建上传地址失败',
       )
     }
 
     if (
-      typeof data.url !==
+      typeof signData.signedUrl !==
+      'string'
+    ) {
+      throw new Error(
+        '没有获取到上传地址',
+      )
+    }
+
+    const uploadResponse =
+      await fetch(
+        signData.signedUrl,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type':
+              file.type,
+          },
+          body: file,
+        },
+      )
+
+    if (!uploadResponse.ok) {
+      const uploadText =
+        await uploadResponse
+          .text()
+          .catch(() => '')
+
+      throw new Error(
+        uploadText ||
+          `Supabase 上传失败 (${uploadResponse.status})`,
+      )
+    }
+
+    if (
+      typeof signData.publicUrl !==
       'string'
     ) {
       throw new Error(
@@ -318,11 +350,11 @@ export function AdminGuideForm({
     }
 
     setImage(
-      data.url,
+      signData.publicUrl,
     )
   } catch (err) {
     console.error(
-      '[ADMIN GUIDE IMAGE] Upload failed:',
+      '[ADMIN GUIDE COVER] Upload failed:',
       err,
     )
 

@@ -31,9 +31,8 @@ export function PageCompanion({
   )
 }
 
-const [messageIndex, setMessageIndex] = useState(() => {
-  return Math.floor(Math.random() * config.messages.length)
-})
+const [messageIndex, setMessageIndex] =
+  useState(0)
 
 const message = config.messages[messageIndex]
 const isLongMessage = message.length > 90
@@ -65,6 +64,19 @@ const [hasEntered, setHasEntered] = useState(false)
 const [exiting, setAngryExit] = useState(false)
 const [closeAttempt, setCloseAttempt] = useState(0)
 const [messageVisible, setMessageVisible] = useState(true)
+
+useEffect(() => {
+  if (config.messages.length <= 1) {
+    return
+  }
+
+  setMessageIndex(
+    Math.floor(
+      Math.random() *
+        config.messages.length,
+    ),
+  )
+}, [companion, config.messages.length])
 
 useEffect(() => {
   const characterTimer = window.setTimeout(() => {

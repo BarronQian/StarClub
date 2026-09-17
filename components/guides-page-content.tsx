@@ -46,6 +46,58 @@ const categories: GuideCategory[] = [
   '其他',
 ]
 
+function getGuideCoverPreviewUrl(
+  src: string,
+) {
+  if (
+    !src.includes(
+      'supabase.co/storage/v1/object/public/',
+    )
+  ) {
+    return src
+  }
+
+  return src.replace(
+    '/storage/v1/object/public/',
+    '/storage/v1/render/image/public/',
+  ) + '?width=800&quality=72&resize=cover'
+}
+
+type GuideCoverImageProps = {
+  src: string
+  alt: string
+}
+
+function GuideCoverImage({
+  src,
+  alt,
+}: GuideCoverImageProps) {
+  const [useOriginal, setUseOriginal] =
+    useState(false)
+
+  return (
+    <Image
+      src={
+        useOriginal
+          ? src
+          : getGuideCoverPreviewUrl(
+              src,
+            )
+      }
+      alt={alt}
+      fill
+      sizes="(min-width: 768px) 400px, 100vw"
+      unoptimized
+      onError={() => {
+        if (!useOriginal) {
+          setUseOriginal(true)
+        }
+      }}
+      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+    />
+  )
+}
+
 function getTagsForCategory(
   guides: GuideListItem[],
   category: GuideCategory,
@@ -314,12 +366,9 @@ export function GuidesPageContent({
               >
               {guide.image && (
                 <div className="relative aspect-video overflow-hidden rounded-lg bg-muted">
-                  <Image
+                  <GuideCoverImage
                     src={guide.image}
                     alt={guide.title}
-                    fill
-                    sizes="(min-width: 768px) 400px, 100vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                   />
 
                   {guide.original && (
