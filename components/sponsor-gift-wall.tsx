@@ -28,28 +28,28 @@ const FONT_SIZE_MAP = {
   large:
     'text-lg sm:text-xl lg:text-2xl',
   xlarge:
-    'text-xl sm:text-2xl lg:text-3xl',
+    'text-xl sm:text-2xl lg:text-[28px]',
 } as const
 
 const DEPTH_MAP = {
   back: {
-    opacity: 0.48,
-    blur: 0.25,
-    scale: 0.86,
+    opacity: 0.52,
+    blur: 0.2,
+    scale: 1,
     zIndex: 10,
   },
 
   middle: {
-    opacity: 0.76,
+    opacity: 0.78,
     blur: 0,
-    scale: 0.96,
+    scale: 1,
     zIndex: 20,
   },
 
   front: {
     opacity: 1,
     blur: 0,
-    scale: 1.05,
+    scale: 1,
     zIndex: 30,
   },
 } as const
@@ -60,7 +60,7 @@ const SPEED_DURATION = {
   fast: 22,
 } as const
 
-const LANE_COUNT = 12
+const LANE_COUNT = 8
 
 function hashString(
   value: string,
@@ -154,7 +154,7 @@ const visualGifts =
           // 依次分配轨道。
           // 同一批视觉实例不会占用相同轨道。
           const lane =
-            instanceIndex %
+            (index * 3 + repeat * 2) %
             LANE_COUNT
 
           // 根据轨道和批次错开运动阶段，
@@ -264,11 +264,21 @@ const visualGifts =
               usableHeight /
               LANE_COUNT
 
+            const sizeOffset =
+              gift.font_size === 'xlarge'
+                ? 0
+                : gift.font_size === 'large'
+                  ? 0.4
+                  : gift.font_size === 'medium'
+                    ? 0.8
+                    : 1.2
+
             const top =
               usableTop +
               lane *
                 laneHeight +
-              laneHeight / 2
+              laneHeight / 2 +
+              sizeOffset
 
             return (
               <div
