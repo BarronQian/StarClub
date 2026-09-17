@@ -11,6 +11,14 @@ import {
   getSponsorsFromDb,
 } from '@/lib/sponsors-db'
 
+import {
+  getSponsorGiftsFromDb,
+} from '@/lib/sponsor-gifts-db'
+
+import {
+  SponsorGiftWall,
+} from '@/components/sponsor-gift-wall'
+
 export const metadata: Metadata = {
   title: '赞助榜 | 星际酒馆 StarClub',
   description:
@@ -21,8 +29,13 @@ export const dynamic =
   'force-dynamic'
 
 export default async function SponsorsPage() {
-  const sponsors =
-    await getSponsorsFromDb()
+  const [
+    sponsors,
+    gifts,
+  ] = await Promise.all([
+    getSponsorsFromDb(),
+    getSponsorGiftsFromDb(),
+  ])
 
   const total =
     sponsors.reduce(
@@ -139,7 +152,7 @@ export default async function SponsorsPage() {
               </span>
 
               <span className="mt-1.5 text-xs tracking-wide text-[#8c8478]">
-                累计赞助
+                累计礼物参考价值
               </span>
             </div>
 
@@ -161,142 +174,69 @@ export default async function SponsorsPage() {
         </div>
       </section>
 
-      {/* 榜单 */}
-      <section className="relative mx-auto max-w-4xl px-5 pt-14 lg:px-10 lg:pt-20">
-        <Reveal className="mb-6 flex items-center justify-between">
-          <div>
-            <span className="font-display text-[0.62rem] tracking-[0.28em] text-[#a66716]">
-              SUPPORTER RANKING
-            </span>
+{/* 社区赞助记录弹幕墙 */}
+<section className="relative pt-12 lg:pt-16">
+  <Reveal className="mx-auto mb-7 max-w-4xl px-5 lg:px-10">
+    <div className="flex items-end justify-between gap-6">
+      <div>
+        <span className="font-display text-[0.62rem] tracking-[0.28em] text-[#a66716]">
+          COMMUNITY GIFT ARCHIVE
+        </span>
 
-            <p className="mt-2 text-xs text-[#91897d]">
-              共{' '}
-              <span className="font-medium text-[#6d6357]">
-                {count}
-              </span>{' '}
-              位赞助者
-            </p>
-          </div>
+        <h2 className="mt-2 font-display text-2xl tracking-tight text-[#2a2621] sm:text-3xl">
+          每一份来自酒友的支持
+        </h2>
 
-          <span className="hidden text-[0.6rem] tracking-[0.2em] text-[#b7afa3] sm:block">
-            TOTAL CONTRIBUTION
-          </span>
-        </Reveal>
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#8c8478]">
+          记录社区活动中，由酒友直接赠送给获奖者与参与者的礼物。
+        </p>
+      </div>
 
-        <ol className="flex flex-col gap-2.5">
-          {sponsors.map(
-            (
-              sponsor,
-              i,
-            ) => {
-              const isTop =
-                sponsor.rank ===
-                1
+      <span className="hidden shrink-0 text-[0.58rem] tracking-[0.18em] text-[#b7afa3] sm:block">
+        {gifts.length} GIFT RECORDS
+      </span>
+    </div>
+  </Reveal>
 
-              return (
-                <Reveal
-                  key={
-                    sponsor.rank
-                  }
-                  as="li"
-                  delay={
-                    (i % 12) *
-                    45
-                  }
-                >
-                    <div
-                      className={
-                        isTop
-                          ? 'group relative rounded-xl border border-[#e6e0d7] bg-white px-5 py-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#c05a87]/25 hover:shadow-[0_10px_30px_-22px_rgba(134,38,90,0.22)] sm:px-7'
-                          : 'group rounded-xl border border-[#e6e0d7] bg-white/75 px-5 py-4 transition-all duration-300 hover:translate-x-1 hover:border-[#c9a36d]/45 hover:bg-white hover:shadow-[0_10px_30px_-22px_rgba(74,57,35,0.22)] sm:px-7'
-                      }
-                    >
+  <SponsorGiftWall
+    gifts={gifts}
+  />
+</section>
+  
+  {/* 社区赞助说明 */}
+<Reveal className="relative mx-auto max-w-4xl px-5 pt-12 lg:px-10 lg:pt-16">
+  <div className="rounded-2xl border border-[#e4ded4] bg-white/60 px-6 py-6 sm:px-8 sm:py-7">
+    <span className="font-display text-[0.58rem] tracking-[0.26em] text-[#a66716]">
+      COMMUNITY GIFT NOTICE
+    </span>
 
-                    <div className="relative flex items-center justify-between gap-4">
-                      <div className="flex min-w-0 items-center gap-4 sm:gap-5">
-                        {/* 排名 */}
-                        <span
-                          className={
-                            isTop
-                              ? 'w-7 shrink-0 font-display text-lg font-semibold text-[#a52f64]'
-                              : 'w-7 shrink-0 font-display text-sm text-[#b28a4b]'
-                          }
-                        >
-                          {String(
-                            sponsor.rank,
-                          ).padStart(
-                            2,
-                            '0',
-                          )}
-                        </span>
+    <h2 className="mt-2 font-display text-lg text-[#2a2621]">
+      社区赞助与礼物说明
+    </h2>
 
-                        <span
-                          aria-hidden="true"
-                          className="h-8 w-px shrink-0 bg-[#ebe5dc]"
-                        />
+    <div className="mt-4 space-y-3 text-xs leading-6 text-[#81796e] sm:text-sm sm:leading-7">
+      <p>
+        本页面记录的赞助均为社区酒友自愿提供的
+        <strong className="font-medium text-[#5f574d]">
+          非现金礼物赞助
+        </strong>
+        。赞助者使用其个人账号直接将礼物赠送至获奖者或接收者账号，星际酒馆及管理组不代收、不保管、不转交任何赞助资金或礼物。
+      </p>
 
-                        {/* 名字 */}
-                        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                          <span
-                            className={
-                              isTop
-                                ? 'truncate font-display text-base font-semibold text-[#241e20] sm:text-lg'
-                                : 'truncate text-sm font-medium text-[#292622] sm:text-base'
-                            }
-                          >
-                            {
-                              sponsor.name
-                            }
-                          </span>
+      <p>
+        礼物完成赠送后，不支持通过星际酒馆要求撤回、退还或退款。因账号、赠送、领取或其他相关问题产生的争议，由赠送人与接收人自行处理，星际酒馆及管理组不承担相关赠送或交易责任。
+      </p>
 
-                          {sponsor.nickname && (
-                            <span className="truncate text-xs text-[#9b9286]">
-                              『
-                              {
-                                sponsor.nickname
-                              }
-                              』
-                            </span>
-                          )}
-
-                          {sponsor.badge && (
-                            <span
-                              className={
-                                isTop
-                                  ? 'corner-cut hidden shrink-0 border border-[#b84a77]/15 bg-[#b84a77]/7 px-2.5 py-1 font-display text-[0.55rem] tracking-wider text-[#9d3262] sm:inline-flex'
-                                  : 'corner-cut hidden shrink-0 border border-[#b87922]/15 bg-[#b87922]/5 px-2.5 py-1 font-display text-[0.55rem] tracking-wider text-[#a66716] sm:inline-flex'
-                              }
-                            >
-                              {
-                                sponsor.badge
-                              }
-                            </span>
-                          )}
-                        </span>
-                      </div>
-
-                      {/* 金额 */}
-                      <div className="shrink-0 text-right">
-                        <span
-                          className={
-                            isTop
-                              ? 'font-display text-lg font-semibold tracking-tight text-[#a52f64] sm:text-xl'
-                              : 'font-display text-sm font-medium tracking-tight text-[#9b6b20] sm:text-base'
-                          }
-                        >
-                          {formatSponsorAmount(
-                            sponsor.amount,
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </Reveal>
-              )
-            },
-          )}
-        </ol>
-      </section>
+      <p>
+        网站展示的累计金额仅用于记录社区赞助礼物的
+        <strong className="font-medium text-[#5f574d]">
+          参考价值
+        </strong>
+        ，不代表星际酒馆收到相应现金。任何赞助金额、次数或礼物价值均不会赋予赞助者任何管理权限、社区职务、活动优势、决策权、特殊待遇或其他利益。
+      </p>
+    </div>
+  </div>
+</Reveal>
 
       <Reveal className="relative mx-auto max-w-4xl px-5 pt-16 text-center lg:px-10">
         <div className="mx-auto mb-6 h-px max-w-sm bg-linear-to-r from-transparent via-[#d8d0c4] to-transparent" />
