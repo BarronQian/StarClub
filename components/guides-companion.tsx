@@ -13,6 +13,15 @@ import type {
   PageCompanionId,
 } from '@/lib/page-companion'
 
+const STORAGE_KEY =
+  'starclub-last-guides-companion'
+
+const companions: PageCompanionId[] = [
+  'asrcwww',
+  'meteorowo',
+  'arx93',
+]
+
 export function GuidesCompanion() {
   const [
     companion,
@@ -23,21 +32,35 @@ export function GuidesCompanion() {
     )
 
   useEffect(() => {
-    const companions:
-      PageCompanionId[] = [
-        'asrcwww',
-        'meteorowo',
-        'arx93',
-      ]
+    const lastCompanion =
+      window.sessionStorage.getItem(
+        STORAGE_KEY,
+      )
+
+    const availableCompanions =
+      companions.filter(
+        (item) =>
+          item !== lastCompanion,
+      )
 
     const randomIndex =
       Math.floor(
         Math.random() *
-          companions.length,
+          availableCompanions.length,
       )
 
+    const nextCompanion =
+      availableCompanions[
+        randomIndex
+      ]
+
     setCompanion(
-      companions[randomIndex],
+      nextCompanion,
+    )
+
+    window.sessionStorage.setItem(
+      STORAGE_KEY,
+      nextCompanion,
     )
   }, [])
 
