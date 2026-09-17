@@ -278,6 +278,9 @@ export async function POST(
 
           is_visible:
             isVisible,
+
+          counts_toward_total:
+            addToSponsorTotal,
         })
         .select()
         .single()
