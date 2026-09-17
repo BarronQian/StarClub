@@ -13,6 +13,7 @@ type SponsorGiftWallProps = {
 }
 
 type GiftVisual = {
+  key: string
   gift: SponsorGiftRow
   lane: number
   delay: number
@@ -32,29 +33,29 @@ const FONT_SIZE_MAP = {
 
 const DEPTH_MAP = {
   back: {
-    opacity: 0.38,
-    blur: 0.55,
-    scale: 0.88,
+    opacity: 0.26,
+    blur: 0.7,
+    scale: 0.78,
     zIndex: 10,
   },
   middle: {
-    opacity: 0.72,
+    opacity: 0.68,
     blur: 0,
-    scale: 1,
+    scale: 0.94,
     zIndex: 20,
   },
   front: {
     opacity: 1,
     blur: 0,
-    scale: 1.08,
+    scale: 1.06,
     zIndex: 30,
   },
 } as const
 
 const SPEED_DURATION = {
-  slow: 28,
-  normal: 22,
-  fast: 17,
+  slow: 30,
+  normal: 26,
+  fast: 22,
 } as const
 
 const LANE_COUNT = 12
@@ -104,12 +105,40 @@ function buildGiftMessage(
 export function SponsorGiftWall({
   gifts,
 }: SponsorGiftWallProps) {
-  const visualGifts =
-    useMemo<GiftVisual[]>(() => {
-      return gifts.map(
+const visualGifts =
+  useMemo<GiftVisual[]>(() => {
+    if (gifts.length === 0) {
+      return []
+    }
+
+    // 数据少的时候自动增加视觉实例，
+    // 让弹幕墙保持足够密度。
+    // 数据越来越多后会自动减少重复。
+    const repeatCount =
+      gifts.length <= 5
+        ? 3
+        : gifts.length <= 10
+          ? 2
+          : 1
+
+    const instances: GiftVisual[] = []
+
+    for (
+      let repeat = 0;
+      repeat < repeatCount;
+      repeat += 1
+    ) {
+      gifts.forEach(
         (gift, index) => {
+          const instanceIndex =
+            repeat *
+              gifts.length +
+            index
+
           const hash =
-            hashString(gift.id)
+            hashString(
+              `${gift.id}-${repeat}`,
+            )
 
           const baseDuration =
             SPEED_DURATION[
@@ -117,30 +146,43 @@ export function SponsorGiftWall({
             ]
 
           const variation =
-            (hash % 500) / 100
+            (hash % 350) /
+            100
 
-          return {
+          // 依次分配轨道。
+          // 同一批视觉实例不会占用相同轨道。
+          const lane =
+            instanceIndex %
+            LANE_COUNT
+
+          // 根据轨道和批次错开运动阶段，
+          // 避免多条弹幕同时堆在屏幕中央。
+          const phase =
+            lane * 2.15 +
+            repeat * 7.4 +
+            index * 1.3
+
+          instances.push({
+            key:
+              `${gift.id}-${repeat}`,
+
             gift,
 
-            // 顺序分配轨道，避免少量记录随机撞进同一条轨道
-            lane:
-              index %
-              LANE_COUNT,
+            lane,
 
-            // 每条弹幕错开运动阶段
             delay:
-              -(
-                index * 4.8 +
-                (hash % 240) / 100
-              ),
+              -phase,
 
             duration:
               baseDuration +
               variation,
-          }
+          })
         },
       )
-    }, [gifts])
+    }
+
+    return instances
+  }, [gifts])
 
   if (gifts.length === 0) {
     return (
@@ -206,6 +248,7 @@ export function SponsorGiftWall({
       <div className="relative h-[85vh] min-h-190 lg:h-[calc(100vh-72px)] lg:min-h-220">
         {visualGifts.map(
           ({
+            key,
             gift,
             lane,
             delay,
@@ -221,8 +264,8 @@ export function SponsorGiftWall({
                 gift,
               )
 
-            const usableTop = 8
-            const usableHeight = 84
+            const usableTop = 10
+            const usableHeight = 80
 
             const laneHeight =
               usableHeight /
@@ -236,7 +279,7 @@ export function SponsorGiftWall({
 
             return (
               <div
-                key={gift.id}
+                key={key}
                 className="pointer-events-none absolute left-0 whitespace-nowrap will-change-transform"
                 style={
                   {
