@@ -33,6 +33,7 @@ export type SponsorGiftRow = {
 
   is_visible: boolean
   sort_order: number
+  counts_toward_total: boolean
   created_at: string
 }
 
@@ -93,6 +94,7 @@ export async function getSponsorGiftsFromDb() {
         depth,
         is_visible,
         sort_order,
+        counts_toward_total,
         created_at
       `)
       .eq(
