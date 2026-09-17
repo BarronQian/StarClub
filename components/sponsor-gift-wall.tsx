@@ -323,15 +323,15 @@ export function SponsorGiftWall({
 
             const laneVariation = [
               0,
+              5.5,
+              1.2,
+              7,
               2.8,
-              1.1,
-              4.2,
-              2,
-              0.7,
-              3.5,
-              1.6,
-              4.8,
-              2.4,
+              0.5,
+              6.2,
+              1.8,
+              8,
+              3.8,
             ]
 
             const duration =
