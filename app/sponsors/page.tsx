@@ -3,7 +3,6 @@ import Image from 'next/image'
 import { Diamond } from 'lucide-react'
 import { Reveal } from '@/components/reveal'
 import {
-  formatSponsorAmount,
   formatSponsorTotal,
 } from '@/lib/sponsors'
 
@@ -11,18 +10,31 @@ import {
   getSponsorsFromDb,
 } from '@/lib/sponsors-db'
 
+import {
+  getSponsorGiftsFromDb,
+} from '@/lib/sponsor-gifts-db'
+
+import {
+  SponsorGiftWall,
+} from '@/components/sponsor-gift-wall'
+
 export const metadata: Metadata = {
-  title: '赞助榜 | 星际酒馆 StarClub',
+  title: '赞助纪念墙 | 星际酒馆 StarClub',
   description:
-    '星际酒馆 StarClub 赞助榜：感谢每一位支持 Star Citizen 华人玩家社区运营、活动与长期建设的酒友。',
+    '星际酒馆 StarClub 社区赞助纪念墙，记录酒友为社区活动、赛事与参与者提供的礼物赞助与支持。',
 }
 
 export const dynamic =
   'force-dynamic'
 
 export default async function SponsorsPage() {
-  const sponsors =
-    await getSponsorsFromDb()
+  const [
+    sponsors,
+    gifts,
+  ] = await Promise.all([
+    getSponsorsFromDb(),
+    getSponsorGiftsFromDb(),
+  ])
 
   const total =
     sponsors.reduce(
@@ -71,34 +83,26 @@ export default async function SponsorsPage() {
 
       {/* Hero */}
       <section className="relative border-b border-[#e8e2d8]">
-        <div className="mx-auto flex max-w-4xl flex-col items-center px-5 py-20 text-center lg:px-10 lg:py-28">
-          <Reveal>
-            <span className="corner-cut inline-block border border-[#b87922]/20 bg-[#b87922]/5 px-4 py-1.5 font-display text-[0.6rem] tracking-[0.3em] text-[#a66716]">
-              荣誉墙 · 星际酒馆
-            </span>
-          </Reveal>
+        <div className="mx-auto flex max-w-4xl flex-col items-center px-5 py-10 text-center sm:py-12 lg:px-10 lg:py-14">
 
-          <Reveal
-            delay={60}
-            className="mt-3"
-          >
+          <Reveal delay={60}>
             <span className="font-display text-[0.65rem] tracking-[0.45em] text-[#a68d68]">
-              HALL OF SPONSORS
+              STARCLUB SUPPORT ARCHIVE
             </span>
           </Reveal>
 
           <Reveal
             delay={100}
-            className="mt-6"
+            className="mt-3"
           >
-            <h1 className="font-display text-4xl leading-tight tracking-tight text-balance text-[#1d1b18] sm:text-5xl lg:text-6xl">
-              星际酒馆赞助榜
-            </h1>
+              <h1 className="font-display text-3xl leading-tight tracking-tight text-balance text-[#1d1b18] sm:text-4xl lg:text-5xl">
+                星际酒馆赞助纪念墙
+              </h1>
           </Reveal>
 
           <Reveal
             delay={140}
-            className="mt-5 max-w-xl"
+            className="mt-3 max-w-xl"
           >
             <p className="text-sm leading-relaxed text-pretty text-[#766f65] sm:text-base">
               感谢每一位撑起这片星海的人。
@@ -107,7 +111,7 @@ export default async function SponsorsPage() {
 
           <Reveal
             delay={180}
-            className="mt-8 flex items-center gap-3"
+            className="mt-5 flex items-center gap-3"
           >
             <span
               className="h-px w-16 bg-[#b87922]/30"
@@ -129,17 +133,17 @@ export default async function SponsorsPage() {
           {/* 总数据 */}
           <Reveal
             delay={220}
-            className="mt-10 flex items-stretch justify-center"
+            className="mt-6 flex items-stretch justify-center"
           >
             <div className="flex min-w-37.5 flex-col items-center px-8">
-              <span className="font-display text-3xl tracking-tight text-[#a66716] sm:text-4xl">
+              <span className="font-display text-2xl tracking-tight text-[#a66716] sm:text-3xl">
                 {formatSponsorTotal(
                   total,
                 )}
               </span>
 
               <span className="mt-1.5 text-xs tracking-wide text-[#8c8478]">
-                累计赞助
+                累计礼物参考价值
               </span>
             </div>
 
@@ -149,7 +153,7 @@ export default async function SponsorsPage() {
             />
 
             <div className="flex min-w-37.5 flex-col items-center px-8">
-              <span className="font-display text-3xl tracking-tight text-[#a66716] sm:text-4xl">
+              <span className="font-display text-2xl tracking-tight text-[#a66716] sm:text-3xl">
                 {count}
               </span>
 
@@ -161,142 +165,118 @@ export default async function SponsorsPage() {
         </div>
       </section>
 
-      {/* 榜单 */}
-      <section className="relative mx-auto max-w-4xl px-5 pt-14 lg:px-10 lg:pt-20">
-        <Reveal className="mb-6 flex items-center justify-between">
-          <div>
-            <span className="font-display text-[0.62rem] tracking-[0.28em] text-[#a66716]">
-              SUPPORTER RANKING
-            </span>
+{/* 社区赞助记录弹幕墙 */}
+<section className="relative pt-7 lg:pt-9">
+  <Reveal className="mx-auto mb-5 max-w-6xl px-5 lg:px-10">
+    <div className="flex items-end justify-between gap-6">
+      <div>
+        <span className="font-display text-[0.62rem] tracking-[0.28em] text-[#a66716]">
+          COMMUNITY GIFT ARCHIVE
+        </span>
 
-            <p className="mt-2 text-xs text-[#91897d]">
-              共{' '}
-              <span className="font-medium text-[#6d6357]">
-                {count}
-              </span>{' '}
-              位赞助者
-            </p>
-          </div>
+        <h2 className="mt-1.5 font-display text-xl tracking-tight text-[#2a2621] sm:text-2xl">
+          每一份来自酒友的支持
+        </h2>
 
-          <span className="hidden text-[0.6rem] tracking-[0.2em] text-[#b7afa3] sm:block">
-            TOTAL CONTRIBUTION
-          </span>
-        </Reveal>
+        <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-[#8c8478] sm:text-sm">
+          记录社区活动中，由酒友直接赠送给获奖者与参与者的礼物。
+        </p>
+      </div>
 
-        <ol className="flex flex-col gap-2.5">
-          {sponsors.map(
-            (
-              sponsor,
-              i,
-            ) => {
-              const isTop =
-                sponsor.rank ===
-                1
+      <span className="hidden shrink-0 text-[0.58rem] tracking-[0.18em] text-[#b7afa3] sm:block">
+        {gifts.length} GIFT RECORDS
+      </span>
+    </div>
+  </Reveal>
 
-              return (
-                <Reveal
-                  key={
-                    sponsor.rank
-                  }
-                  as="li"
-                  delay={
-                    (i % 12) *
-                    45
-                  }
-                >
-                    <div
-                      className={
-                        isTop
-                          ? 'group relative rounded-xl border border-[#e6e0d7] bg-white px-5 py-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#c05a87]/25 hover:shadow-[0_10px_30px_-22px_rgba(134,38,90,0.22)] sm:px-7'
-                          : 'group rounded-xl border border-[#e6e0d7] bg-white/75 px-5 py-4 transition-all duration-300 hover:translate-x-1 hover:border-[#c9a36d]/45 hover:bg-white hover:shadow-[0_10px_30px_-22px_rgba(74,57,35,0.22)] sm:px-7'
-                      }
-                    >
+  <SponsorGiftWall
+    gifts={gifts}
+  />
+</section>
+  
+{/* 社区赞助说明 */}
+<Reveal className="relative border-t border-[#e4ded4]">
+  <section className="mx-auto max-w-6xl px-5 py-16 lg:px-10 lg:py-20">
+    <div className="text-center">
+      <span className="font-display text-[0.58rem] tracking-[0.28em] text-[#a66716]">
+        COMMUNITY GIFT NOTICE
+      </span>
 
-                    <div className="relative flex items-center justify-between gap-4">
-                      <div className="flex min-w-0 items-center gap-4 sm:gap-5">
-                        {/* 排名 */}
-                        <span
-                          className={
-                            isTop
-                              ? 'w-7 shrink-0 font-display text-lg font-semibold text-[#a52f64]'
-                              : 'w-7 shrink-0 font-display text-sm text-[#b28a4b]'
-                          }
-                        >
-                          {String(
-                            sponsor.rank,
-                          ).padStart(
-                            2,
-                            '0',
-                          )}
-                        </span>
+      <h2 className="mt-3 font-display text-2xl tracking-tight text-[#2a2621]">
+        社区赞助与礼物说明
+      </h2>
 
-                        <span
-                          aria-hidden="true"
-                          className="h-8 w-px shrink-0 bg-[#ebe5dc]"
-                        />
+      <div className="mx-auto mt-5 h-px w-16 bg-[#b87922]/35" />
+    </div>
 
-                        {/* 名字 */}
-                        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                          <span
-                            className={
-                              isTop
-                                ? 'truncate font-display text-base font-semibold text-[#241e20] sm:text-lg'
-                                : 'truncate text-sm font-medium text-[#292622] sm:text-base'
-                            }
-                          >
-                            {
-                              sponsor.name
-                            }
-                          </span>
+    <div className="mt-12 grid gap-10 md:grid-cols-2 lg:grid-cols-4 lg:gap-0">
+      <div className="lg:border-r lg:border-[#e4ded4] lg:pr-8">
+        <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
+          01 · DIRECT GIFT
+        </span>
 
-                          {sponsor.nickname && (
-                            <span className="truncate text-xs text-[#9b9286]">
-                              『
-                              {
-                                sponsor.nickname
-                              }
-                              』
-                            </span>
-                          )}
+        <h3 className="mt-3 text-sm font-semibold text-[#3b352e]">
+          礼物直赠赞助
+        </h3>
 
-                          {sponsor.badge && (
-                            <span
-                              className={
-                                isTop
-                                  ? 'corner-cut hidden shrink-0 border border-[#b84a77]/15 bg-[#b84a77]/7 px-2.5 py-1 font-display text-[0.55rem] tracking-wider text-[#9d3262] sm:inline-flex'
-                                  : 'corner-cut hidden shrink-0 border border-[#b87922]/15 bg-[#b87922]/5 px-2.5 py-1 font-display text-[0.55rem] tracking-wider text-[#a66716] sm:inline-flex'
-                              }
-                            >
-                              {
-                                sponsor.badge
-                              }
-                            </span>
-                          )}
-                        </span>
-                      </div>
+        <p className="mt-3 text-xs leading-6 text-[#81796e]">
+          本页面记录的赞助均由社区酒友自愿提供。
+          赞助内容可能包含通过 Star Citizen 官网以现金购买的数字商品，
+          但赞助者不会向星际酒馆或管理组支付、转交任何现金。
+          所有赞助礼物均由赞助者使用其个人账号直接赠送至获奖者或接收者账号，
+          星际酒馆及管理组不代收、不保管、不转交相关资金或礼物。
+        </p>
+      </div>
 
-                      {/* 金额 */}
-                      <div className="shrink-0 text-right">
-                        <span
-                          className={
-                            isTop
-                              ? 'font-display text-lg font-semibold tracking-tight text-[#a52f64] sm:text-xl'
-                              : 'font-display text-sm font-medium tracking-tight text-[#9b6b20] sm:text-base'
-                          }
-                        >
-                          {formatSponsorAmount(
-                            sponsor.amount,
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </Reveal>
-              )
-            },
-          )}
-        </ol>
-      </section>
+      <div className="lg:border-r lg:border-[#e4ded4] lg:px-8">
+        <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
+          02 · FINAL GIFT
+        </span>
+
+        <h3 className="mt-3 text-sm font-semibold text-[#3b352e]">
+          赠送完成后不经酒馆退还
+        </h3>
+
+        <p className="mt-3 text-xs leading-6 text-[#81796e]">
+          礼物完成赠送后，不支持通过星际酒馆要求撤回、退还或退款。
+          因账号、赠送、领取等问题产生的争议，由赠送人与接收人自行处理，
+          星际酒馆及管理组不承担相关赠送或交易责任。
+        </p>
+      </div>
+
+      <div className="lg:border-r lg:border-[#e4ded4] lg:px-8">
+        <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
+          03 · REFERENCE VALUE
+        </span>
+
+        <h3 className="mt-3 text-sm font-semibold text-[#3b352e]">
+          金额仅为赞助礼物参考价值
+        </h3>
+
+        <p className="mt-3 text-xs leading-6 text-[#81796e]">
+          网站展示的累计金额用于记录赞助礼物的购买价格或参考价值，
+          不代表星际酒馆或管理组实际收到相应现金，
+          也不代表任何形式的投资、入股、会员费用或社区权益。
+        </p>
+      </div>
+
+      <div className="lg:pl-8">
+        <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
+          04 · NO PRIVILEGES
+        </span>
+
+        <h3 className="mt-3 text-sm font-semibold text-[#3b352e]">
+          赞助不产生任何社区特权
+        </h3>
+
+        <p className="mt-3 text-xs leading-6 text-[#81796e]">
+          任何赞助金额、次数或礼物价值均不会赋予赞助者管理权限、
+          社区职务、活动优势、决策权、特殊待遇或其他利益。
+        </p>
+      </div>
+    </div>
+  </section>
+</Reveal>
 
       <Reveal className="relative mx-auto max-w-4xl px-5 pt-16 text-center lg:px-10">
         <div className="mx-auto mb-6 h-px max-w-sm bg-linear-to-r from-transparent via-[#d8d0c4] to-transparent" />
