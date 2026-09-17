@@ -3,7 +3,6 @@ import Image from 'next/image'
 import { Diamond } from 'lucide-react'
 import { Reveal } from '@/components/reveal'
 import {
-  formatSponsorAmount,
   formatSponsorTotal,
 } from '@/lib/sponsors'
 
@@ -20,9 +19,9 @@ import {
 } from '@/components/sponsor-gift-wall'
 
 export const metadata: Metadata = {
-  title: '赞助榜 | 星际酒馆 StarClub',
+  title: '赞助纪念墙 | 星际酒馆 StarClub',
   description:
-    '星际酒馆 StarClub 赞助榜：感谢每一位支持 Star Citizen 华人玩家社区运营、活动与长期建设的酒友。',
+    '星际酒馆 StarClub 社区赞助纪念墙，记录酒友为社区活动、赛事与参与者提供的礼物赞助与支持。',
 }
 
 export const dynamic =
@@ -85,18 +84,10 @@ export default async function SponsorsPage() {
       {/* Hero */}
       <section className="relative border-b border-[#e8e2d8]">
         <div className="mx-auto flex max-w-4xl flex-col items-center px-5 py-10 text-center sm:py-12 lg:px-10 lg:py-14">
-          <Reveal>
-            <span className="corner-cut inline-block border border-[#b87922]/20 bg-[#b87922]/5 px-4 py-1.5 font-display text-[0.6rem] tracking-[0.3em] text-[#a66716]">
-              荣誉墙 · 星际酒馆
-            </span>
-          </Reveal>
 
-          <Reveal
-            delay={60}
-            className="mt-2"
-          >
+          <Reveal delay={60}>
             <span className="font-display text-[0.65rem] tracking-[0.45em] text-[#a68d68]">
-              HALL OF SPONSORS
+              STARCLUB SUPPORT ARCHIVE
             </span>
           </Reveal>
 
@@ -104,9 +95,9 @@ export default async function SponsorsPage() {
             delay={100}
             className="mt-3"
           >
-            <h1 className="font-display text-3xl leading-tight tracking-tight text-balance text-[#1d1b18] sm:text-4xl lg:text-5xl">
-              星际酒馆赞助榜
-            </h1>
+              <h1 className="font-display text-3xl leading-tight tracking-tight text-balance text-[#1d1b18] sm:text-4xl lg:text-5xl">
+                星际酒馆赞助纪念墙
+              </h1>
           </Reveal>
 
           <Reveal
