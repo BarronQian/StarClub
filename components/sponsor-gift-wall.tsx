@@ -56,8 +56,8 @@ const DEPTH_MAP = {
 
 const SPEED_DURATION = {
   slow: 30,
-  normal: 26,
-  fast: 22,
+  normal: 27,
+  fast: 24,
 } as const
 
 const LANE_COUNT = 8
@@ -113,79 +113,70 @@ const visualGifts =
       return []
     }
 
-    // 数据少的时候自动增加视觉实例，
-    // 让弹幕墙保持足够密度。
-    // 数据越来越多后会自动减少重复。
-    const repeatCount =
-      gifts.length <= 5
-        ? 3
-        : gifts.length <= 10
-          ? 2
-          : 1
-
-    const instances: GiftVisual[] = []
-
-    for (
-      let repeat = 0;
-      repeat < repeatCount;
-      repeat += 1
-    ) {
-      gifts.forEach(
-        (gift, index) => {
-          const instanceIndex =
-            repeat *
-              gifts.length +
-            index
-
-          const hash =
-            hashString(
-              `${gift.id}-${repeat}`,
-            )
-
-          const baseDuration =
-            SPEED_DURATION[
-              gift.speed
-            ]
-
-          const variation =
-            (hash % 350) /
-            100
-
-          // 依次分配轨道。
-          // 同一批视觉实例不会占用相同轨道。
-          const lane =
-            (index * 3 + repeat * 2) %
-            LANE_COUNT
-
-          // 根据轨道和批次错开运动阶段，
-          // 避免多条弹幕同时堆在屏幕中央。
-          const phase =
-            lane * 2.15 +
-            repeat * 7.4 +
-            index * 1.3
-
-          instances.push({
-            key:
-              `${gift.id}-${repeat}`,
-
-            gift,
-
-            lane,
-
-            delay:
-              -phase,
-
-            duration:
-              baseDuration +
-              variation,
-          })
-        },
+    // 同一时间最多一个轨道一个弹幕。
+    // 从根本上避免同轨追尾和文字覆盖。
+    const visibleGifts =
+      gifts.slice(
+        0,
+        LANE_COUNT,
       )
-    }
 
-    return instances
+    return visibleGifts.map(
+      (gift, index) => {
+        const hash =
+          hashString(gift.id)
+
+        const baseDuration =
+          SPEED_DURATION[
+            gift.speed
+          ]
+
+        const variation =
+          (hash % 350) /
+          100
+
+        // 使用跳跃式轨道分配，
+        // 避免视觉上全部从上到下机械排列。
+        const laneOrder = [
+          3,
+          6,
+          1,
+          5,
+          0,
+          7,
+          2,
+          4,
+        ]
+
+        const lane =
+          laneOrder[index]
+
+        // 每条轨道只有一个动画，
+        // delay 仅负责让进入页面时弹幕分散在不同横向位置。
+        const duration =
+          baseDuration +
+          variation
+
+        const progress =
+          (
+            index /
+            visibleGifts.length +
+            (hash % 17) / 100
+          ) % 1
+
+        return {
+          key: gift.id,
+          gift,
+          lane,
+
+          delay:
+            -(duration * progress),
+
+          duration,
+        }
+      },
+    )
   }, [gifts])
-
   if (gifts.length === 0) {
     return (
       <div className="flex min-h-140 items-center justify-center border-y border-[#e8e2d8]">
