@@ -84,7 +84,7 @@ export default async function SponsorsPage() {
 
       {/* Hero */}
       <section className="relative border-b border-[#e8e2d8]">
-        <div className="mx-auto flex max-w-4xl flex-col items-center px-5 py-20 text-center lg:px-10 lg:py-28">
+        <div className="mx-auto flex max-w-4xl flex-col items-center px-5 py-10 text-center sm:py-12 lg:px-10 lg:py-14">
           <Reveal>
             <span className="corner-cut inline-block border border-[#b87922]/20 bg-[#b87922]/5 px-4 py-1.5 font-display text-[0.6rem] tracking-[0.3em] text-[#a66716]">
               荣誉墙 · 星际酒馆
@@ -93,7 +93,7 @@ export default async function SponsorsPage() {
 
           <Reveal
             delay={60}
-            className="mt-3"
+            className="mt-2"
           >
             <span className="font-display text-[0.65rem] tracking-[0.45em] text-[#a68d68]">
               HALL OF SPONSORS
@@ -102,16 +102,16 @@ export default async function SponsorsPage() {
 
           <Reveal
             delay={100}
-            className="mt-6"
+            className="mt-3"
           >
-            <h1 className="font-display text-4xl leading-tight tracking-tight text-balance text-[#1d1b18] sm:text-5xl lg:text-6xl">
+            <h1 className="font-display text-3xl leading-tight tracking-tight text-balance text-[#1d1b18] sm:text-4xl lg:text-5xl">
               星际酒馆赞助榜
             </h1>
           </Reveal>
 
           <Reveal
             delay={140}
-            className="mt-5 max-w-xl"
+            className="mt-3 max-w-xl"
           >
             <p className="text-sm leading-relaxed text-pretty text-[#766f65] sm:text-base">
               感谢每一位撑起这片星海的人。
@@ -120,7 +120,7 @@ export default async function SponsorsPage() {
 
           <Reveal
             delay={180}
-            className="mt-8 flex items-center gap-3"
+            className="mt-5 flex items-center gap-3"
           >
             <span
               className="h-px w-16 bg-[#b87922]/30"
@@ -142,10 +142,10 @@ export default async function SponsorsPage() {
           {/* 总数据 */}
           <Reveal
             delay={220}
-            className="mt-10 flex items-stretch justify-center"
+            className="mt-6 flex items-stretch justify-center"
           >
             <div className="flex min-w-37.5 flex-col items-center px-8">
-              <span className="font-display text-3xl tracking-tight text-[#a66716] sm:text-4xl">
+              <span className="font-display text-2xl tracking-tight text-[#a66716] sm:text-3xl">
                 {formatSponsorTotal(
                   total,
                 )}
@@ -162,7 +162,7 @@ export default async function SponsorsPage() {
             />
 
             <div className="flex min-w-37.5 flex-col items-center px-8">
-              <span className="font-display text-3xl tracking-tight text-[#a66716] sm:text-4xl">
+              <span className="font-display text-2xl tracking-tight text-[#a66716] sm:text-3xl">
                 {count}
               </span>
 
@@ -175,19 +175,19 @@ export default async function SponsorsPage() {
       </section>
 
 {/* 社区赞助记录弹幕墙 */}
-<section className="relative pt-12 lg:pt-16">
-  <Reveal className="mx-auto mb-7 max-w-4xl px-5 lg:px-10">
+<section className="relative pt-7 lg:pt-9">
+  <Reveal className="mx-auto mb-5 max-w-6xl px-5 lg:px-10">
     <div className="flex items-end justify-between gap-6">
       <div>
         <span className="font-display text-[0.62rem] tracking-[0.28em] text-[#a66716]">
           COMMUNITY GIFT ARCHIVE
         </span>
 
-        <h2 className="mt-2 font-display text-2xl tracking-tight text-[#2a2621] sm:text-3xl">
+        <h2 className="mt-1.5 font-display text-xl tracking-tight text-[#2a2621] sm:text-2xl">
           每一份来自酒友的支持
         </h2>
 
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#8c8478]">
+        <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-[#8c8478] sm:text-sm">
           记录社区活动中，由酒友直接赠送给获奖者与参与者的礼物。
         </p>
       </div>
