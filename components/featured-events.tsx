@@ -13,10 +13,10 @@ export async function FeaturedEvents() {
   if (!featured) return null
 
   return (
-    <section
-      id="events"
-      className="relative border-t border-border bg-[#f5f5f7] py-20 lg:py-32"
-    >
+      <section
+        id="events"
+        className="relative border-t border-border bg-[#f5f5f7] py-20 dark:bg-[#302d29] lg:py-32"
+      >
       <div className="site-container">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <SectionHeading
