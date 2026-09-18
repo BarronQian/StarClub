@@ -687,13 +687,13 @@ combostar: {
   alt: 'Combostar 奥里森拳皇',
 
   side: 'right',
-  height: 540,
-  offsetX: -15,
+  height: 500,
+  offsetX: 24,
 
-  bubbleOffsetX: -115,
-  bubbleOffsetY: 25,
-  bubbleWidth: 350,
-  bubbleTailOffset: 245,
+  bubbleOffsetX: 58,
+  bubbleOffsetY: 90,
+  bubbleWidth: 340,
+  bubbleTailOffset: 40,
 
   title: '奥里森拳皇の拳法秘诀',
 
@@ -712,9 +712,9 @@ combostar: {
   exitMessage: '拳练完了再来找我。',
 
   exitMark: '🥊',
-  exitMarkX: 0,
-  exitMarkY: 0,
-  exitMarkSize: 26,
+  exitMarkX: 43,
+  exitMarkY: 8,
+  exitMarkSize: 42,
 
   autoCycle: true,
   cycleInterval: 9000,
