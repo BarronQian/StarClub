@@ -4,6 +4,7 @@ import { Diamond } from 'lucide-react'
 import { Reveal } from '@/components/reveal'
 import { HallOfFameColumn } from '@/components/hall-of-fame-column'
 import { HallOfFameRecords } from '@/components/hall-of-fame-records'
+import { HallOfFameCompanion } from '@/components/hall-of-fame-companion'
 import {
   CASUAL_HONORS,
   CHAMPIONS,
@@ -124,6 +125,7 @@ export default function HallOfFamePage() {
           <HallOfFameRecords honors={CASUAL_HONORS} />
         </div>
       </section>
+            <HallOfFameCompanion />
     </div>
   )
 }

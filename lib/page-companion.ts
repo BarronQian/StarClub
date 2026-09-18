@@ -681,6 +681,46 @@ arx93: {
   exitMarkSize: 42,
 },
 
+combostar: {
+  name: 'Combostar · 奥里森拳皇',
+  image: '/images/characters/combostar.png',
+  alt: 'Combostar 奥里森拳皇',
+
+  side: 'right',
+  height: 470,
+  offsetX: 0,
+
+  bubbleOffsetX: 0,
+  bubbleOffsetY: 0,
+  bubbleWidth: 330,
+  bubbleTailOffset: 70,
+
+  title: '奥里森拳皇の拳法秘诀',
+
+  messages: [
+    '一上来就抡重拳，多半先累的是你。',
+    '觉得能多打一拳的时候，通常已经该停了。',
+    '别想着每一下都打重，稳定命中比单次伤害重要。',
+    '一直进攻没问题，前提是你知道什么时候该撤。',
+    '自己体力见底之前先拉开，不要等完全没劲了再跑。',
+    '不是谁出拳多谁赢，是谁的有效拳更多。',
+    '对方防得严，就先把他体力磨掉，再找空档。',
+    '别陪对面拼谁更能扛，逼他先把体力花完。',
+  ],
+
+  exitTitle: 'Combostar',
+  exitMessage: '拳练完了再来找我。',
+
+  exitMark: '🥊',
+  exitMarkX: 0,
+  exitMarkY: 0,
+  exitMarkSize: 26,
+
+  autoCycle: true,
+  cycleInterval: 9000,
+  doubleClose: true,
+},
+
 } satisfies Record<string, PageCompanionConfig>
 
 export type PageCompanionId = keyof typeof PAGE_COMPANIONS
