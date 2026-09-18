@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 import { PageNavigation } from '@/components/page-navigation'
 import { SiteHeader } from '@/components/site-header'
+import { ThemePullSwitch } from '@/components/theme-pull-switch'
 
 const orbitron = Orbitron({
   subsets: ['latin'],
@@ -77,27 +78,75 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'light',
-  themeColor: '#ffffff',
+  colorScheme: 'light dark',
+  themeColor: [
+    {
+      media: '(prefers-color-scheme: light)',
+      color: '#ffffff',
+    },
+    {
+      media: '(prefers-color-scheme: dark)',
+      color: '#0d0f12',
+    },
+  ],
 }
 
+const themeScript = `
+  (() => {
+    try {
+      const savedTheme =
+        localStorage.getItem('starclub-theme')
+
+      const prefersDark =
+        window.matchMedia(
+          '(prefers-color-scheme: dark)'
+        ).matches
+
+      const shouldUseDark =
+        savedTheme === 'dark' ||
+        (
+          !savedTheme &&
+          prefersDark
+        )
+
+      document.documentElement.classList.toggle(
+        'dark',
+        shouldUseDark
+      )
+    } catch {}
+  })()
+`
+
 export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+    children,
+  }: Readonly<{
+    children: React.ReactNode
+  }>) {
+
   return (
     <html
       lang="zh-CN"
+      suppressHydrationWarning
       className={`bg-background ${orbitron.variable} ${notoSansSC.variable}`}
     >
-        <body className="font-sans antialiased">
-          <SiteHeader />
-          {children}
-          <PageNavigation />
-          <Toaster />
-          {process.env.NODE_ENV === 'production' && <Analytics />}
-        </body>
+      <head>
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: themeScript,
+          }}
+        />
+      </head>
+
+      <body className="font-sans antialiased">
+        <SiteHeader />
+        <ThemePullSwitch />
+        {children}
+        <PageNavigation />
+        <Toaster />
+        {process.env.NODE_ENV ===
+          'production' && <Analytics />}
+      </body>
     </html>
   )
 }

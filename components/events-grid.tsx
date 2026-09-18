@@ -109,19 +109,19 @@ function EventCard({ event, index }: { event: EventItem; index: number }) {
     <Reveal delay={index * 80} className="h-full">
       <Link
   href={`/events/${event.slug}`}
-  className={cn(
-    'group corner-cut relative flex h-full flex-col overflow-hidden border border-border bg-white',
-    'shadow-[0_8px_22px_rgba(0,0,0,0.10),0_24px_48px_rgba(0,0,0,0.14)]',
-    'transition-all duration-300 ease-out',
+className={cn(
+  'group corner-cut relative flex h-full flex-col overflow-hidden border border-border text-card-foreground',
+  'shadow-[0_8px_22px_rgba(0,0,0,0.10),0_24px_48px_rgba(0,0,0,0.14)]',
+  'transition-all duration-300 ease-out',
 
-    ended
-      ? 'border-neutral-200 bg-neutral-50/80 hover:-translate-y-1 hover:scale-[1.005]'
-      : 'hover:-translate-y-1.5 hover:scale-[1.015] hover:border-primary hover:ring-1 hover:ring-primary/40',
+  ended
+    ? 'bg-muted/65 dark:bg-card/75 hover:-translate-y-1 hover:scale-[1.005]'
+    : 'bg-white dark:bg-card hover:-translate-y-1.5 hover:scale-[1.015] hover:border-primary hover:ring-1 hover:ring-primary/40',
 
-    ended
-      ? 'hover:shadow-[0_6px_16px_rgba(0,0,0,0.08),0_18px_36px_rgba(0,0,0,0.10)]'
-      : 'hover:shadow-[0_6px_16px_rgba(0,0,0,0.08),0_22px_48px_rgba(0,0,0,0.15)]',
-  )}
+  ended
+    ? 'hover:shadow-[0_6px_16px_rgba(0,0,0,0.08),0_18px_36px_rgba(0,0,0,0.10)]'
+    : 'hover:shadow-[0_6px_16px_rgba(0,0,0,0.08),0_22px_48px_rgba(0,0,0,0.15)]',
+)}
 >
 
 {ongoing && (
@@ -156,19 +156,27 @@ function EventCard({ event, index }: { event: EventItem; index: number }) {
   </div>
 )}
 
-        <div className="relative aspect-16/10 w-full">
-          <Image
-            src={event.image || '/placeholder.svg'}
-            alt={event.alt}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className={cn(
-              'object-cover transition-transform duration-1200 group-hover:scale-[1.04]',
-              ended && 'grayscale-35 saturate-70 brightness-[0.92] opacity-75',
-            )}
-          />
-        </div>
-        <div className="flex flex-1 flex-col gap-3 p-6 lg:p-7">
+    <div className="relative aspect-16/10 w-full">
+      <Image
+        src={event.image || '/placeholder.svg'}
+        alt={event.alt}
+        fill
+        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        className={cn(
+          'object-cover transition-transform duration-1200 group-hover:scale-[1.04]',
+          ended && 'grayscale-35 saturate-70 brightness-[0.92] opacity-75',
+        )}
+      />
+    </div>
+
+    {ended && (
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-10 bg-black/[0.035] dark:bg-black/10"
+      />
+    )}
+
+    <div className="relative z-20 flex flex-1 flex-col gap-3 p-6 lg:p-7">
           <div className="flex items-center justify-between gap-3">
             <span className="font-display text-[0.6rem] tracking-[0.26em] text-primary">
               {event.tag}
@@ -182,13 +190,36 @@ function EventCard({ event, index }: { event: EventItem; index: number }) {
               {EVENT_STATUS_LABEL[event.status]}
             </span>
           </div>
-          <h3 className="line-clamp-2 min-h-14 text-lg leading-snug text-foreground lg:text-xl">
-           {event.title}
-          </h3>
-          <p className="line-clamp-3 min-h-18 text-sm leading-relaxed text-muted-foreground">
-          {event.description}
-          </p>
-          <dl className="mt-1 flex flex-col gap-2 border-t border-border pt-4 text-xs text-foreground/80">
+    <h3
+      className={cn(
+        'line-clamp-2 min-h-14 text-lg leading-snug lg:text-xl',
+        ended
+          ? 'text-foreground/62 dark:text-foreground/58'
+          : 'text-foreground dark:text-foreground/92',
+      )}
+    >
+      {event.title}
+    </h3>
+
+    <p
+      className={cn(
+        'line-clamp-3 min-h-18 text-sm leading-relaxed',
+        ended
+          ? 'text-muted-foreground/65 dark:text-foreground/42'
+          : 'text-foreground/76 dark:text-foreground/68',
+      )}
+    >
+      {event.description}
+    </p>
+
+    <dl
+      className={cn(
+        'mt-1 flex flex-col gap-2 border-t border-border pt-4 text-xs',
+        ended
+          ? 'text-muted-foreground/60 dark:text-foreground/38'
+          : 'text-foreground/68 dark:text-foreground/60',
+      )}
+    >
            
            <div className="flex items-start gap-2">
   <CalendarDays

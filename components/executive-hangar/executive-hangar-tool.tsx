@@ -257,9 +257,9 @@ useEffect(
   return (
     <div className="flex flex-col gap-6">
 
-      <section className="overflow-hidden rounded-3xl border border-border bg-white shadow-[0_16px_50px_rgba(0,0,0,0.055)]">
+      <section className="overflow-hidden rounded-3xl border border-border bg-white shadow-[0_16px_50px_rgba(0,0,0,0.055)] dark:bg-[#37332f] dark:shadow-[0_16px_50px_rgba(0,0,0,0.16)]">
 
-        <div className="border-b border-border bg-[linear-gradient(180deg,#ffffff_0%,#faf9f6_100%)] px-6 py-5 lg:px-8">
+        <div className="border-b border-border bg-[linear-gradient(180deg,#ffffff_0%,#faf9f6_100%)] px-6 py-5 dark:bg-[linear-gradient(180deg,#3b3732_0%,#37332f_100%)] lg:px-8">
 
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
 
@@ -276,7 +276,7 @@ useEffect(
                 </p>
               </div>
 
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-neutral-950 lg:text-3xl">
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-neutral-950 dark:text-[#f1ede8] lg:text-3xl">
                 行政机库状态控制台
               </h2>
 
@@ -287,12 +287,12 @@ useEffect(
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
 
-              <div className="rounded-2xl border border-border bg-white px-4 py-3">
-                <p className="text-[10px] font-medium tracking-[0.15em] text-muted-foreground">
-                  当前时间
-                </p>
+            <div className="rounded-2xl border border-border bg-white px-4 py-3 dark:bg-[#403b36]">
+              <p className="text-[10px] font-medium tracking-[0.15em] text-muted-foreground">
+                当前时间
+              </p>
 
-                <p className="mt-1 font-mono text-sm font-semibold tabular-nums text-neutral-900">
+                <p className="mt-1 font-mono text-sm font-semibold tabular-nums text-neutral-900 dark:text-[#d8d2ca]">
                 {now !== null
                   ? formatLocalClock(
                       now,
@@ -301,12 +301,12 @@ useEffect(
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-border bg-white px-4 py-3">
+              <div className="rounded-2xl border border-border bg-white px-4 py-3 dark:bg-[#403b36]">
                 <p className="text-[10px] font-medium tracking-[0.15em] text-muted-foreground">
                   当前阶段
                 </p>
 
-                <p className="mt-1 text-sm font-semibold text-neutral-900">
+                <p className="mt-1 text-sm font-semibold text-neutral-900 dark:text-[#d8d2ca]">
                   {state?.phase === 'open'
                     ? '开放阶段'
                     : state?.phase === 'reset'
@@ -317,12 +317,12 @@ useEffect(
                 </p>
               </div>
 
-              <div className="col-span-2 rounded-2xl border border-border bg-white px-4 py-3 sm:col-span-1">
+              <div className="col-span-2 rounded-2xl border border-border bg-white px-4 py-3 dark:bg-[#403b36] sm:col-span-1">
                 <p className="text-[10px] font-medium tracking-[0.15em] text-muted-foreground">
                   周期基准 UTC
                 </p>
 
-                <p className="mt-1 font-mono text-sm font-semibold tabular-nums text-neutral-900">
+                <p className="mt-1 font-mono text-sm font-semibold tabular-nums text-neutral-900 dark:text-[#d8d2ca]">
                   {formatUtcDateTime(
                     anchor,
                   )}
@@ -346,14 +346,14 @@ useEffect(
                   CYCLE INSTRUMENT
                 </p>
 
-                <h3 className="mt-1 text-base font-semibold text-neutral-950">
+                <h3 className="mt-1 text-base font-semibold text-neutral-950 dark:text-[#eeeae4]">
                   周期主仪表
                 </h3>
               </div>
 
             </div>
 
-            <div className="rounded-2xl border border-border bg-[#fbfbfa] p-3 lg:p-4">
+            <div className="rounded-2xl border border-border bg-[#fbfbfa] p-3 dark:bg-[#312e2a] lg:p-4">
               <HangarInstrument
                 state={
                   state
@@ -376,7 +376,7 @@ useEffect(
                 NEXT WINDOW
               </p>
 
-              <h3 className="mt-1 text-base font-semibold text-neutral-950">
+              <h3 className="mt-1 text-base font-semibold text-neutral-950 dark:text-[#eeeae4]">
                 下一次开放
               </h3>
             </div>
@@ -405,14 +405,14 @@ useEffect(
         0 &&
         now !==
           null && (
-        <section className="rounded-3xl border border-border bg-white p-5 shadow-[0_12px_36px_rgba(0,0,0,0.04)] lg:p-7">
+        <section className="rounded-3xl border border-border bg-white p-5 shadow-[0_12px_36px_rgba(0,0,0,0.04)] dark:bg-[#37332f] dark:shadow-[0_12px_36px_rgba(0,0,0,0.14)] lg:p-7">
 
           <div className="mb-5">
             <p className="text-[10px] font-semibold tracking-[0.18em] text-muted-foreground">
               UPCOMING WINDOWS
             </p>
 
-            <h3 className="mt-1 text-lg font-semibold text-neutral-950">
+            <h3 className="mt-1 text-lg font-semibold text-neutral-950 dark:text-[#eeeae4]">
               后续开放窗口
             </h3>
 
@@ -440,14 +440,14 @@ useEffect(
       )}
 
 
-      <section className="rounded-3xl border border-border bg-white p-5 shadow-[0_12px_36px_rgba(0,0,0,0.04)] lg:p-7">
+      <section className="rounded-3xl border border-border bg-white p-5 shadow-[0_12px_36px_rgba(0,0,0,0.04)] dark:bg-[#37332f] dark:shadow-[0_12px_36px_rgba(0,0,0,0.14)] lg:p-7">
 
         <div className="mb-5">
           <p className="text-[10px] font-semibold tracking-[0.18em] text-muted-foreground">
             CALIBRATION
           </p>
 
-          <h3 className="mt-1 text-lg font-semibold text-neutral-950">
+          <h3 className="mt-1 text-lg font-semibold text-neutral-950 dark:text-[#eeeae4]">
             周期校准
           </h3>
 

@@ -1,6 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import {
+  useEffect,
+  useState,
+} from 'react'
 import {
   ChevronDown,
   RotateCcw,
@@ -35,6 +38,13 @@ export function CalibrationPanel({
 
   const [calibrated, setCalibrated] =
     useState(false)
+
+  const [mounted, setMounted] =
+    useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleCalibrate = () => {
     const parsed =
@@ -306,21 +316,25 @@ export function CalibrationPanel({
                       </p>
 
                       <p className="mt-1.5 font-mono text-sm font-semibold tabular-nums text-white/85">
-                        {clockInZone(
-                          new Date(
-                            anchor +
-                              CLOSED_MS,
-                          ),
-                        )}
+                        {mounted
+                          ? clockInZone(
+                              new Date(
+                                anchor +
+                                  CLOSED_MS,
+                              ),
+                            )
+                          : '--:--'}
                       </p>
 
                       <p className="mt-1 font-mono text-[9px] tabular-nums text-white/40">
-                        {dateInZone(
-                          new Date(
-                            anchor +
-                              CLOSED_MS,
-                          ),
-                        )}
+                        {mounted
+                          ? dateInZone(
+                              new Date(
+                                anchor +
+                                  CLOSED_MS,
+                              ),
+                            )
+                          : '--/--'}
                       </p>
                     </div>
 
