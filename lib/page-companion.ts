@@ -687,13 +687,13 @@ combostar: {
   alt: 'Combostar 奥里森拳皇',
 
   side: 'right',
-  height: 470,
-  offsetX: 0,
+  height: 540,
+  offsetX: -15,
 
-  bubbleOffsetX: 0,
-  bubbleOffsetY: 0,
-  bubbleWidth: 330,
-  bubbleTailOffset: 70,
+  bubbleOffsetX: -115,
+  bubbleOffsetY: 25,
+  bubbleWidth: 350,
+  bubbleTailOffset: 245,
 
   title: '奥里森拳皇の拳法秘诀',
 
