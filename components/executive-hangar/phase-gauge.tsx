@@ -11,6 +11,14 @@ const R = 134
 const START = 210
 const SWEEP = 240
 
+function svgNumber(
+  value: number,
+) {
+  return Number(
+    value.toFixed(6),
+  )
+}
+
 function point(
   angleDeg: number,
   radius = R,
@@ -20,13 +28,15 @@ function point(
     180
 
   return {
-    x:
+    x: svgNumber(
       SIZE / 2 +
-      radius * Math.cos(a),
+        radius * Math.cos(a),
+    ),
 
-    y:
+    y: svgNumber(
       SIZE / 2 -
-      radius * Math.sin(a),
+        radius * Math.sin(a),
+    ),
   }
 }
 

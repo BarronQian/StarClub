@@ -153,10 +153,10 @@ export function SiteHeader() {
   return (
     <header
       className={cn(
-        'fixed inset-x-0 top-0 z-50 transition-colors duration-500',
+        'fixed inset-x-0 top-0 z-50 border-b transition-all duration-500',
         scrolled || open
-          ? 'border-b border-border bg-background/85 backdrop-blur-xl'
-          : 'border-b border-transparent',
+          ? 'border-border bg-background/90 shadow-[0_4px_20px_rgba(0,0,0,0.04)] backdrop-blur-xl'
+          : 'border-border/60 bg-background/78 backdrop-blur-xl',
       )}
     >
       <div className="site-container flex h-16 items-center justify-between gap-6 lg:h-20">

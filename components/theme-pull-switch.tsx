@@ -61,10 +61,11 @@ export function ThemePullSwitch() {
         group
         fixed
         left-5
-        top-(--site-header-height,64px)
-        z-90
+        top-16
+        z-40
         sm:left-6
         lg:left-8
+        lg:top-20
       "
     >
       <button
@@ -112,30 +113,42 @@ export function ThemePullSwitch() {
             `}
           />
 
-          {/* 金属模式指示器 */}
+          {/* 拉绳与金属坠之间的小连接环 */}
             <div
               className="
-                relative
-                -mt-px
-                flex
-                h-9
-                w-4.5
-                items-center
-                justify-center
-                rounded-b-2xl
-                rounded-t-lg
+                -mb-0.5
+                h-1.25
+                w-1.75
+                rounded-full
                 border
                 border-[#8a5a20]
-                bg-linear-to-r
-                from-[#79501e]
-                via-[#e2b45a]
-                to-[#76501f]
-                shadow-[0_4px_8px_rgba(0,0,0,0.22)]
-                transition-shadow
-                duration-300
-                group-hover:shadow-[0_5px_14px_rgba(191,132,42,0.30)]
+                bg-[#c9933d]
               "
-            >
+            />
+
+          {/* 金属模式指示器 */}
+          <div
+            className="
+              relative
+              -mt-px
+              flex
+              h-9
+              w-4.5
+              items-center
+              justify-center
+              rounded-full
+              border
+              border-[#8a5a20]
+              bg-linear-to-r
+              from-[#76501f]
+              via-[#e4b75d]
+              to-[#76501f]
+              shadow-[0_4px_8px_rgba(0,0,0,0.22)]
+              transition-shadow
+              duration-300
+              group-hover:shadow-[0_5px_14px_rgba(191,132,42,0.30)]
+            "
+          >
             {isDark ? (
               /* Moon */
               <svg

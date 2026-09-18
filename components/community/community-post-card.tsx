@@ -143,7 +143,7 @@ export function CommunityPostCard({
     post.author_id
 
   return (
-    <article className="rounded-2xl border border-border bg-white p-5 shadow-[0_6px_20px_rgba(0,0,0,0.025)]">
+    <article className="rounded-2xl border border-border bg-white p-5 shadow-[0_6px_20px_rgba(0,0,0,0.025)] transition-colors dark:border-white/[0.08] dark:bg-[#37332f] dark:shadow-none">
       <div className="flex gap-3">
 
         {author?.profile_slug ? (
@@ -164,11 +164,11 @@ export function CommunityPostCard({
                 className="size-11 rounded-full object-cover"
               />
             ) : (
-              <div className="size-11 rounded-full bg-neutral-100" />
+              <div className="size-11 rounded-full bg-neutral-100 dark:bg-white/10" />
             )}
           </Link>
         ) : (
-          <div className="size-11 shrink-0 rounded-full bg-neutral-100" />
+          <div className="size-11 shrink-0 rounded-full bg-neutral-100 dark:bg-white/10" />
         )}
 
         <div className="min-w-0 flex-1">
@@ -256,7 +256,7 @@ export function CommunityPostCard({
 
           </div>
 
-          <p className="mt-4 whitespace-pre-wrap wrap-break-word text-[15px] leading-7 text-neutral-800">
+          <p className="mt-4 whitespace-pre-wrap wrap-break-word text-[15px] leading-7 text-neutral-800 dark:text-[#e5e1dc]">
             {post.content}
           </p>
 

@@ -2491,7 +2491,7 @@ const pageDescription =
 
   return (
     <>
-      <main className="mt-16 h-[calc(100vh-64px)] overflow-hidden bg-white">
+      <main className="mt-16 h-[calc(100vh-64px)] overflow-hidden bg-background text-foreground transition-colors">
         <div className="site-container h-full">
 
           <div className="grid h-full grid-cols-1 xl:grid-cols-[240px_minmax(0,780px)_360px] xl:justify-center">
@@ -2509,7 +2509,7 @@ const pageDescription =
                     className={
                       feedMode ===
                       'community'
-                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 dark:bg-white/10 px-4 text-left text-sm font-semibold text-foreground'
                         : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
                     }
                   >
@@ -2664,7 +2664,7 @@ const pageDescription =
                 </nav>
             </aside>
 
-            <div className="h-full overflow-y-auto border-x border-border bg-[#f7f7f5] px-5 pb-6 pt-14 lg:px-6">
+            <div className="h-full overflow-y-auto border-x border-border bg-[#f7f7f5] px-5 pb-6 pt-14 transition-colors dark:bg-[#262421] lg:px-6">
 
               <div className="mb-10 lg:mb-12">
 
@@ -2682,7 +2682,7 @@ const pageDescription =
                   feedMode !== 'following' &&
                   feedMode !==
                     'notifications' && (
-                <section className="rounded-2xl border border-border bg-white p-5 shadow-[0_8px_28px_rgba(0,0,0,0.04)]">
+                <section className="rounded-2xl border border-border bg-white dark:bg-[#302d29] p-5 shadow-[0_8px_28px_rgba(0,0,0,0.04)]">
 
                 {loggedIn ? (
                   <div className="flex gap-4">
@@ -3550,7 +3550,7 @@ const pageDescription =
 
               <div className="space-y-5">
 
-                <section className="overflow-hidden rounded-2xl border border-border bg-white">
+                <section className="overflow-hidden rounded-2xl border border-border bg-white dark:bg-[#302d29]">
 
                   <div className="flex items-center justify-between px-5 pb-3 pt-5">
 
@@ -3598,7 +3598,7 @@ const pageDescription =
                               }
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="group block px-5 py-4 transition-colors hover:bg-neutral-50"
+                              className="group block px-5 py-4 transition-colors hover:bg-neutral-50 dark:hover:bg-white/[0.04]"
                             >
                               <div className="flex gap-3">
 
@@ -3615,10 +3615,8 @@ const pageDescription =
 
                                 <div className="min-w-0 flex-1">
 
-                                  <p className="line-clamp-2 text-[13px] font-medium leading-5 text-neutral-900 transition-colors group-hover:text-neutral-600">
-                                    {
-                                      item.title
-                                    }
+                                  <p className="line-clamp-2 text-[13px] font-medium leading-5 text-neutral-900 transition-colors group-hover:text-neutral-600 dark:text-neutral-200 dark:group-hover:text-white">
+                                    {item.title}
                                   </p>
 
                                   <p className="mt-1.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
@@ -3654,7 +3652,7 @@ const pageDescription =
                   </div>
                 </section>
 
-                <section className="rounded-2xl border border-border bg-white p-5">
+                <section className="rounded-2xl border border-border bg-white dark:bg-[#302d29] p-5">
 
                   <h2 className="text-base font-semibold">
                     推荐酒友
