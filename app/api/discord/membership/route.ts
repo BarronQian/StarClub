@@ -169,6 +169,7 @@ export async function GET(request: Request) {
         profile.discord_id,
       joinedAt:
         member.joined_at ?? null,
+      roles,
     })
     
   } catch (error) {

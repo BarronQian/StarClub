@@ -169,7 +169,7 @@ const [
   setFollowStatusLoading,
 ] = useState(true)
 
-// 读取当前登录用户 + 关注状态
+// 读取当前用户 + 公开关注统计 + 我的关注状态
 useEffect(() => {
   if (!profile?.id) {
     return
@@ -184,33 +184,21 @@ useEffect(() => {
           getSupabaseBrowser()
 
         const {
-          data: {
-            session,
-          },
+          data: { session },
         } =
           await supabase.auth.getSession()
 
         const userId =
           session?.user?.id ?? null
 
-        setCurrentUserId(
-          userId,
-        )
+        setCurrentUserId(userId)
 
-        // 未登录
-        if (
-          !session?.access_token
-        ) {
-          setFollowing(false)
-          return
-        }
+        const headers:
+          Record<string, string> = {}
 
-        // 自己的主页不需要查询关注状态
-        if (
-          userId === profile.id
-        ) {
-          setFollowing(false)
-          return
+        if (session?.access_token) {
+          headers.Authorization =
+            `Bearer ${session.access_token}`
         }
 
         const response =
@@ -220,10 +208,7 @@ useEffect(() => {
             )}`,
             {
               method: 'GET',
-              headers: {
-                Authorization:
-                  `Bearer ${session.access_token}`,
-              },
+              headers,
               cache: 'no-store',
             },
           )
@@ -234,35 +219,37 @@ useEffect(() => {
         if (!response.ok) {
           throw new Error(
             data.error ||
-              '读取关注状态失败',
+              '读取关注数据失败',
           )
         }
 
-          const nextFollowing =
-            data.following === true
+        // 公开统计数量
+        setFollowingCount(
+          typeof data.followingCount ===
+            'number'
+            ? data.followingCount
+            : 0,
+        )
 
-          setFollowing(nextFollowing)
+        setFollowerCount(
+          typeof data.followerCount ===
+            'number'
+            ? data.followerCount
+            : 0,
+        )
 
-          setFollowerCount(
-            (current) =>
-              nextFollowing
-                ? current + 1
-                : Math.max(0, current - 1),
+        // 只有登录并且正在看别人主页时，
+        // 才需要显示“我是否关注了这个人”
+        if (
+          session?.access_token &&
+          userId !== profile.id
+        ) {
+          setFollowing(
+            data.following === true,
           )
-
-          setFollowingCount(
-            typeof data.followingCount ===
-              'number'
-              ? data.followingCount
-              : 0,
-          )
-
-          setFollowerCount(
-            typeof data.followerCount ===
-              'number'
-              ? data.followerCount
-              : 0,
-          )
+        } else {
+          setFollowing(false)
+        }
       } catch (error) {
         console.error(
           'Failed to load follow status:',
@@ -270,6 +257,8 @@ useEffect(() => {
         )
 
         setFollowing(false)
+        setFollowingCount(0)
+        setFollowerCount(0)
       } finally {
         setFollowStatusLoading(false)
       }
