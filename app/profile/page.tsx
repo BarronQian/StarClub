@@ -75,6 +75,21 @@ type ProfilePost = {
   liked_by_me: boolean
 }
 
+type FollowListUser = {
+  id: string
+  username: string | null
+  displayName: string | null
+  avatarUrl: string | null
+  starCitizenHandle: string | null
+  profileSlug: string | null
+  memberNumber: number | null
+  followedAt: string | null
+}
+
+type FollowListType =
+  | 'following'
+  | 'followers'
+
 export default function ProfilePage() {
   const router = useRouter()
 
@@ -257,6 +272,33 @@ export default function ProfilePage() {
     setFollowerCount,
   ] = useState(0)
 
+  const [
+    followListType,
+    setFollowListType,
+  ] = useState<FollowListType | null>(
+    null,
+  )
+
+  const [
+    followListUsers,
+    setFollowListUsers,
+  ] = useState<FollowListUser[]>([])
+
+  const [
+    followListLoading,
+    setFollowListLoading,
+  ] = useState(false)
+
+  const [
+    followListError,
+    setFollowListError,
+  ] = useState<string | null>(null)
+
+  const [
+    unfollowingUserId,
+    setUnfollowingUserId,
+  ] = useState<string | null>(null)
+
   useEffect(() => {
   if (!user?.id) {
     setProfilePosts([])
@@ -362,6 +404,133 @@ export default function ProfilePage() {
 
   void loadFollowCounts()
 }, [user?.id, accessToken])
+
+  const openFollowList = async (
+  type: FollowListType,
+) => {
+  if (!accessToken) {
+    return
+  }
+
+  try {
+    setFollowListType(type)
+    setFollowListUsers([])
+    setFollowListError(null)
+    setFollowListLoading(true)
+
+    const response =
+      await fetch(
+        `/api/community/follows/list?type=${type}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization:
+              `Bearer ${accessToken}`,
+          },
+          cache: 'no-store',
+        },
+      )
+
+    const data =
+      await response.json()
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+          '读取名单失败',
+      )
+    }
+
+    setFollowListUsers(
+      Array.isArray(data.users)
+        ? data.users
+        : [],
+    )
+  } catch (error) {
+    console.error(
+      'Failed to load follow list:',
+      error,
+    )
+
+    setFollowListError(
+      error instanceof Error
+        ? error.message
+        : '读取名单失败',
+    )
+  } finally {
+    setFollowListLoading(false)
+  }
+}
+
+const unfollowFromList = async (
+  profileId: string,
+) => {
+  if (
+    !accessToken ||
+    unfollowingUserId
+  ) {
+    return
+  }
+
+  try {
+    setUnfollowingUserId(
+      profileId,
+    )
+
+    const response =
+      await fetch(
+        `/api/community/follows?profileId=${encodeURIComponent(
+          profileId,
+        )}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization:
+              `Bearer ${accessToken}`,
+          },
+        },
+      )
+
+    const data =
+      await response.json()
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+          '取消关注失败',
+      )
+    }
+
+    setFollowListUsers(
+      (current) =>
+        current.filter(
+          (item) =>
+            item.id !== profileId,
+        ),
+    )
+
+    setFollowingCount(
+      (current) =>
+        Math.max(
+          0,
+          current - 1,
+        ),
+    )
+  } catch (error) {
+    console.error(
+      'Failed to unfollow:',
+      error,
+    )
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : '取消关注失败',
+    )
+  } finally {
+    setUnfollowingUserId(null)
+  }
+}
 
   useEffect(() => {
     const supabase =
@@ -594,6 +763,7 @@ useEffect(() => {
       !accessToken
     ) {
       setDiscordVerified(false)
+      setDiscordRoles([])
       return
     }
 
@@ -629,6 +799,13 @@ useEffect(() => {
             data.isMember === true &&
             data.isVerified === true
           )
+          
+          setDiscordRoles(
+            Array.isArray(data.roles)
+              ? data.roles
+              : []
+          )
+
         } catch (error) {
           console.error(
             'Discord membership check failed:',
@@ -2214,11 +2391,16 @@ const handleConfirmCoverUpload =
           {stats.map((stat) => {
             const Icon = stat.icon
 
-            return (
-              <div
-                key={stat.label}
-                className="flex items-center gap-3 border-b border-r border-border px-5 py-5 last:border-r-0 sm:last:border-b-0 lg:border-b-0"
-              >
+            const followType:
+              FollowListType | null =
+              stat.label === '关注'
+                ? 'following'
+                : stat.label === '粉丝'
+                  ? 'followers'
+                  : null
+
+            const content = (
+              <>
                 <div className="flex size-8 shrink-0 items-center justify-center">
                   <Icon
                     className="size-4 text-[#a66700]"
@@ -2235,6 +2417,32 @@ const handleConfirmCoverUpload =
                     {stat.value}
                   </p>
                 </div>
+              </>
+            )
+
+            if (followType) {
+              return (
+                <button
+                  key={stat.label}
+                  type="button"
+                  onClick={() => {
+                    void openFollowList(
+                      followType,
+                    )
+                  }}
+                  className="flex items-center gap-3 border-b border-r border-border px-5 py-5 text-left transition-colors hover:bg-[#a66700]/5 last:border-r-0 sm:last:border-b-0 lg:border-b-0"
+                >
+                  {content}
+                </button>
+              )
+            }
+
+            return (
+              <div
+                key={stat.label}
+                className="flex items-center gap-3 border-b border-r border-border px-5 py-5 last:border-r-0 sm:last:border-b-0 lg:border-b-0"
+              >
+                {content}
               </div>
             )
           })}
@@ -3073,6 +3281,189 @@ const handleConfirmCoverUpload =
       </div>
     </div>
   )}
+
+      {followListType && (
+        <div
+          className="fixed inset-0 z-200 flex items-center justify-center bg-black/35 px-4 backdrop-blur-[2px]"
+          onMouseDown={(event) => {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              setFollowListType(null)
+            }
+          }}
+        >
+          <div className="flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-black/10 bg-white shadow-2xl">
+            {/* Header */}
+            <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-5">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {followListType ===
+                  'following'
+                    ? '我的关注'
+                    : '我的粉丝'}
+                </h2>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {followListType ===
+                  'following'
+                    ? `${followingCount} 位酒友`
+                    : `${followerCount} 位酒友`}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setFollowListType(null)
+                }
+                className="flex size-9 items-center justify-center rounded-full text-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="关闭"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* List */}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              {followListLoading ? (
+                <div className="flex min-h-52 items-center justify-center px-6 py-12">
+                  <p className="text-sm text-muted-foreground">
+                    正在加载...
+                  </p>
+                </div>
+              ) : followListError ? (
+                <div className="flex min-h-52 items-center justify-center px-6 py-12">
+                  <p className="text-sm text-red-500">
+                    {followListError}
+                  </p>
+                </div>
+              ) : followListUsers.length ===
+                0 ? (
+                <div className="flex min-h-52 items-center justify-center px-6 py-12">
+                  <div className="text-center">
+                    <Users
+                      className="mx-auto size-6 text-muted-foreground/50"
+                      strokeWidth={1.5}
+                    />
+
+                    <p className="mt-3 text-sm font-medium">
+                      {followListType ===
+                      'following'
+                        ? '还没有关注酒友'
+                        : '还没有粉丝'}
+                    </p>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {followListType ===
+                      'following'
+                        ? '去社区认识更多酒友吧。'
+                        : '其他酒友关注你后会显示在这里。'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {followListUsers.map(
+                    (followUser) => {
+                      const name =
+                        followUser.starCitizenHandle ||
+                        followUser.displayName ||
+                        followUser.username ||
+                        followUser.profileSlug ||
+                        'StarClub 用户'
+
+                      const starClubId =
+                        followUser.profileSlug &&
+                        followUser.memberNumber !==
+                          null
+                          ? `${followUser.profileSlug}#${String(
+                              followUser.memberNumber,
+                            ).padStart(
+                              4,
+                              '0',
+                            )}`
+                          : null
+
+                      return (
+                        <div
+                          key={
+                            followUser.id
+                          }
+                          className="flex items-center gap-3 px-6 py-4 transition-colors hover:bg-muted/30"
+                        >
+                          <Link
+                            href={
+                              followUser.profileSlug
+                                ? `/profile/${encodeURIComponent(
+                                    followUser.profileSlug,
+                                  )}`
+                                : '#'
+                            }
+                            onClick={() =>
+                              setFollowListType(
+                                null,
+                              )
+                            }
+                            className="flex min-w-0 flex-1 items-center gap-3"
+                          >
+                            {followUser.avatarUrl ? (
+                              <img
+                                src={
+                                  followUser.avatarUrl
+                                }
+                                alt={name}
+                                className="size-11 shrink-0 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="size-11 shrink-0 rounded-full bg-muted" />
+                            )}
+
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">
+                                {name}
+                              </p>
+
+                              {starClubId && (
+                                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                                  @{starClubId}
+                                </p>
+                              )}
+                            </div>
+                          </Link>
+
+                          {followListType ===
+                            'following' && (
+                            <button
+                              type="button"
+                              disabled={
+                                unfollowingUserId ===
+                                followUser.id
+                              }
+                              onClick={() => {
+                                void unfollowFromList(
+                                  followUser.id,
+                                )
+                              }}
+                              className="shrink-0 rounded-full border border-border bg-white px-3.5 py-2 text-xs font-medium transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {unfollowingUserId ===
+                              followUser.id
+                                ? '处理中...'
+                                : '取消关注'}
+                            </button>
+                          )}
+                        </div>
+                      )
+                    },
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
     </main>
   )

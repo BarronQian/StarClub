@@ -14,94 +14,56 @@ import type { User } from '@supabase/supabase-js'
 import { AuthLoginButton } from '@/components/auth-login-button'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
-async function syncDiscordProfile(user: User) {
-  const supabase = getSupabaseBrowser()
+async function syncDiscordProfile(
+  user: User,
+) {
+  const supabase =
+    getSupabaseBrowser()
 
-  const discordAvatar =
-    user.user_metadata?.avatar_url ||
-    user.user_metadata?.picture ||
-    null
+  try {
+    const {
+      data: { session },
+    } =
+      await supabase.auth.getSession()
 
-  const discordUsername =
-    user.user_metadata?.preferred_username ||
-    user.user_metadata?.user_name ||
-    user.user_metadata?.name ||
-    null
-
-  const discordDisplayName =
-    user.user_metadata?.full_name ||
-    user.user_metadata?.name ||
-    discordUsername ||
-    null
-
-  const { data: profile, error } =
-    await supabase
-      .from('profiles')
-      .select(
-        'avatar_url, username, display_name',
-      )
-      .eq('id', user.id)
-      .maybeSingle()
-
-  if (error || !profile) {
-    if (error) {
-      console.error(
-        'Failed to load profile for Discord sync:',
-        error,
-      )
+    if (!session?.access_token) {
+      return
     }
 
-    return
-  }
+    const response =
+      await fetch(
+        '/api/profile/sync-discord',
+        {
+          method: 'POST',
+          headers: {
+            Authorization:
+              `Bearer ${session.access_token}`,
+          },
+          cache: 'no-store',
+        },
+      )
 
-  const updates: {
-    avatar_url?: string
-    username?: string
-    display_name?: string
-    updated_at?: string
-  } = {}
+    const data =
+      await response.json()
 
-  if (
-    discordAvatar &&
-    profile.avatar_url !== discordAvatar
-  ) {
-    updates.avatar_url = discordAvatar
-  }
+    if (!response.ok) {
+      console.error(
+        'Failed to sync Discord profile:',
+        data,
+      )
+      return
+    }
 
-  if (
-    discordUsername &&
-    profile.username !== discordUsername
-  ) {
-    updates.username = discordUsername
-  }
-
-  if (
-    discordDisplayName &&
-    profile.display_name !== discordDisplayName
-  ) {
-    updates.display_name =
-      discordDisplayName
-  }
-
-  if (
-    Object.keys(updates).length === 0
-  ) {
-    return
-  }
-
-  updates.updated_at =
-    new Date().toISOString()
-
-  const { error: updateError } =
-    await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id)
-
-  if (updateError) {
+    if (data.updated === true) {
+      console.log(
+        'Discord profile synced:',
+        data,
+      )
+    }
+  } catch (error) {
     console.error(
       'Failed to sync Discord profile:',
-      updateError,
+      error,
     )
   }
 }
