@@ -74,6 +74,49 @@
   --radius: 0.875rem;
 }
 
+.dark {
+  color-scheme: dark;
+
+  /*
+   * StarClub Night Mode
+   * 深灰夜间模式，不使用接近纯黑的背景
+   */
+
+  --background: oklch(0.30 0.008 65);
+  --foreground: oklch(0.95 0.004 80);
+
+  --card: oklch(0.345 0.009 65);
+  --card-foreground: oklch(0.95 0.004 80);
+
+  --popover: oklch(0.33 0.009 65);
+  --popover-foreground: oklch(0.95 0.004 80);
+
+  /* StarClub Gold */
+  --primary: oklch(0.72 0.13 68);
+  --primary-foreground: oklch(0.17 0.006 60);
+
+  --ember: oklch(0.7 0.18 42);
+
+  --secondary: oklch(0.37 0.009 65);
+  --secondary-foreground: oklch(0.94 0.004 80);
+
+  --muted: oklch(0.37 0.009 65);
+  --muted-foreground: oklch(0.76 0.008 70);
+
+  --accent: oklch(0.40 0.018 68);
+  --accent-foreground: oklch(0.97 0.004 80);
+
+  --destructive: oklch(0.65 0.19 25);
+
+  --border: oklch(1 0 0 / 13%);
+  --input: oklch(1 0 0 / 17%);
+  --ring: oklch(0.72 0.13 68 / 50%);
+}
+
+.dark .glass {
+  background: oklch(0.33 0.008 65 / 0.82);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -168,6 +211,10 @@
   .glass {
     background: oklch(1 0 0 / 0.72);
     backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .dark .glass {
+  background: oklch(0.25 0.008 65 / 0.78);
   }
 
   /* soft rounded panels replace the old sci-fi clipped corners */
