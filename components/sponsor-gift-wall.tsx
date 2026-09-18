@@ -1,7 +1,9 @@
 'use client'
 
 import {
+  useEffect,
   useMemo,
+  useState,
 } from 'react'
 
 import type {
@@ -12,12 +14,9 @@ type SponsorGiftWallProps = {
   gifts: SponsorGiftRow[]
 }
 
-type GiftVisual = {
-  key: string
-  gift: SponsorGiftRow
-  lane: number
-  delay: number
-  duration: number
+type LaneState = {
+  giftIndex: number
+  cycle: number
 }
 
 const FONT_SIZE_MAP = {
@@ -33,14 +32,14 @@ const FONT_SIZE_MAP = {
 
 const DEPTH_MAP = {
   back: {
-    opacity: 0.52,
-    blur: 0.2,
+    opacity: 0.58,
+    blur: 0,
     scale: 1,
     zIndex: 10,
   },
 
   middle: {
-    opacity: 0.78,
+    opacity: 0.8,
     blur: 0,
     scale: 1,
     zIndex: 20,
@@ -55,31 +54,25 @@ const DEPTH_MAP = {
 } as const
 
 const SPEED_DURATION = {
-  slow: 30,
-  normal: 27,
-  fast: 24,
+  slow: 14,
+  normal: 11.5,
+  fast: 9,
 } as const
 
-const LANE_COUNT = 8
+const LANE_COUNT = 10
 
-function hashString(
-  value: string,
-) {
-  let hash = 0
-
-  for (
-    let i = 0;
-    i < value.length;
-    i += 1
-  ) {
-    hash =
-      (hash * 31 +
-        value.charCodeAt(i)) >>>
-      0
-  }
-
-  return hash
-}
+const LANE_ORDER = [
+  4,
+  8,
+  1,
+  6,
+  3,
+  9,
+  0,
+  7,
+  2,
+  5,
+]
 
 function buildGiftMessage(
   gift: SponsorGiftRow,
@@ -107,77 +100,74 @@ function buildGiftMessage(
 export function SponsorGiftWall({
   gifts,
 }: SponsorGiftWallProps) {
-const visualGifts =
-  useMemo<GiftVisual[]>(() => {
-    if (gifts.length === 0) {
-      return []
-    }
+  const laneGifts =
+    useMemo(() => {
+      const lanes =
+        Array.from(
+          {
+            length:
+              LANE_COUNT,
+          },
+          () =>
+            [] as SponsorGiftRow[],
+        )
 
-    // 同一时间最多一个轨道一个弹幕。
-    // 从根本上避免同轨追尾和文字覆盖。
-    const visibleGifts =
-      gifts.slice(
-        0,
-        LANE_COUNT,
+      gifts.forEach(
+        (
+          gift,
+          index,
+        ) => {
+          const lane =
+            index %
+            LANE_COUNT
+
+          lanes[
+            lane
+          ].push(
+            gift,
+          )
+        },
       )
 
-    return visibleGifts.map(
-      (gift, index) => {
-        const hash =
-          hashString(gift.id)
+      return lanes
+    }, [gifts])
 
-        const baseDuration =
-          SPEED_DURATION[
-            gift.speed
-          ]
+  const [
+    laneStates,
+    setLaneStates,
+  ] =
+    useState<LaneState[]>(
+      () =>
+        Array.from(
+          {
+            length:
+              LANE_COUNT,
+          },
+          () => ({
+            giftIndex: 0,
+            cycle: 0,
+          }),
+        ),
+    )
 
-        const variation =
-          (hash % 350) /
-          100
-
-        // 使用跳跃式轨道分配，
-        // 避免视觉上全部从上到下机械排列。
-        const laneOrder = [
-          3,
-          6,
-          1,
-          5,
-          0,
-          7,
-          2,
-          4,
-        ]
-
-        const lane =
-          laneOrder[index]
-
-        // 每条轨道只有一个动画，
-        // delay 仅负责让进入页面时弹幕分散在不同横向位置。
-        const duration =
-          baseDuration +
-          variation
-
-        const progress =
-          (
-            index /
-            visibleGifts.length +
-            (hash % 17) / 100
-          ) % 1
-
-        return {
-          key: gift.id,
-          gift,
-          lane,
-
-          delay:
-            -(duration * progress),
-
-          duration,
-        }
-      },
+  useEffect(() => {
+    setLaneStates(
+      Array.from(
+        {
+          length:
+            LANE_COUNT,
+        },
+        () => ({
+          giftIndex: 0,
+          cycle: 0,
+        }),
+      ),
     )
   }, [gifts])
-  if (gifts.length === 0) {
+
+  if (
+    gifts.length === 0
+  ) {
     return (
       <div className="flex min-h-140 items-center justify-center border-y border-[#e8e2d8]">
         <div className="text-center">
@@ -193,6 +183,52 @@ const visualGifts =
     )
   }
 
+  function advanceLane(
+    laneIndex: number,
+  ) {
+    const giftsInLane =
+      laneGifts[
+        laneIndex
+      ]
+
+    if (
+      giftsInLane.length ===
+      0
+    ) {
+      return
+    }
+
+    setLaneStates(
+      (current) =>
+        current.map(
+          (
+            state,
+            index,
+          ) => {
+            if (
+              index !==
+              laneIndex
+            ) {
+              return state
+            }
+
+            return {
+              giftIndex:
+                (
+                  state.giftIndex +
+                  1
+                ) %
+                giftsInLane.length,
+
+              cycle:
+                state.cycle +
+                1,
+            }
+          },
+        ),
+    )
+  }
+
   return (
     <div className="relative overflow-hidden border-y border-[#eeeae4] bg-white">
       <style jsx>{`
@@ -200,44 +236,59 @@ const visualGifts =
           from {
             transform:
               translate3d(
-                calc(100vw + 100%),
+                100vw,
                 0,
                 0
-              )
-              scale(var(--gift-scale));
+              );
           }
 
           to {
             transform:
               translate3d(
-                calc(-100vw - 100%),
+                -100%,
                 0,
                 0
-              )
-              scale(var(--gift-scale));
+              );
           }
         }
       `}</style>
 
+      {/* 左侧淡出 */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-y-0 left-0 z-40 w-24 bg-linear-to-r from-white to-transparent sm:w-44"
       />
 
+      {/* 右侧淡出 */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-y-0 right-0 z-40 w-24 bg-linear-to-l from-white to-transparent sm:w-44"
       />
 
       <div className="relative h-[85vh] min-h-190 lg:h-[calc(100vh-72px)] lg:min-h-220">
-        {visualGifts.map(
-          ({
-            key,
-            gift,
-            lane,
-            delay,
-            duration,
-          }) => {
+        {laneGifts.map(
+          (
+            giftsInLane,
+            laneIndex,
+          ) => {
+            if (
+              giftsInLane.length ===
+              0
+            ) {
+              return null
+            }
+
+            const state =
+              laneStates[
+                laneIndex
+              ]
+
+            const gift =
+              giftsInLane[
+                state.giftIndex %
+                  giftsInLane.length
+              ]
+
             const depth =
               DEPTH_MAP[
                 gift.depth
@@ -248,52 +299,107 @@ const visualGifts =
                 gift,
               )
 
-            const usableTop = 10
-            const usableHeight = 80
+            const lane =
+              LANE_ORDER[
+                laneIndex
+              ]
+
+            const usableTop =
+              10
+
+            const usableHeight =
+              80
 
             const laneHeight =
               usableHeight /
               LANE_COUNT
 
-            const sizeOffset =
-              gift.font_size === 'xlarge'
-                ? 0
-                : gift.font_size === 'large'
-                  ? 0.4
-                  : gift.font_size === 'medium'
-                    ? 0.8
-                    : 1.2
-
             const top =
               usableTop +
               lane *
                 laneHeight +
-              laneHeight / 2 +
-              sizeOffset
+              laneHeight /
+                2
+
+            const laneVariation = [
+              0,
+              5.5,
+              1.2,
+              7,
+              3.8,
+              0.4,
+              6,
+              2.2,
+              8,
+              4.5,
+            ]
+
+            const duration =
+              SPEED_DURATION[
+                gift.speed
+              ] +
+              laneVariation[
+                laneIndex
+              ]
+
+            /*
+             * 每条轨道不同的初始延迟，
+             * 避免 10 条弹幕同时从右侧出现。
+             *
+             * 后续 cycle > 0 后，
+             * 当前弹幕跑完立即切换下一条。
+             */
+              const initialProgress = [
+                0.04,
+                0.34,
+                0.12,
+                0.46,
+                0.22,
+                0.08,
+                0.40,
+                0.17,
+                0.50,
+                0.28,
+              ]
+
+            const delay =
+              state.cycle === 0
+                ? -(
+                    duration *
+                    initialProgress[
+                      laneIndex
+                    ]
+                  )
+                : 0
 
             return (
               <div
-                key={key}
+                key={`${laneIndex}-${gift.id}-${state.cycle}`}
                 className="pointer-events-none absolute left-0 whitespace-nowrap will-change-transform"
-                style={
-                  {
-                    top: `${top}%`,
-                    opacity:
-                      depth.opacity,
-                    filter:
-                      depth.blur > 0
-                        ? `blur(${depth.blur}px)`
-                        : undefined,
-                    zIndex:
-                      depth.zIndex,
-
-                    '--gift-scale':
-                      depth.scale,
-
-                    animation:
-                      `sponsor-danmaku ${duration}s linear ${delay}s infinite`,
-                  } as React.CSSProperties
+                onAnimationEnd={() =>
+                  advanceLane(
+                    laneIndex,
+                  )
                 }
+                style={{
+                  top:
+                    `${top}%`,
+
+                  opacity:
+                    depth.opacity,
+
+                  filter:
+                    depth.blur >
+                    0
+                      ? `blur(${depth.blur}px)`
+                      : undefined,
+
+                  zIndex:
+                    depth.zIndex,
+
+                  animation:
+                    `sponsor-danmaku ${duration}s linear ${delay}s 1 both`,
+                }}
               >
                 <div
                   className={`flex items-center gap-2 font-medium tracking-wide drop-shadow-sm ${FONT_SIZE_MAP[gift.font_size]}`}
@@ -327,7 +433,9 @@ const visualGifts =
                   </span>
 
                   <span className="font-semibold">
-                    {message.gift}
+                    {
+                      message.gift
+                    }
                   </span>
 
                   <span className="opacity-40">

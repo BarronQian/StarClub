@@ -23,13 +23,13 @@ import {
 const ENTRIES = [
   {
     eyebrow:
-      'HALL OF SPONSORS',
+      'SUPPORT ARCHIVE',
     title:
-      '星际酒馆赞助榜',
+      '星际酒馆赞助纪念墙',
     desc:
-      '感谢每一位帮助社区持续运营、举办活动并支持奖励计划的酒友。',
+      '记录酒友为社区活动、赛事与参与者提供的礼物赞助与支持。',
     ctaLabel:
-      '查看完整赞助榜',
+      '查看完整记录',
     href:
       '/sponsors',
   },
@@ -111,9 +111,9 @@ export async function CommunitySupport() {
           sponsorTotal,
         ),
       label:
-        '累计赞助',
+        '累计礼物参考价值',
       en:
-        'TOTAL SUPPORT',
+        'GIFT VALUE',
     },
     {
       value:
@@ -146,7 +146,7 @@ export async function CommunitySupport() {
             index="04"
             eyebrow="Community Support"
             title="让每一次远航，都有人同行。"
-            description="感谢每一位支持星际酒馆社区运营、活动、奖励与长期建设的酒友。"
+            description="感谢每一位为社区活动、赛事与酒友提供礼物支持的赞助者。"
           />
 
           <Reveal
@@ -186,18 +186,31 @@ export async function CommunitySupport() {
           </Reveal>
         </div>
 
-        <Reveal
-          delay={200}
-          className="mt-14 lg:mt-20"
-        >
-          <SponsorTicker
-            sponsors={
-              sponsors
-            }
-          />
-        </Reveal>
+          <Reveal
+            delay={200}
+            className="mt-14 lg:mt-20"
+          >
+            <SponsorTicker
+              sponsors={
+                sponsors
+              }
+            />
+          </Reveal>
 
-        <div className="mt-14 grid gap-10 border-t border-border pt-12 sm:grid-cols-2 sm:gap-0 sm:divide-x sm:divide-border lg:mt-20 lg:pt-14">
+          <Reveal
+            delay={240}
+            className="mt-5"
+          >
+            <p className="max-w-4xl text-xs leading-relaxed text-muted-foreground">
+              <span className="font-medium text-foreground/70">
+                赞助说明：
+              </span>
+              所示金额为社区赞助礼物的购买价格或参考价值，并非星际酒馆收到的现金；
+              礼物由赞助者直接赠送给获奖者或接收者，酒馆及管理组不代收资金或礼物。
+            </p>
+          </Reveal>
+
+          <div className="mt-10 grid gap-10 border-t border-border pt-12 sm:grid-cols-2 sm:gap-0 sm:divide-x sm:divide-border lg:mt-12 lg:pt-14">
           <div className="sm:pr-10 lg:pr-14">
             <SupportEntry
               entry={
