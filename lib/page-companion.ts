@@ -718,7 +718,7 @@ combostar: {
 
   autoCycle: true,
   cycleInterval: 9000,
-  doubleClose: true,
+  doubleClose: false,
 },
 
 } satisfies Record<string, PageCompanionConfig>
