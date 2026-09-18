@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import { Diamond } from 'lucide-react'
+
 import { Reveal } from '@/components/reveal'
+import { SponsorGiftWall } from '@/components/sponsor-gift-wall'
+
 import {
   formatSponsorTotal,
 } from '@/lib/sponsors'
@@ -13,10 +16,6 @@ import {
 import {
   getSponsorGiftsFromDb,
 } from '@/lib/sponsor-gifts-db'
-
-import {
-  SponsorGiftWall,
-} from '@/components/sponsor-gift-wall'
 
 export const metadata: Metadata = {
   title: '赞助纪念墙 | 星际酒馆 StarClub',
@@ -49,8 +48,10 @@ export default async function SponsorsPage() {
 
   const count =
     sponsors.length
+
   return (
-    <div className="relative left-1/2 w-screen -translate-x-1/2 overflow-hidden bg-[#faf9f7] pb-24 text-[#1d1b18] lg:pb-32">
+    <div className="relative left-1/2 w-screen -translate-x-1/2 overflow-hidden bg-[#faf9f7] text-[#1d1b18]">
+
       {/* 顶部柔和金色环境光 */}
       <div
         aria-hidden="true"
@@ -76,14 +77,14 @@ export default async function SponsorsPage() {
         src="/images/starclub-logo.png"
         alt=""
         aria-hidden="true"
-        width={520}
-        height={520}
-        className="pointer-events-none absolute left-1/2 top-36 h-107.5 w-107.5 -translate-x-1/2 select-none object-contain opacity-[0.025]"
+        width={360}
+        height={360}
+        className="pointer-events-none absolute left-1/2 top-12 h-80 w-80 -translate-x-1/2 select-none object-contain opacity-[0.025]"
       />
 
       {/* Hero */}
       <section className="relative border-b border-[#e8e2d8]">
-        <div className="mx-auto flex max-w-4xl flex-col items-center px-5 py-10 text-center sm:py-12 lg:px-10 lg:py-14">
+        <div className="mx-auto flex max-w-4xl flex-col items-center px-5 py-4 text-center sm:py-5 lg:px-10 lg:py-5">
 
           <Reveal delay={60}>
             <span className="font-display text-[0.65rem] tracking-[0.45em] text-[#a68d68]">
@@ -93,16 +94,16 @@ export default async function SponsorsPage() {
 
           <Reveal
             delay={100}
-            className="mt-3"
+            className="mt-1.5"
           >
-              <h1 className="font-display text-3xl leading-tight tracking-tight text-balance text-[#1d1b18] sm:text-4xl lg:text-5xl">
-                星际酒馆赞助纪念墙
-              </h1>
+            <h1 className="font-display text-3xl leading-tight tracking-tight text-balance text-[#1d1b18] sm:text-4xl lg:text-[2.6rem]">
+              星际酒馆赞助纪念墙
+            </h1>
           </Reveal>
 
           <Reveal
             delay={140}
-            className="mt-3 max-w-xl"
+            className="mt-1.5 max-w-xl"
           >
             <p className="text-sm leading-relaxed text-pretty text-[#766f65] sm:text-base">
               感谢每一位撑起这片星海的人。
@@ -111,7 +112,7 @@ export default async function SponsorsPage() {
 
           <Reveal
             delay={180}
-            className="mt-5 flex items-center gap-3"
+            className="mt-3 flex items-center gap-3"
           >
             <span
               className="h-px w-16 bg-[#b87922]/30"
@@ -133,7 +134,7 @@ export default async function SponsorsPage() {
           {/* 总数据 */}
           <Reveal
             delay={220}
-            className="mt-6 flex items-stretch justify-center"
+            className="mt-3 flex items-stretch justify-center"
           >
             <div className="flex min-w-37.5 flex-col items-center px-8">
               <span className="font-display text-2xl tracking-tight text-[#a66716] sm:text-3xl">
@@ -165,128 +166,168 @@ export default async function SponsorsPage() {
         </div>
       </section>
 
-{/* 社区赞助记录弹幕墙 */}
-<section className="relative pt-7 lg:pt-9">
-  <Reveal className="mx-auto mb-5 max-w-6xl px-5 lg:px-10">
-    <div className="flex items-end justify-between gap-6">
-      <div>
-        <span className="font-display text-[0.62rem] tracking-[0.28em] text-[#a66716]">
-          COMMUNITY GIFT ARCHIVE
-        </span>
+      {/* 社区赞助记录弹幕墙 */}
+      <section className="relative pt-4 lg:pt-5">
+        <Reveal className="mx-auto mb-3 max-w-6xl px-5 lg:px-10">
+          <div className="flex items-end justify-between gap-6">
 
-        <h2 className="mt-1.5 font-display text-xl tracking-tight text-[#2a2621] sm:text-2xl">
-          每一份来自酒友的支持
-        </h2>
+            <div>
+              <span className="font-display text-[0.62rem] tracking-[0.28em] text-[#a66716]">
+                COMMUNITY GIFT ARCHIVE
+              </span>
 
-        <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-[#8c8478] sm:text-sm">
-          记录社区活动中，由酒友直接赠送给获奖者与参与者的礼物。
-        </p>
-      </div>
+              <h2 className="mt-1 font-display text-lg tracking-tight text-[#2a2621] sm:text-xl">
+                每一份来自酒友的支持
+              </h2>
 
-      <span className="hidden shrink-0 text-[0.58rem] tracking-[0.18em] text-[#b7afa3] sm:block">
-        {gifts.length} GIFT RECORDS
-      </span>
-    </div>
-  </Reveal>
+              <p className="mt-1 max-w-xl text-xs leading-relaxed text-[#8c8478]">
+                记录社区活动中，由酒友直接赠送给获奖者与参与者的礼物。
+              </p>
+            </div>
 
-  <SponsorGiftWall
-    gifts={gifts}
-  />
-</section>
-  
-{/* 社区赞助说明 */}
-<Reveal className="relative border-t border-[#e4ded4]">
-  <section className="mx-auto max-w-6xl px-5 py-16 lg:px-10 lg:py-20">
-    <div className="text-center">
-      <span className="font-display text-[0.58rem] tracking-[0.28em] text-[#a66716]">
-        COMMUNITY GIFT NOTICE
-      </span>
+            <span className="hidden shrink-0 text-[0.58rem] tracking-[0.18em] text-[#b7afa3] sm:block">
+              {gifts.length} GIFT RECORDS
+            </span>
 
-      <h2 className="mt-3 font-display text-2xl tracking-tight text-[#2a2621]">
-        社区赞助与礼物说明
-      </h2>
+          </div>
+        </Reveal>
 
-      <div className="mx-auto mt-5 h-px w-16 bg-[#b87922]/35" />
-    </div>
+        <SponsorGiftWall
+          gifts={gifts}
+        />
+      </section>
 
-    <div className="mt-12 grid gap-10 md:grid-cols-2 lg:grid-cols-4 lg:gap-0">
-      <div className="lg:border-r lg:border-[#e4ded4] lg:pr-8">
-        <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
-          01 · DIRECT GIFT
-        </span>
+      {/* 社区赞助说明 */}
+      <Reveal className="relative border-t border-[#e4ded4] bg-[#faf9f7]">
+        <section className="mx-auto max-w-6xl px-5 py-10 lg:px-10 lg:py-12">
 
-        <h3 className="mt-3 text-sm font-semibold text-[#3b352e]">
-          礼物直赠赞助
-        </h3>
+          <div className="grid gap-8 lg:grid-cols-[260px_1fr] lg:gap-14">
 
-        <p className="mt-3 text-xs leading-6 text-[#81796e]">
-          本页面记录的赞助均由社区酒友自愿提供。
-          赞助内容可能包含通过 Star Citizen 官网以现金购买的数字商品，
-          但赞助者不会向星际酒馆或管理组支付、转交任何现金。
-          所有赞助礼物均由赞助者使用其个人账号直接赠送至获奖者或接收者账号，
-          星际酒馆及管理组不代收、不保管、不转交相关资金或礼物。
-        </p>
-      </div>
+            {/* 左侧标题 */}
+            <div>
+              <span className="font-display text-[0.58rem] tracking-[0.28em] text-[#a66716]">
+                COMMUNITY GIFT NOTICE
+              </span>
 
-      <div className="lg:border-r lg:border-[#e4ded4] lg:px-8">
-        <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
-          02 · FINAL GIFT
-        </span>
+              <h2 className="mt-2 font-display text-xl tracking-tight text-[#2a2621] sm:text-2xl">
+                社区赞助与礼物说明
+              </h2>
 
-        <h3 className="mt-3 text-sm font-semibold text-[#3b352e]">
-          赠送完成后不经酒馆退还
-        </h3>
+              <p className="mt-3 max-w-55 text-xs leading-5 text-[#8c8478]">
+                关于社区礼物赞助、参考价值与责任范围的说明。
+              </p>
 
-        <p className="mt-3 text-xs leading-6 text-[#81796e]">
-          礼物完成赠送后，不支持通过星际酒馆要求撤回、退还或退款。
-          因账号、赠送、领取等问题产生的争议，由赠送人与接收人自行处理，
-          星际酒馆及管理组不承担相关赠送或交易责任。
-        </p>
-      </div>
+              <div className="mt-5 h-px w-12 bg-[#b87922]/35" />
+            </div>
 
-      <div className="lg:border-r lg:border-[#e4ded4] lg:px-8">
-        <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
-          03 · REFERENCE VALUE
-        </span>
+            {/* 右侧说明 */}
+            <div className="grid gap-x-10 gap-y-8 md:grid-cols-2">
 
-        <h3 className="mt-3 text-sm font-semibold text-[#3b352e]">
-          金额仅为赞助礼物参考价值
-        </h3>
+              {/* 01 */}
+              <div className="border-t border-[#ded8cf] pt-4">
+                <div className="flex items-center gap-3">
+                  <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
+                    01
+                  </span>
 
-        <p className="mt-3 text-xs leading-6 text-[#81796e]">
-          网站展示的累计金额用于记录赞助礼物的购买价格或参考价值，
-          不代表星际酒馆或管理组实际收到相应现金，
-          也不代表任何形式的投资、入股、会员费用或社区权益。
-        </p>
-      </div>
+                  <span className="text-[0.58rem] tracking-[0.18em] text-[#aaa196]">
+                    DIRECT GIFT
+                  </span>
+                </div>
 
-      <div className="lg:pl-8">
-        <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
-          04 · NO PRIVILEGES
-        </span>
+                <h3 className="mt-2 text-sm font-semibold text-[#3b352e]">
+                  礼物由赞助者直接赠送
+                </h3>
 
-        <h3 className="mt-3 text-sm font-semibold text-[#3b352e]">
-          赞助不产生任何社区特权
-        </h3>
+                <p className="mt-2 text-xs leading-5.5 text-[#81796e]">
+                  赞助内容可能包含通过 Star Citizen 官网以现金购买的数字商品，
+                  但赞助者不会向星际酒馆或管理组支付、转交现金。
+                  礼物均由赞助者使用个人账号直接赠送给获奖者或接收者，
+                  星际酒馆及管理组不代收、不保管、不转交相关资金或礼物。
+                </p>
+              </div>
 
-        <p className="mt-3 text-xs leading-6 text-[#81796e]">
-          任何赞助金额、次数或礼物价值均不会赋予赞助者管理权限、
-          社区职务、活动优势、决策权、特殊待遇或其他利益。
-        </p>
-      </div>
-    </div>
-  </section>
-</Reveal>
+              {/* 02 */}
+              <div className="border-t border-[#ded8cf] pt-4">
+                <div className="flex items-center gap-3">
+                  <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
+                    02
+                  </span>
 
-      <Reveal className="relative mx-auto max-w-4xl px-5 pt-16 text-center lg:px-10">
-        <div className="mx-auto mb-6 h-px max-w-sm bg-linear-to-r from-transparent via-[#d8d0c4] to-transparent" />
+                  <span className="text-[0.58rem] tracking-[0.18em] text-[#aaa196]">
+                    FINAL GIFT
+                  </span>
+                </div>
 
-        <p className="text-[0.65rem] tracking-[0.12em] text-[#aaa196]">
-          Built by the
-          community, powered
-          by its supporters.
-        </p>
+                <h3 className="mt-2 text-sm font-semibold text-[#3b352e]">
+                  赠送完成后不经酒馆退还
+                </h3>
+
+                <p className="mt-2 text-xs leading-5.5 text-[#81796e]">
+                  礼物完成赠送后，不支持通过星际酒馆要求撤回、退还或退款。
+                  因账号、赠送或领取产生的问题，由赠送人与接收人自行处理，
+                  星际酒馆及管理组不承担相关赠送或交易责任。
+                </p>
+              </div>
+
+              {/* 03 */}
+              <div className="border-t border-[#ded8cf] pt-4">
+                <div className="flex items-center gap-3">
+                  <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
+                    03
+                  </span>
+
+                  <span className="text-[0.58rem] tracking-[0.18em] text-[#aaa196]">
+                    REFERENCE VALUE
+                  </span>
+                </div>
+
+                <h3 className="mt-2 text-sm font-semibold text-[#3b352e]">
+                  金额仅代表礼物参考价值
+                </h3>
+
+                <p className="mt-2 text-xs leading-5.5 text-[#81796e]">
+                  页面展示的累计金额仅用于记录赞助礼物的购买价格或参考价值，
+                  不代表星际酒馆或管理组实际收到相应现金，
+                  也不代表投资、入股、会员费用或任何社区权益。
+                </p>
+              </div>
+
+              {/* 04 */}
+              <div className="border-t border-[#ded8cf] pt-4">
+                <div className="flex items-center gap-3">
+                  <span className="font-display text-[0.58rem] tracking-[0.2em] text-[#a66716]">
+                    04
+                  </span>
+
+                  <span className="text-[0.58rem] tracking-[0.18em] text-[#aaa196]">
+                    NO PRIVILEGES
+                  </span>
+                </div>
+
+                <h3 className="mt-2 text-sm font-semibold text-[#3b352e]">
+                  赞助不产生任何社区特权
+                </h3>
+
+                <p className="mt-2 text-xs leading-5.5 text-[#81796e]">
+                  任何赞助金额、次数或礼物价值均不会赋予赞助者管理权限、
+                  社区职务、活动优势、决策权、特殊待遇或其他利益。
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+          {/* 底部社区标语 */}
+          <div className="mt-9 border-t border-[#e4ded4] pt-5 text-center">
+            <p className="text-[0.6rem] tracking-[0.14em] text-[#aaa196]">
+              Built by the community, powered by its supporters.
+            </p>
+          </div>
+
+        </section>
       </Reveal>
+
     </div>
   )
 }
