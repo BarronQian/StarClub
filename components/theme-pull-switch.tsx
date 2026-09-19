@@ -60,12 +60,11 @@ export function ThemePullSwitch() {
       className="
         group
         fixed
-        left-5
-        top-16
+        left-8
+        top-20
         z-40
-        sm:left-6
-        lg:left-8
-        lg:top-20
+        hidden
+        lg:block
       "
     >
       <button

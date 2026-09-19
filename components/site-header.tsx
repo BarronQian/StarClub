@@ -11,6 +11,7 @@ import { GUIDE_TAGS, type GuideCategory } from '@/lib/guides'
 import { ARCHIVE } from '@/lib/archive'
 import { SiteSearch } from '@/components/site-search'
 import { HeaderUserAuth } from '@/components/header-user-auth'
+import { MobileThemeSwitch } from '@/components/mobile-theme-switch'
 
 const NAV_LINKS = [
   { key: 'about', href: '/#about', label: '关于我们', en: 'ABOUT' },
@@ -351,6 +352,9 @@ export function SiteHeader() {
           >
             加入 DISCORD
           </a>
+
+          <MobileThemeSwitch />
+          
           <button
             type="button"
             onClick={() => {

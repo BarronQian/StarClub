@@ -143,7 +143,7 @@ export function CommunityPostCard({
     post.author_id
 
   return (
-    <article className="rounded-2xl border border-border bg-white p-5 shadow-[0_6px_20px_rgba(0,0,0,0.025)] transition-colors dark:border-white/[0.08] dark:bg-[#37332f] dark:shadow-none">
+    <article className="rounded-2xl border border-border bg-white p-5 shadow-[0_6px_20px_rgba(0,0,0,0.025)] transition-colors dark:border-white/8 dark:bg-[#37332f] dark:shadow-none">
       <div className="flex gap-3">
 
         {author?.profile_slug ? (
@@ -260,7 +260,7 @@ export function CommunityPostCard({
             {post.content}
           </p>
 
-          <div className="mt-5 flex items-center gap-6 border-t border-border pt-4">
+          <div className="mt-5 flex items-center gap-6 border-t border-border pt-4 dark:border-white/8">
 
             <button
               type="button"

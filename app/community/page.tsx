@@ -2491,10 +2491,10 @@ const pageDescription =
 
   return (
     <>
-      <main className="mt-16 h-[calc(100vh-64px)] overflow-hidden bg-background text-foreground transition-colors">
-        <div className="site-container h-full">
+      <main className="mt-16 h-[calc(100vh-64px)] w-full overflow-hidden bg-background text-foreground transition-colors">
+        <div className="h-full w-full overflow-hidden xl:site-container">
 
-          <div className="grid h-full grid-cols-1 xl:grid-cols-[240px_minmax(0,780px)_360px] xl:justify-center">
+          <div className="grid h-full w-full min-w-0 grid-cols-1 overflow-hidden xl:grid-cols-[240px_minmax(0,780px)_360px] xl:justify-center">
 
             <aside className="hidden h-full px-5 pb-6 pt-14 xl:block">
                 <nav className="sticky top-14 space-y-2">
@@ -2510,7 +2510,7 @@ const pageDescription =
                       feedMode ===
                       'community'
                         ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 dark:bg-white/10 px-4 text-left text-sm font-semibold text-foreground'
-                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground dark:hover:bg-white/6'
                     }
                   >
                     <House
@@ -2540,8 +2540,8 @@ const pageDescription =
                     className={
                       feedMode ===
                       'following'
-                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
-                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground dark:bg-white/10'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground dark:hover:bg-white/6'
                     }
                   >
                     <Users
@@ -2571,8 +2571,8 @@ const pageDescription =
                     className={
                       feedMode ===
                       'notifications'
-                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
-                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground dark:bg-white/10'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground dark:hover:bg-white/6'
                     }
                   >
                     <Bell
@@ -2611,8 +2611,8 @@ const pageDescription =
                     }}
                     className={
                       feedMode === 'mine'
-                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
-                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground dark:bg-white/10'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground dark:hover:bg-white/6'
                     }
                   >
                     <FileText
@@ -2641,8 +2641,8 @@ const pageDescription =
                     className={
                       feedMode ===
                       'comments'
-                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground'
-                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground'
+                        ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-neutral-100 px-4 text-left text-sm font-semibold text-foreground dark:bg-white/10'
+                        : 'flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-neutral-50 hover:text-foreground dark:hover:bg-white/6'
                     }
                   >
                     <MessageCircle
@@ -2664,9 +2664,9 @@ const pageDescription =
                 </nav>
             </aside>
 
-            <div className="h-full overflow-y-auto border-x border-border bg-[#f7f7f5] px-5 pb-6 pt-14 transition-colors dark:bg-[#262421] lg:px-6">
+            <div className="h-full min-w-0 w-full overflow-x-hidden overflow-y-auto bg-[#f7f7f5] px-4 pb-6 pt-0 transition-colors scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden dark:bg-[#262421] sm:px-5 xl:border-x xl:border-border xl:px-6 xl:pt-14 xl:scrollbar-auto xl:[-ms-overflow-style:auto] xl:[&::-webkit-scrollbar]:block">
 
-              <div className="mb-10 lg:mb-12">
+              <div className="mb-6 pt-6 xl:mb-12 xl:pt-0">
 
                 <h1 className="text-4xl font-semibold tracking-tight lg:text-5xl">
                   {pageTitle}
@@ -2676,7 +2676,116 @@ const pageDescription =
                   {pageDescription}
                 </p>
 
-              </div>
+                  </div>
+                    
+                {/* Mobile Community Navigation */}
+                  <div className="sticky top-0 z-50 -mx-4 mb-6 border-b border-border bg-[#f7f7f5] dark:bg-[#262421] sm:-mx-5 xl:hidden">
+                    <div className="overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden">
+                      <div className="flex min-w-full sm:px-5">
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            switchFeed('community')
+                          }}
+                          className={`relative h-12 flex-1 shrink-0 px-2 text-sm transition-colors ${
+                            feedMode === 'community'
+                              ? 'font-semibold text-foreground'
+                              : 'font-medium text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          社区主页
+
+                          {feedMode === 'community' && (
+                            <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#a66700]" />
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            switchFeed('following')
+                          }}
+                          className={`relative h-12 flex-1 shrink-0 px-2 text-sm transition-colors ${
+                            feedMode === 'following'
+                              ? 'font-semibold text-foreground'
+                              : 'font-medium text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          关注
+
+                          {feedMode === 'following' && (
+                            <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#a66700]" />
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            switchFeed('notifications')
+                          }}
+                          className={`relative h-12 flex-1 shrink-0 px-2 text-sm transition-colors ${
+                            feedMode === 'notifications'
+                              ? 'font-semibold text-foreground'
+                              : 'font-medium text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <span className="inline-flex items-center gap-1.5">
+                            我的消息
+
+                            {unseenNotificationCount > 0 && (
+                              <span className="inline-flex min-w-4.5 items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[9px] font-semibold leading-none text-white">
+                                {unseenNotificationCount > 99
+                                  ? '99+'
+                                  : unseenNotificationCount}
+                              </span>
+                            )}
+                          </span>
+
+                          {feedMode === 'notifications' && (
+                            <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#a66700]" />
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            switchFeed('mine')
+                          }}
+                          className={`relative h-12 flex-1 shrink-0 px-2 text-sm transition-colors ${
+                            feedMode === 'mine'
+                              ? 'font-semibold text-foreground'
+                              : 'font-medium text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          我的帖子
+
+                          {feedMode === 'mine' && (
+                            <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#a66700]" />
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            switchFeed('comments')
+                          }}
+                          className={`relative h-12 flex-1 shrink-0 px-2 text-sm transition-colors ${
+                            feedMode === 'comments'
+                              ? 'font-semibold text-foreground'
+                              : 'font-medium text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          我的评论
+
+                          {feedMode === 'comments' && (
+                            <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#a66700]" />
+                          )}
+                        </button>
+
+                      </div>
+                    </div>
+                  </div>
 
                 {feedMode !== 'comments' &&
                   feedMode !== 'following' &&
@@ -2696,7 +2805,7 @@ const pageDescription =
                         className="size-11 shrink-0 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="size-11 shrink-0 rounded-full bg-neutral-100" />
+                      <div className="size-11 shrink-0 rounded-full bg-neutral-100 dark:bg-white/10" />
                     )}
 
                     <div className="min-w-0 flex-1">
@@ -2890,7 +2999,7 @@ const pageDescription =
               <section className="mt-6 space-y-4">
 
                 {loading ? (
-                  <div className="rounded-2xl border border-border bg-white p-8 text-center">
+                  <div className="rounded-2xl border border-border bg-white p-8 text-center dark:bg-[#302d29]">
                     <p className="text-sm text-muted-foreground">
                       {feedMode ===
                       'mine'
@@ -2908,9 +3017,9 @@ const pageDescription =
                     'notifications' ? (
                     <div className="space-y-4">
 
-                      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.025)] sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.025)] dark:bg-[#302d29] sm:flex-row sm:items-center sm:justify-between">
 
-                        <div className="flex items-center gap-1 rounded-full bg-neutral-100 p-1">
+                        <div className="flex items-center gap-1 rounded-full bg-neutral-100 p-1 dark:bg-white/6">
 
                           <button
                             type="button"
@@ -2922,7 +3031,7 @@ const pageDescription =
                             className={
                               notificationFilter ===
                               'all'
-                                ? 'rounded-full bg-white px-4 py-2 text-xs font-semibold text-foreground shadow-sm'
+                                ? 'rounded-full bg-white px-4 py-2 text-xs font-semibold text-foreground shadow-sm dark:bg-white/10'
                                 : 'rounded-full px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
                             }
                           >
@@ -2939,7 +3048,7 @@ const pageDescription =
                             className={
                               notificationFilter ===
                               'replies'
-                                ? 'rounded-full bg-white px-4 py-2 text-xs font-semibold text-foreground shadow-sm'
+                                ? 'rounded-full bg-white px-4 py-2 text-xs font-semibold text-foreground shadow-sm dark:bg-white/10'
                                 : 'rounded-full px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
                             }
                           >
@@ -2956,7 +3065,7 @@ const pageDescription =
                             className={
                               notificationFilter ===
                               'likes'
-                                ? 'rounded-full bg-white px-4 py-2 text-xs font-semibold text-foreground shadow-sm'
+                                ? 'rounded-full bg-white px-4 py-2 text-xs font-semibold text-foreground shadow-sm dark:bg-white/10'
                                 : 'rounded-full px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
                             }
                           >
@@ -3016,7 +3125,7 @@ const pageDescription =
                         },
                       ).length > 0 ? (
 
-                        <div className="overflow-hidden rounded-2xl border border-border bg-white">
+                        <div className="overflow-hidden rounded-2xl border border-border bg-white dark:bg-[#302d29]">
 
                           {notifications
                             .filter(
@@ -3085,8 +3194,8 @@ const pageDescription =
                                         }}
                                     className={
                                       unread
-                                        ? 'group relative flex w-full items-start gap-4 border-b border-border bg-[#fffaf2] px-5 py-5 text-left transition-colors last:border-b-0 hover:bg-[#fff7e8]'
-                                        : 'group relative flex w-full items-start gap-4 border-b border-border bg-white px-5 py-5 text-left transition-colors last:border-b-0 hover:bg-neutral-50'
+                                        ? 'group relative flex w-full items-start gap-4 border-b border-border bg-[#fffaf2] px-5 py-5 text-left transition-colors last:border-b-0 hover:bg-[#fff7e8] dark:bg-[#382f24] dark:hover:bg-[#403426]'
+                                        : 'group relative flex w-full items-start gap-4 border-b border-border bg-white px-5 py-5 text-left transition-colors last:border-b-0 hover:bg-neutral-50 dark:bg-[#302d29] dark:hover:bg-white/4'
                                     }
                                   >
 
@@ -3104,11 +3213,11 @@ const pageDescription =
                                           className="size-11 rounded-full object-cover"
                                         />
                                       ) : (
-                                        <div className="size-11 rounded-full bg-neutral-100" />
+                                        <div className="size-11 rounded-full bg-neutral-100 dark:bg-white/10" />
                                       )}
 
                                       {unread && (
-                                        <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-white bg-red-500" />
+                                        <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-white bg-red-500 dark:border-[#382f24]" />
                                       )}
 
                                     </div>
@@ -3117,11 +3226,11 @@ const pageDescription =
                                     <div className="min-w-0 flex-1">
 
                                       <p
-                                        className={
-                                          unread
-                                            ? 'text-sm leading-6 text-neutral-900'
-                                            : 'text-sm leading-6 text-neutral-700'
-                                        }
+                                          className={
+                                            unread
+                                              ? 'text-sm leading-6 text-neutral-900 dark:text-neutral-100'
+                                              : 'text-sm leading-6 text-neutral-700 dark:text-neutral-300'
+                                          }
                                       >
                                         <span
                                           className={
@@ -3178,7 +3287,7 @@ const pageDescription =
                         </div>
 
                       ) : (
-                        <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center">
+                        <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center dark:bg-[#302d29]">
 
                           <Bell
                             className="mx-auto size-6 text-muted-foreground"
@@ -3257,7 +3366,7 @@ const pageDescription =
                             key={
                               comment.id
                             }
-                            className="rounded-2xl border border-border bg-white p-5 shadow-[0_6px_20px_rgba(0,0,0,0.025)]"
+                            className="rounded-2xl border border-border bg-white p-5 shadow-[0_6px_20px_rgba(0,0,0,0.025)] dark:bg-[#302d29]"
                           >
                             <div className="flex items-start justify-between gap-4">
                               <div className="min-w-0">
@@ -3306,13 +3415,13 @@ const pageDescription =
                               />
                             </div>
 
-                            <p className="mt-4 whitespace-pre-wrap wrap-break-word text-[15px] leading-7 text-neutral-900">
+                            <p className="mt-4 whitespace-pre-wrap wrap-break-word text-[15px] leading-7 text-neutral-900 dark:text-neutral-100">
                               {
                                 comment.content
                               }
                             </p>
 
-                            <div className="mt-5 rounded-xl border border-border bg-[#f8f8f6] p-4">
+                            <div className="mt-5 rounded-xl border border-border bg-[#f8f8f6] p-4 dark:bg-white/5">
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                 <span className="text-[11px] text-muted-foreground">
                                   回复于
@@ -3346,7 +3455,7 @@ const pageDescription =
                                 </span>
                               </div>
 
-                              <p className="mt-2 line-clamp-3 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-neutral-700">
+                              <p className="mt-2 line-clamp-3 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-neutral-700 dark:text-neutral-300">
                                 {
                                   post.content
                                 }
@@ -3390,7 +3499,7 @@ const pageDescription =
                       },
                     )
                   ) : (
-                    <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center">
+                    <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center dark:bg-[#302d29]">
                       <p className="text-base font-medium">
                         你还没有发表评论
                       </p>
@@ -3487,7 +3596,7 @@ const pageDescription =
                     )
 
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center">
+                  <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center dark:bg-[#302d29]">
 
                       <p className="text-base font-medium">
                         {feedMode ===
@@ -3598,7 +3707,7 @@ const pageDescription =
                               }
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="group block px-5 py-4 transition-colors hover:bg-neutral-50 dark:hover:bg-white/[0.04]"
+                              className="group block px-5 py-4 transition-colors hover:bg-neutral-50 dark:hover:bg-white/4"
                             >
                               <div className="flex gap-3">
 
@@ -3713,7 +3822,7 @@ const pageDescription =
             ) => {
               event.stopPropagation()
             }}
-            className="w-full max-w-sm rounded-2xl border border-border bg-white p-6 shadow-2xl"
+            className="w-full max-w-sm rounded-2xl border border-border bg-white p-6 shadow-2xl dark:bg-[#302d29]"
           >
             <h2
               id="delete-post-title"
@@ -3813,7 +3922,7 @@ const pageDescription =
         ) => {
           event.stopPropagation()
         }}
-        className="w-full max-w-sm rounded-2xl border border-border bg-white p-6 shadow-2xl"
+        className="w-full max-w-sm rounded-2xl border border-border bg-white p-6 shadow-2xl dark:bg-[#302d29]"
       >
         <h2 className="text-lg font-semibold">
           禁言用户
@@ -3824,7 +3933,7 @@ const pageDescription =
         </p>
 
         <div className="mt-5">
-          <label className="text-xs font-medium text-neutral-700">
+          <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
             处罚原因
           </label>
 
@@ -3842,7 +3951,7 @@ const pageDescription =
             maxLength={500}
             rows={3}
             placeholder="例如：多次发布违规内容"
-            className="mt-2 w-full resize-none rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none transition focus:border-neutral-400"
+            className="mt-2 w-full resize-none rounded-xl border border-border bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-400 dark:bg-white/6 dark:text-neutral-100 dark:placeholder:text-neutral-500"
           />
 
           <p className="mt-1 text-right text-[11px] text-muted-foreground">
@@ -3853,7 +3962,7 @@ const pageDescription =
           </p>
         </div>
 
-        <p className="mt-4 text-xs font-medium text-neutral-700">
+        <p className="mt-4 text-xs font-medium text-neutral-700 dark:text-neutral-300">
           选择禁言时长
         </p>
 
@@ -3913,7 +4022,7 @@ const pageDescription =
                 'permanent',
               )
             }}
-            className="rounded-xl border border-red-200 px-4 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-red-200 px-4 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10"
           >
             永久禁言
           </button>
@@ -3975,7 +4084,7 @@ const pageDescription =
       ) => {
         event.stopPropagation()
       }}
-      className="w-full max-w-sm rounded-2xl border border-border bg-white p-6 shadow-2xl"
+      className="w-full max-w-sm rounded-2xl border border-border bg-white p-6 shadow-2xl dark:bg-[#302d29]"
     >
       <h2
         id="delete-comment-title"
