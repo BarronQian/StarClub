@@ -18,6 +18,7 @@ import {
   Smile,
   FileText,
   CheckCheck,
+  ArrowUp,
 } from 'lucide-react'
 
 import {
@@ -328,6 +329,14 @@ export default function CommunityPage() {
   const [
   emojiOpen,
   setEmojiOpen,
+] = useState(false)
+
+const feedScrollRef =
+  useRef<HTMLDivElement>(null)
+
+const [
+  showFeedTop,
+  setShowFeedTop,
 ] = useState(false)
 
 const textareaRef =
@@ -1928,6 +1937,13 @@ useEffect(() => {
       setHasMore(false)
       setNextCursor(null)
       setFeedMode(mode)
+
+      requestAnimationFrame(() => {
+        feedScrollRef.current?.scrollTo({
+          top: 0,
+          behavior: 'smooth',
+        })
+      })
     }
 
   const publishPost =
@@ -2664,7 +2680,15 @@ const pageDescription =
                 </nav>
             </aside>
 
-            <div className="h-full min-w-0 w-full overflow-x-hidden overflow-y-auto bg-[#f7f7f5] px-4 pb-6 pt-0 transition-colors scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden dark:bg-[#262421] sm:px-5 xl:border-x xl:border-border xl:px-6 xl:pt-14 xl:scrollbar-auto xl:[-ms-overflow-style:auto] xl:[&::-webkit-scrollbar]:block">
+              <div
+                ref={feedScrollRef}
+                onScroll={(event) => {
+                  setShowFeedTop(
+                    event.currentTarget.scrollTop > 500
+                  )
+                }}
+                className="h-full min-w-0 w-full overflow-x-hidden overflow-y-auto bg-[#f7f7f5] px-4 pb-6 pt-0 transition-colors scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden dark:bg-[#262421] sm:px-5 xl:border-x xl:border-border xl:px-6 xl:pt-14 xl:scrollbar-auto xl:[-ms-overflow-style:auto] xl:[&::-webkit-scrollbar]:block"
+              >
 
               <div className="mb-6 pt-6 xl:mb-12 xl:pt-0">
 
@@ -3796,6 +3820,24 @@ const pageDescription =
           </div>
         </div>
       </main>
+        
+
+        {showFeedTop && (
+          <button
+            type="button"
+            onClick={() => {
+              feedScrollRef.current?.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+              })
+            }}
+            className="fixed bottom-6 right-6 z-50 flex size-11 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-lg backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:text-primary xl:hidden"
+            aria-label="回到顶部"
+            title="回到顶部"
+          >
+            <ArrowUp className="size-4" />
+          </button>
+        )}
 
       {deleteConfirmPost && (
         <div
