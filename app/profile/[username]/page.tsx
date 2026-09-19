@@ -771,7 +771,7 @@ const stats = [
             <div className="absolute right-4 top-4 z-20 lg:right-5 lg:top-5">
               <Link
                 href="/profile"
-                 className="inline-flex items-center rounded-full border border-white/60 bg-white/90 px-4 py-2 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow-md"
+                 className="inline-flex items-center rounded-full border border-white/60 bg-white/90 px-4 py-2 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow-md dark:border-white/15 dark:bg-black/55 dark:text-white dark:hover:bg-black/70"
               >
                 ← 返回个人主页
               </Link>
@@ -955,7 +955,7 @@ const stats = [
           {/* Main column */}
           <div className="flex flex-col gap-6">
 
-            <section className="overflow-hidden rounded-2xl border border-border bg-white">
+            <section className="overflow-hidden rounded-2xl border border-border bg-white shadow-[0_8px_24px_rgba(0,0,0,0.03)] dark:border-white/8 dark:bg-[#37332f] dark:shadow-none">
               <div className="flex items-center border-b border-border px-6">
                 <div className="border-b-2 border-primary py-5 text-sm text-foreground">
                   动态
@@ -1065,7 +1065,7 @@ const stats = [
           <aside className="flex flex-col gap-5">
 
             {/* Identities */}
-            <section className="rounded-2xl border border-border bg-white p-5">
+            <section className="rounded-2xl border border-border bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.03)] dark:border-white/8 dark:bg-[#37332f] dark:shadow-none">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-medium">
                   酒馆身份
@@ -1119,7 +1119,7 @@ const stats = [
             </section>
 
             {/* Visitors */}
-            <section className="rounded-2xl border border-border bg-white p-5">
+            <section className="rounded-2xl border border-border bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.03)] dark:border-white/8 dark:bg-[#37332f] dark:shadow-none">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-medium">
                   最近访客
@@ -1183,7 +1183,7 @@ const stats = [
                               className="size-9 shrink-0 rounded-full object-cover"
                             />
                           ) : (
-                            <div className="size-9 shrink-0 rounded-full bg-neutral-100" />
+                            <div className="size-9 shrink-0 rounded-full bg-neutral-100 dark:bg-white/10" />
                           )}
 
                           <div className="min-w-0 flex-1">
