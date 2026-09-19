@@ -1662,27 +1662,44 @@ const locationLabel =
             </label>
 
             <textarea
-              value={
-                description
-              }
-              onChange={(
-                event,
-              ) =>
+              value={description}
+              onChange={(event) =>
                 setDescription(
-                  event.target
-                    .value,
+                  event.target.value,
                 )
               }
-              maxLength={3000}
+              maxLength={500}
               rows={5}
               placeholder="补充交易要求、时间、地点或其他说明……"
               className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm leading-6 outline-none focus:border-foreground/40"
             />
 
-            <div className="mt-1 text-right text-xs text-muted-foreground">
-              {description.length}
-              /3000
+            <div className="mt-1 flex items-center justify-between gap-4 text-xs text-muted-foreground">
+              <span>
+                最多填写 500 字
+              </span>
+
+              <span
+                className={
+                  description.length >= 450
+                    ? 'font-medium text-amber-500'
+                    : ''
+                }
+              >
+                {description.length}/500
+              </span>
             </div>
+          </div>
+          
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+            <div className="text-sm font-medium text-foreground">
+              商单有效期提醒
+            </div>
+
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              商单连续 30 天没有任何成交记录将自动删除。
+              每产生一笔新的成交记录，30 天期限将重新计算。
+            </p>
           </div>
 
           {uploadProgressText && (

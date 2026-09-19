@@ -1203,10 +1203,10 @@ async function submitReport() {
                   </div>
 
                   <div className="mt-1 text-sm font-medium">
-                    {listing.quality !==
-                    null
-                      ? `${listing.quality}%`
-                      : '未注明'}
+                      {listing.quality !==
+                      null
+                        ? listing.quality
+                        : '未注明'}
                   </div>
                 </div>
 
@@ -1241,7 +1241,20 @@ async function submitReport() {
                   商品说明
                 </h2>
 
-                <div className="mt-3 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+                <div
+                  className="
+                    mt-3
+                    max-h-70
+                    overflow-y-auto
+                    whitespace-pre-wrap
+                    wrap-break-word
+                    pr-3
+                    text-sm
+                    leading-7
+                    text-muted-foreground
+                    scrollbar-thin
+                  "
+                >
                   {listing.description ||
                     '卖家暂未填写额外说明。'}
                 </div>
