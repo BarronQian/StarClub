@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  useEffect,
   useMemo,
   useState,
 } from 'react'
@@ -19,6 +20,9 @@ import {
   RefreshCw,
   Trash2,
   Upload,
+  Pencil,
+  X,
+  Check,
 } from 'lucide-react'
 
 import {
@@ -186,6 +190,14 @@ export function CommunityStickerAdmin({
     useState<CommunitySticker[]>(
       initialStickers,
     )
+  
+    useEffect(() => {
+    setStickers(
+      initialStickers,
+    )
+  }, [
+    initialStickers,
+  ])
 
   const [
     actionId,
@@ -193,6 +205,18 @@ export function CommunityStickerAdmin({
   ] = useState<
     string | null
   >(null)
+
+    const [
+    editingId,
+    setEditingId,
+  ] = useState<
+    string | null
+  >(null)
+
+  const [
+    editingName,
+    setEditingName,
+  ] = useState('')
 
   const [
     name,
@@ -824,7 +848,7 @@ export function CommunityStickerAdmin({
       }
     }
 
-    const handleRegenerate =
+  const handleRegenerate =
     async (
       sticker:
         CommunitySticker,
@@ -1017,6 +1041,107 @@ export function CommunityStickerAdmin({
           err instanceof Error
             ? err.message
             : '重新优化失败',
+        )
+      } finally {
+        setActionId(null)
+      }
+    }
+  
+    const handleStartRename =
+    (
+      sticker:
+        CommunitySticker,
+    ) => {
+      setEditingId(
+        sticker.id,
+      )
+
+      setEditingName(
+        sticker.name,
+      )
+
+      setError(null)
+      setSuccess(null)
+    }
+
+  const handleCancelRename =
+    () => {
+      setEditingId(null)
+      setEditingName('')
+    }
+
+  const handleSaveRename =
+    async (
+      sticker:
+        CommunitySticker,
+    ) => {
+      const nextName =
+        editingName.trim()
+
+      if (!nextName) {
+        setError(
+          '表情包名称不能为空',
+        )
+        return
+      }
+
+      if (
+        nextName.length > 80
+      ) {
+        setError(
+          '表情包名称不能超过 80 个字符',
+        )
+        return
+      }
+
+      if (
+        nextName ===
+        sticker.name
+      ) {
+        handleCancelRename()
+        return
+      }
+
+      setActionId(
+        sticker.id,
+      )
+      setError(null)
+      setSuccess(null)
+
+      try {
+        const updated =
+          await updateSticker(
+            sticker.id,
+            {
+              name:
+                nextName,
+            },
+          )
+
+        setStickers(
+          (current) =>
+            current.map(
+              (item) =>
+                item.id ===
+                sticker.id
+                  ? updated
+                  : item,
+            ),
+        )
+
+        setEditingId(null)
+        setEditingName('')
+
+        setSuccess(
+          `已将表情包名称修改为「${nextName}」。`,
+        )
+
+        router.refresh()
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : '修改名称失败',
         )
       } finally {
         setActionId(null)
@@ -1331,15 +1456,136 @@ export function CommunityStickerAdmin({
 
                     <div className="space-y-4 p-4">
                       <div>
-                        <p className="truncate text-sm font-medium text-foreground">
-                          {
-                            sticker.name
-                          }
-                        </p>
+                        {editingId ===
+                        sticker.id ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={
+                                  editingName
+                                }
+                                maxLength={
+                                  80
+                                }
+                                autoFocus
+                                disabled={
+                                  busy
+                                }
+                                onChange={(
+                                  event,
+                                ) =>
+                                  setEditingName(
+                                    event
+                                      .target
+                                      .value,
+                                  )
+                                }
+                                onKeyDown={(
+                                  event,
+                                ) => {
+                                  if (
+                                    event.key ===
+                                    'Enter'
+                                  ) {
+                                    event.preventDefault()
 
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          网站显示使用优化版
-                        </p>
+                                    void handleSaveRename(
+                                      sticker,
+                                    )
+                                  }
+
+                                  if (
+                                    event.key ===
+                                    'Escape'
+                                  ) {
+                                    handleCancelRename()
+                                  }
+                                }}
+                              />
+
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                disabled={
+                                  busy
+                                }
+                                onClick={() =>
+                                  void handleSaveRename(
+                                    sticker,
+                                  )
+                                }
+                              >
+                                {busy ? (
+                                  <Loader2 className="size-4 animate-spin" />
+                                ) : (
+                                  <Check className="size-4" />
+                                )}
+
+                                <span className="sr-only">
+                                  保存名称
+                                </span>
+                              </Button>
+
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                disabled={
+                                  busy
+                                }
+                                onClick={
+                                  handleCancelRename
+                                }
+                              >
+                                <X className="size-4" />
+
+                                <span className="sr-only">
+                                  取消编辑
+                                </span>
+                              </Button>
+                            </div>
+
+                            <p className="text-[11px] text-muted-foreground">
+                              Enter 保存 · Esc 取消
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                                {
+                                  sticker.name
+                                }
+                              </p>
+
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 shrink-0"
+                                disabled={
+                                  busy
+                                }
+                                onClick={() =>
+                                  handleStartRename(
+                                    sticker,
+                                  )
+                                }
+                              >
+                                <Pencil className="size-3.5" />
+
+                                <span className="sr-only">
+                                  编辑名称
+                                </span>
+                              </Button>
+                            </div>
+
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              网站显示使用优化版
+                            </p>
+                          </>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/30 p-3">
