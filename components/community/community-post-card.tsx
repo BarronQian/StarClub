@@ -270,21 +270,16 @@ export function CommunityPostCard({
               {post.content}
             </p>
 
-            {post.sticker && (
-              <div className="mt-3">
-                <img
-                  src={
-                    post.sticker
-                      .optimized_url
-                  }
-                  alt={
-                    post.sticker.name
-                  }
-                  loading="lazy"
-                  className="h-auto max-w-[min(280px,75vw)] rounded-xl object-contain sm:max-w-[320px]"
-                />
-              </div>
-            )}
+              {post.sticker && (
+                <div className="mt-3">
+                  <img
+                    src={post.sticker.optimized_url}
+                    alt={post.sticker.name}
+                    loading="lazy"
+                    className="h-auto max-w-25 rounded-lg object-contain sm:max-w-30"
+                  />
+                </div>
+              )}
 
             <div className="mt-5 flex items-center gap-6 border-t border-border pt-4 dark:border-white/8">
 
