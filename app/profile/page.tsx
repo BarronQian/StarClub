@@ -2211,14 +2211,14 @@ const handleConfirmCoverUpload =
     }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] pb-24 dark:bg-background">
+    <main className="min-h-screen bg-[#f7f7f5] pb-24 transition-colors dark:bg-[#2b2825]">
       <div className="site-container pt-20 lg:pt-24">
 
         {/* Profile hero */}
-        <section className="overflow-hidden rounded-3xl border border-border bg-white shadow-[0_10px_35px_rgba(0,0,0,0.05)] dark:bg-card dark:shadow-[0_10px_35px_rgba(0,0,0,0.18)]">
+        <section className="overflow-hidden rounded-3xl border border-border bg-white shadow-[0_10px_35px_rgba(0,0,0,0.05)] dark:border-white/8 dark:bg-[#37332f] dark:shadow-none">
 
           {/* Banner */}
-          <div className="relative h-44 overflow-hidden bg-[#ece8e1] lg:h-56">
+          <div className="relative h-44 overflow-hidden bg-[#ece8e1] dark:bg-[#302d29] lg:h-56">
             {profile?.cover_url ? (
               <Image
                 src={
@@ -2230,7 +2230,7 @@ const handleConfirmCoverUpload =
                 className="object-cover"
               />
             ) : (
-              <div className="absolute inset-0 bg-linear-to-r from-[#f4eee5] via-[#ebe5db] to-[#ded7ca]" />
+              <div className="absolute inset-0 bg-linear-to-r from-[#f4eee5] via-[#ebe5db] to-[#ded7ca] dark:from-[#39342f] dark:via-[#332f2b] dark:to-[#2d2a27]" />
             )}
 
             <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-black/10 to-transparent" />
@@ -2241,7 +2241,7 @@ const handleConfirmCoverUpload =
                   href={`/profile/${encodeURIComponent(
                     profile.profile_slug
                   )}`}
-                  className="rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-medium text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-white"
+                  className="rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-medium text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-white dark:border-white/15 dark:bg-black/55 dark:text-white dark:hover:bg-black/70"
                 >
                   访客视角
                 </Link>
@@ -2253,7 +2253,7 @@ const handleConfirmCoverUpload =
                 onClick={() => {
                   setCoverRulesOpen(true)
                 }}
-                className={`rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-medium text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-white ${
+                className={`rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-medium text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-white dark:border-white/15 dark:bg-black/55 dark:text-white dark:hover:bg-black/70 ${
                   coverUploading
                     ? 'cursor-wait opacity-60'
                     : ''
@@ -2311,7 +2311,7 @@ const handleConfirmCoverUpload =
                   {/* Edit profile */}
                   <Link
                     href="/profile/settings"
-                    className="mt-0.5 hidden shrink-0 items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-xs font-medium text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all hover:border-black/15 hover:bg-neutral-50 dark:bg-card dark:hover:border-white/15 dark:hover:bg-muted lg:inline-flex"
+                    className="mt-0.5 hidden shrink-0 items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-xs font-medium text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all hover:border-black/15 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/6 dark:hover:border-white/15 dark:hover:bg-white/10 lg:inline-flex"
                   >
                     <Pencil
                       className="size-3.5"
@@ -2324,7 +2324,7 @@ const handleConfirmCoverUpload =
                 {/* Mobile edit */}
                 <Link
                   href="/profile/settings"
-                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-xs font-medium text-foreground dark:bg-card dark:hover:bg-muted lg:hidden"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-xs font-medium text-foreground dark:border-white/10 dark:bg-white/6 dark:hover:bg-white/10 lg:hidden"
                 >
                   <Pencil className="size-3.5" />
                   编辑个人资料
@@ -2387,7 +2387,7 @@ const handleConfirmCoverUpload =
         </section>
 
         {/* Stats */}
-        <section className="mt-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-white shadow-[0_8px_24px_rgba(0,0,0,0.03)] dark:bg-card dark:shadow-[0_8px_24px_rgba(0,0,0,0.16)] sm:grid-cols-3 lg:grid-cols-6">
+        <section className="mt-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-white shadow-[0_8px_24px_rgba(0,0,0,0.03)] dark:border-white/8 dark:bg-[#37332f] dark:shadow-none sm:grid-cols-3 lg:grid-cols-6">
           {stats.map((stat) => {
             const Icon = stat.icon
 
@@ -2430,7 +2430,7 @@ const handleConfirmCoverUpload =
                       followType,
                     )
                   }}
-                  className="flex items-center gap-3 border-b border-r border-border px-5 py-5 text-left transition-colors hover:bg-[#a66700]/5 last:border-r-0 sm:last:border-b-0 lg:border-b-0"
+                  className="flex items-center gap-3 border-b border-r border-border px-5 py-5 text-left transition-colors hover:bg-[#a66700]/5 dark:border-white/8 dark:hover:bg-white/4 last:border-r-0 sm:last:border-b-0 lg:border-b-0"
                 >
                   {content}
                 </button>
@@ -2440,7 +2440,7 @@ const handleConfirmCoverUpload =
             return (
               <div
                 key={stat.label}
-                className="flex items-center gap-3 border-b border-r border-border px-5 py-5 last:border-r-0 sm:last:border-b-0 lg:border-b-0"
+                className="flex items-center gap-3 border-b border-r border-border px-5 py-5 dark:border-white/8 last:border-r-0 sm:last:border-b-0 lg:border-b-0"
               >
                 {content}
               </div>
@@ -2454,7 +2454,7 @@ const handleConfirmCoverUpload =
           {/* Main column */}
           <div className="flex flex-col gap-6">
 
-            <section className="overflow-hidden rounded-2xl border border-border bg-white dark:bg-card">
+            <section className="overflow-hidden rounded-2xl border border-border bg-white dark:border-white/8 dark:bg-[#37332f]">
               <div className="flex items-center border-b border-border px-6">
                 <div className="border-b-2 border-primary py-5 text-sm text-foreground">
                   动态
@@ -2469,7 +2469,7 @@ const handleConfirmCoverUpload =
                   </div>
                   ) : profilePosts.length > 0 ? (
                     <>
-                      <div className="divide-y divide-border">
+                      <div className="divide-y divide-border dark:divide-white/8">
                    {visibleProfilePosts.map(
                       (post) => (
                         <Link
@@ -2477,7 +2477,7 @@ const handleConfirmCoverUpload =
                           href={`/community?postId=${encodeURIComponent(
                             post.id,
                           )}`}
-                          className="block px-6 py-6 transition-colors hover:bg-neutral-50/70"
+                          className="block px-6 py-6 transition-colors hover:bg-neutral-50/70 dark:hover:bg-white/4"
                         >
                           <div className="flex items-center justify-between gap-4">
                             <span className="text-xs text-muted-foreground">
@@ -2560,7 +2560,7 @@ const handleConfirmCoverUpload =
           {/* Right column */}
           <aside className="flex flex-col gap-5">
 
-            <section className="rounded-2xl border border-border bg-white p-5 dark:bg-card">
+            <section className="rounded-2xl border border-border bg-white p-5 dark:border-white/8 dark:bg-[#37332f]">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-medium">
                   酒馆身份
@@ -2624,7 +2624,7 @@ const handleConfirmCoverUpload =
               )}
             </section>
 
-            <section className="rounded-2xl border border-border bg-white p-5 dark:bg-card">
+            <section className="rounded-2xl border border-border bg-white p-5 dark:border-white/8 dark:bg-[#37332f]">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-medium">
                   最近访客
@@ -2684,7 +2684,7 @@ const handleConfirmCoverUpload =
                               className="size-9 shrink-0 rounded-full object-cover"
                             />
                           ) : (
-                            <div className="size-9 shrink-0 rounded-full bg-neutral-100" />
+                            <div className="size-9 shrink-0 rounded-full bg-neutral-100 dark:bg-white/10" />
                           )}
 
                           <div className="min-w-0 flex-1">
@@ -2757,7 +2757,7 @@ const handleConfirmCoverUpload =
       {/* RSI verification modal */}
       {rsiBinding && (
         <div className="fixed inset-0 z-130 flex items-center justify-center bg-black/25 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-3xl border border-neutral-200 bg-white p-6 text-neutral-950 shadow-2xl">
+          <div className="w-full max-w-lg rounded-3xl border border-neutral-200 bg-white p-6 text-neutral-950 shadow-2xl dark:border-white/10 dark:bg-[#37332f] dark:text-[#eee9e3]">
 
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -2807,7 +2807,7 @@ const handleConfirmCoverUpload =
                     }
                     placeholder="例如 GuMieHaoRen"
                     autoComplete="off"
-                    className="mt-2 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-950 outline-none transition-colors placeholder:text-neutral-400 focus:border-primary"
+                    className="mt-2 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-950 outline-none transition-colors placeholder:text-neutral-400 focus:border-primary dark:border-white/10 dark:bg-[#302d29] dark:text-[#eee9e3] dark:placeholder:text-white/35"
                   />
                 </label>
 
@@ -2984,7 +2984,7 @@ const handleConfirmCoverUpload =
               onMouseDown={(event) => {
                 event.stopPropagation()
               }}
-              className="w-full max-w-md rounded-3xl border border-black/5 bg-white p-6 text-neutral-950 shadow-2xl"
+              className="w-full max-w-md rounded-3xl border border-black/5 bg-white p-6 text-neutral-950 shadow-2xl dark:border-white/10 dark:bg-[#37332f] dark:text-[#eee9e3]"
             >
               {canChangeCover ? (
                 <>
@@ -2996,12 +2996,12 @@ const handleConfirmCoverUpload =
                     每 7 天仅可更换一次封面。上传成功后将开始计算新的 7 天更换周期。
                   </p>
 
-                  <div className="mt-5 rounded-2xl bg-[#f7f7f5] p-4 text-neutral-950">
+                  <div className="mt-5 rounded-2xl bg-[#f7f7f5] p-4 text-neutral-950 dark:bg-[#302d29] dark:text-[#eee9e3]">
                     <p className="text-xs font-semibold text-foreground">
                       图片要求
                     </p>
 
-                    <div className="mt-3 space-y-2 text-xs leading-5 text-neutral-500">
+                    <div className="mt-3 space-y-2 text-xs leading-5 text-neutral-500 dark:text-white/55">
                       <p>
                         • 支持 JPG、JPEG、PNG
                       </p>
@@ -3042,7 +3042,7 @@ const handleConfirmCoverUpload =
                           false
                         )
                       }}
-                      className="rounded-full border border-border px-5 py-2.5 text-xs font-medium transition-colors hover:bg-neutral-50"
+                      className="rounded-full border border-border px-5 py-2.5 text-xs font-medium transition-colors hover:bg-neutral-50 dark:border-white/10 dark:hover:bg-white/8"
                     >
                       取消
                     </button>
@@ -3052,7 +3052,7 @@ const handleConfirmCoverUpload =
                       onClick={() => {
                         coverInputRef.current?.click()
                       }}
-                      className="rounded-full bg-neutral-950 px-5 py-2.5 text-xs font-medium text-white transition-colors hover:bg-neutral-800"
+                      className="rounded-full bg-neutral-950 px-5 py-2.5 text-xs font-medium text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-[#2b2825] dark:hover:bg-white/90"
                     >
                       选择图片
                     </button>
@@ -3068,7 +3068,7 @@ const handleConfirmCoverUpload =
                     为避免频繁更换个人主页封面，每位用户每 7 天仅可更换一次。
                   </p>
 
-                  <div className="mt-5 rounded-2xl bg-[#f7f7f5] p-4">
+                  <div className="mt-5 rounded-2xl bg-[#f7f7f5] p-4 dark:bg-[#302d29]">
                     <p className="text-xs text-muted-foreground">
                       下次可更换时间
                     </p>
@@ -3095,7 +3095,7 @@ const handleConfirmCoverUpload =
                           false
                         )
                       }}
-                      className="rounded-full bg-neutral-950 px-5 py-2.5 text-xs font-medium text-white transition-colors hover:bg-neutral-800"
+                      className="rounded-full bg-neutral-950 px-5 py-2.5 text-xs font-medium text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-[#2b2825] dark:hover:bg-white/90"
                     >
                       知道了
                     </button>
@@ -3111,7 +3111,7 @@ const handleConfirmCoverUpload =
 {coverCropOpen &&
   coverCropUrl && (
     <div className="fixed inset-0 z-150 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-5xl rounded-3xl bg-white p-6 shadow-2xl">
+      <div className="w-full max-w-5xl rounded-3xl bg-white p-6 shadow-2xl dark:bg-[#37332f] dark:text-[#eee9e3]">
         <div>
           <h2 className="text-xl font-semibold">
             调整封面
@@ -3231,7 +3231,7 @@ const handleConfirmCoverUpload =
                 )
               )
             }}
-            className="mt-3 w-full accent-neutral-950"
+            className="mt-3 w-full accent-neutral-950 dark:accent-white"
           />
         </div>
 
@@ -3257,7 +3257,7 @@ const handleConfirmCoverUpload =
                 null
               )
             }}
-            className="rounded-full border border-border px-5 py-2.5 text-xs font-medium transition-colors hover:bg-neutral-50"
+            className="rounded-full border border-border px-5 py-2.5 text-xs font-medium transition-colors hover:bg-neutral-50 dark:border-white/10 dark:hover:bg-white/8"
           >
             取消
           </button>
@@ -3294,9 +3294,9 @@ const handleConfirmCoverUpload =
             }
           }}
         >
-          <div className="flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-black/10 bg-white text-neutral-950 shadow-2xl">
+          <div className="flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-black/10 bg-white text-neutral-950 shadow-2xl dark:border-white/10 dark:bg-[#37332f] dark:text-[#eee9e3]">
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-5">
+            <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-5 dark:border-white/8">
               <div>
                 <h2 className="text-lg font-semibold">
                   {followListType ===
@@ -3305,7 +3305,7 @@ const handleConfirmCoverUpload =
                     : '我的粉丝'}
                 </h2>
 
-                <p className="mt-1 text-xs text-neutral-500">
+                <p className="mt-1 text-xs text-neutral-500 dark:text-white/50">
                   {followListType ===
                   'following'
                     ? `${followingCount} 位酒友`
@@ -3318,7 +3318,7 @@ const handleConfirmCoverUpload =
                 onClick={() =>
                   setFollowListType(null)
                 }
-                  className="flex size-9 items-center justify-center rounded-full text-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-950"
+                  className="flex size-9 items-center justify-center rounded-full text-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-950 dark:text-white/45 dark:hover:bg-white/8 dark:hover:text-white"
               >
                 ×
               </button>
@@ -3328,7 +3328,7 @@ const handleConfirmCoverUpload =
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               {followListLoading ? (
                 <div className="flex min-h-52 items-center justify-center px-6 py-12">
-                  <p className="text-sm text-neutral-500">
+                  <p className="text-sm text-neutral-500 dark:text-white/50">
                     正在加载...
                   </p>
                 </div>
@@ -3343,7 +3343,7 @@ const handleConfirmCoverUpload =
                 <div className="flex min-h-52 items-center justify-center px-6 py-12">
                   <div className="text-center">
                     <Users
-                      className="mx-auto size-6 text-neutral-500/50"
+                      className="mx-auto size-6 text-neutral-500/50 dark:text-white/30"
                       strokeWidth={1.5}
                     />
 
@@ -3354,7 +3354,7 @@ const handleConfirmCoverUpload =
                         : '还没有粉丝'}
                     </p>
 
-                    <p className="mt-1 text-xs text-neutral-500">
+                    <p className="mt-1 text-xs text-neutral-500 dark:text-white/50">
                       {followListType ===
                       'following'
                         ? '去社区认识更多酒友吧。'
@@ -3363,7 +3363,7 @@ const handleConfirmCoverUpload =
                   </div>
                 </div>
               ) : (
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-border dark:divide-white/8">
                   {followListUsers.map(
                     (followUser) => {
                       const name =
@@ -3390,7 +3390,7 @@ const handleConfirmCoverUpload =
                           key={
                             followUser.id
                           }
-                          className="flex items-center gap-3 px-6 py-4 transition-colors hover:bg-muted/30"
+                          className="flex items-center gap-3 px-6 py-4 transition-colors hover:bg-muted/30 dark:hover:bg-white/4"
                         >
                           <Link
                             href={
@@ -3409,14 +3409,12 @@ const handleConfirmCoverUpload =
                           >
                             {followUser.avatarUrl ? (
                               <img
-                                src={
-                                  followUser.avatarUrl
-                                }
+                                src={followUser.avatarUrl}
                                 alt={name}
                                 className="size-11 shrink-0 rounded-full object-cover"
                               />
                             ) : (
-                              <div className="size-11 shrink-0 rounded-full bg-muted" />
+                              <div className="size-11 shrink-0 rounded-full bg-muted dark:bg-white/10" />
                             )}
 
                             <div className="min-w-0">
@@ -3425,7 +3423,7 @@ const handleConfirmCoverUpload =
                               </p>
 
                               {starClubId && (
-                                <p className="mt-0.5 truncate text-[11px] text-neutral-500">
+                                <p className="mt-0.5 truncate text-[11px] text-neutral-500 dark:text-white/45">
                                   @{starClubId}
                                 </p>
                               )}
@@ -3445,7 +3443,7 @@ const handleConfirmCoverUpload =
                                   followUser.id,
                                 )
                               }}
-                                className="shrink-0 rounded-full border border-neutral-200 bg-white px-3.5 py-2 text-xs font-medium text-neutral-700 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="shrink-0 rounded-full border border-neutral-200 bg-white px-3.5 py-2 text-xs font-medium text-neutral-700 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/6 dark:text-[#eee9e3] dark:hover:border-red-400/30 dark:hover:bg-red-500/10 dark:hover:text-red-300"
                             >
                               {unfollowingUserId ===
                               followUser.id

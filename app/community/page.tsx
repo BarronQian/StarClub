@@ -1898,7 +1898,6 @@ useEffect(() => {
   }, [
     stickerOpen,
     stickersLoaded,
-    stickersLoading,
   ])
 
   useEffect(() => {
