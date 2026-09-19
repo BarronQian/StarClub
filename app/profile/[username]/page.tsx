@@ -758,11 +758,11 @@ const stats = [
     'StarClub 用户'
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] pb-24">
+    <main className="min-h-screen bg-[#f7f7f5] pb-24 transition-colors dark:bg-[#2b2825]">
       <div className="site-container pt-20 lg:pt-24">
 
         {/* Profile hero */}
-        <section className="overflow-hidden rounded-3xl border border-border bg-white shadow-[0_10px_35px_rgba(0,0,0,0.05)]">
+        <section className="overflow-hidden rounded-3xl border border-border bg-white dark:bg-[#37332f] shadow-[0_10px_35px_rgba(0,0,0,0.05)]">
 
           {/* Banner */}
           <div className="relative h-44 overflow-hidden bg-[#ece8e1] lg:h-56">
@@ -919,7 +919,7 @@ const stats = [
         </section>
 
         {/* Stats */}
-        <section className="mt-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-white shadow-[0_8px_24px_rgba(0,0,0,0.03)] sm:grid-cols-3 lg:grid-cols-6">
+        <section className="mt-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-white dark:bg-[#37332f] shadow-[0_8px_24px_rgba(0,0,0,0.03)] sm:grid-cols-3 lg:grid-cols-6">
           {stats.map((stat) => {
             const Icon = stat.icon
 

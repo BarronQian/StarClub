@@ -237,6 +237,7 @@ export async function GET(
         .select(`
           id,
           content,
+          sticker_id,
           created_at,
           updated_at,
           author_id,
@@ -347,6 +348,80 @@ export async function GET(
             POSTS_PAGE_SIZE,
           )
         : rows
+
+    const stickerIds =
+      Array.from(
+        new Set(
+          pageRows
+            .map(
+              (post) =>
+                post.sticker_id,
+            )
+            .filter(
+              (
+                id,
+              ): id is string =>
+                typeof id ===
+                  'string' &&
+                id.length > 0,
+            ),
+        ),
+      )
+
+    const stickerMap =
+      new Map<
+        string,
+        {
+          id: string
+          name: string
+          optimized_url: string
+          optimized_width:
+            number | null
+          optimized_height:
+            number | null
+        }
+      >()
+
+    if (
+      stickerIds.length > 0
+    ) {
+      const {
+        data: stickers,
+        error:
+          stickersError,
+      } = await supabase
+        .from(
+          'community_stickers',
+        )
+        .select(`
+          id,
+          name,
+          optimized_url,
+          optimized_width,
+          optimized_height
+        `)
+        .in(
+          'id',
+          stickerIds,
+        )
+
+      if (stickersError) {
+        console.error(
+          'Failed to load post stickers:',
+          stickersError,
+        )
+      } else {
+        for (
+          const sticker of
+            stickers ?? []
+        ) {
+          stickerMap.set(
+            sticker.id,
+            sticker,
+          )
+        }
+      }
+    }
 
     const postIds =
       pageRows.map(
@@ -506,6 +581,13 @@ export async function GET(
       pageRows.map(
         (post) => ({
           ...post,
+
+          sticker:
+            post.sticker_id
+              ? stickerMap.get(
+                  post.sticker_id,
+                ) ?? null
+              : null,
 
           like_count:
             likeCounts.get(
@@ -770,6 +852,13 @@ export async function POST(
         ? body.content.trim()
         : ''
 
+    const stickerId =
+      typeof body.stickerId ===
+        'string' &&
+      body.stickerId.trim()
+        ? body.stickerId.trim()
+        : null
+
     if (!content) {
       return NextResponse.json(
         {
@@ -796,6 +885,60 @@ export async function POST(
       )
     }
 
+    if (stickerId) {
+      const {
+        data: sticker,
+        error:
+          stickerError,
+      } = await supabase
+        .from(
+          'community_stickers',
+        )
+        .select(
+          'id, is_active',
+        )
+        .eq(
+          'id',
+          stickerId,
+        )
+        .maybeSingle()
+
+      if (
+        stickerError
+      ) {
+        console.error(
+          'Failed to validate sticker:',
+          stickerError,
+        )
+
+        return NextResponse.json(
+          {
+            error:
+              '验证梗图失败',
+          },
+          {
+            status: 500,
+          },
+        )
+      }
+
+      if (
+        !sticker ||
+        sticker.is_active !==
+          true
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              '该梗图不存在或已下架',
+          },
+          {
+            status: 400,
+          },
+        )
+      }
+    }
+
     const {
       data: post,
       error:
@@ -810,12 +953,16 @@ export async function POST(
 
         content,
 
+        sticker_id:
+          stickerId,
+
         visibility:
           'public',
       })
       .select(`
         id,
         content,
+        sticker_id,
         created_at,
         updated_at
       `)

@@ -124,11 +124,12 @@ export default function RootLayout({
   }>) {
 
   return (
-    <html
-      lang="zh-CN"
-      suppressHydrationWarning
-      className={`bg-background ${orbitron.variable} ${notoSansSC.variable}`}
-    >
+        <html
+          lang="zh-CN"
+          suppressHydrationWarning
+          data-scroll-behavior="smooth"
+          className={`bg-background ${orbitron.variable} ${notoSansSC.variable}`}
+        >
       <head>
         <script
           suppressHydrationWarning
