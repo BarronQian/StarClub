@@ -2211,11 +2211,11 @@ const handleConfirmCoverUpload =
     }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] pb-24">
+    <main className="min-h-screen bg-[#f7f7f5] pb-24 dark:bg-background">
       <div className="site-container pt-20 lg:pt-24">
 
         {/* Profile hero */}
-        <section className="overflow-hidden rounded-3xl border border-border bg-white shadow-[0_10px_35px_rgba(0,0,0,0.05)]">
+        <section className="overflow-hidden rounded-3xl border border-border bg-white shadow-[0_10px_35px_rgba(0,0,0,0.05)] dark:bg-card dark:shadow-[0_10px_35px_rgba(0,0,0,0.18)]">
 
           {/* Banner */}
           <div className="relative h-44 overflow-hidden bg-[#ece8e1] lg:h-56">
@@ -2272,7 +2272,7 @@ const handleConfirmCoverUpload =
 
               {/* Avatar */}
               <div className="-mt-14 shrink-0 lg:-mt-16">
-                <div className="relative size-28 overflow-hidden rounded-3xl border-[5px] border-white bg-muted shadow-lg lg:size-32">
+                <div className="relative size-28 overflow-hidden rounded-3xl border-[5px] border-white bg-muted shadow-lg dark:border-card lg:size-32">
                   <Image
                     src={avatar}
                     alt={`${username} 头像`}
@@ -2311,7 +2311,7 @@ const handleConfirmCoverUpload =
                   {/* Edit profile */}
                   <Link
                     href="/profile/settings"
-                    className="mt-0.5 hidden shrink-0 items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-xs font-medium text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all hover:border-black/15 hover:bg-neutral-50 lg:inline-flex"
+                    className="mt-0.5 hidden shrink-0 items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-xs font-medium text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all hover:border-black/15 hover:bg-neutral-50 dark:bg-card dark:hover:border-white/15 dark:hover:bg-muted lg:inline-flex"
                   >
                     <Pencil
                       className="size-3.5"
@@ -2324,7 +2324,7 @@ const handleConfirmCoverUpload =
                 {/* Mobile edit */}
                 <Link
                   href="/profile/settings"
-                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-xs font-medium text-foreground lg:hidden"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-xs font-medium text-foreground dark:bg-card dark:hover:bg-muted lg:hidden"
                 >
                   <Pencil className="size-3.5" />
                   编辑个人资料
@@ -2387,7 +2387,7 @@ const handleConfirmCoverUpload =
         </section>
 
         {/* Stats */}
-        <section className="mt-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-white shadow-[0_8px_24px_rgba(0,0,0,0.03)] sm:grid-cols-3 lg:grid-cols-6">
+        <section className="mt-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-white shadow-[0_8px_24px_rgba(0,0,0,0.03)] dark:bg-card dark:shadow-[0_8px_24px_rgba(0,0,0,0.16)] sm:grid-cols-3 lg:grid-cols-6">
           {stats.map((stat) => {
             const Icon = stat.icon
 
@@ -2454,7 +2454,7 @@ const handleConfirmCoverUpload =
           {/* Main column */}
           <div className="flex flex-col gap-6">
 
-            <section className="overflow-hidden rounded-2xl border border-border bg-white">
+            <section className="overflow-hidden rounded-2xl border border-border bg-white dark:bg-card">
               <div className="flex items-center border-b border-border px-6">
                 <div className="border-b-2 border-primary py-5 text-sm text-foreground">
                   动态
@@ -2560,7 +2560,7 @@ const handleConfirmCoverUpload =
           {/* Right column */}
           <aside className="flex flex-col gap-5">
 
-            <section className="rounded-2xl border border-border bg-white p-5">
+            <section className="rounded-2xl border border-border bg-white p-5 dark:bg-card">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-medium">
                   酒馆身份
@@ -2624,7 +2624,7 @@ const handleConfirmCoverUpload =
               )}
             </section>
 
-            <section className="rounded-2xl border border-border bg-white p-5">
+            <section className="rounded-2xl border border-border bg-white p-5 dark:bg-card">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-medium">
                   最近访客
@@ -2757,7 +2757,7 @@ const handleConfirmCoverUpload =
       {/* RSI verification modal */}
       {rsiBinding && (
         <div className="fixed inset-0 z-130 flex items-center justify-center bg-black/25 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-3xl border border-border bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-lg rounded-3xl border border-neutral-200 bg-white p-6 text-neutral-950 shadow-2xl">
 
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -2807,7 +2807,7 @@ const handleConfirmCoverUpload =
                     }
                     placeholder="例如 GuMieHaoRen"
                     autoComplete="off"
-                    className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary"
+                    className="mt-2 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-950 outline-none transition-colors placeholder:text-neutral-400 focus:border-primary"
                   />
                 </label>
 
@@ -2984,7 +2984,7 @@ const handleConfirmCoverUpload =
               onMouseDown={(event) => {
                 event.stopPropagation()
               }}
-              className="w-full max-w-md rounded-3xl border border-black/5 bg-white p-6 shadow-2xl"
+              className="w-full max-w-md rounded-3xl border border-black/5 bg-white p-6 text-neutral-950 shadow-2xl"
             >
               {canChangeCover ? (
                 <>
@@ -2996,12 +2996,12 @@ const handleConfirmCoverUpload =
                     每 7 天仅可更换一次封面。上传成功后将开始计算新的 7 天更换周期。
                   </p>
 
-                  <div className="mt-5 rounded-2xl bg-[#f7f7f5] p-4">
+                  <div className="mt-5 rounded-2xl bg-[#f7f7f5] p-4 text-neutral-950">
                     <p className="text-xs font-semibold text-foreground">
                       图片要求
                     </p>
 
-                    <div className="mt-3 space-y-2 text-xs leading-5 text-muted-foreground">
+                    <div className="mt-3 space-y-2 text-xs leading-5 text-neutral-500">
                       <p>
                         • 支持 JPG、JPEG、PNG
                       </p>
@@ -3294,7 +3294,7 @@ const handleConfirmCoverUpload =
             }
           }}
         >
-          <div className="flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-black/10 bg-white shadow-2xl">
+          <div className="flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-black/10 bg-white text-neutral-950 shadow-2xl">
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-5">
               <div>
@@ -3305,7 +3305,7 @@ const handleConfirmCoverUpload =
                     : '我的粉丝'}
                 </h2>
 
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-xs text-neutral-500">
                   {followListType ===
                   'following'
                     ? `${followingCount} 位酒友`
@@ -3318,8 +3318,7 @@ const handleConfirmCoverUpload =
                 onClick={() =>
                   setFollowListType(null)
                 }
-                className="flex size-9 items-center justify-center rounded-full text-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="关闭"
+                  className="flex size-9 items-center justify-center rounded-full text-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-950"
               >
                 ×
               </button>
@@ -3329,7 +3328,7 @@ const handleConfirmCoverUpload =
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               {followListLoading ? (
                 <div className="flex min-h-52 items-center justify-center px-6 py-12">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-neutral-500">
                     正在加载...
                   </p>
                 </div>
@@ -3344,7 +3343,7 @@ const handleConfirmCoverUpload =
                 <div className="flex min-h-52 items-center justify-center px-6 py-12">
                   <div className="text-center">
                     <Users
-                      className="mx-auto size-6 text-muted-foreground/50"
+                      className="mx-auto size-6 text-neutral-500/50"
                       strokeWidth={1.5}
                     />
 
@@ -3355,7 +3354,7 @@ const handleConfirmCoverUpload =
                         : '还没有粉丝'}
                     </p>
 
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-neutral-500">
                       {followListType ===
                       'following'
                         ? '去社区认识更多酒友吧。'
@@ -3426,7 +3425,7 @@ const handleConfirmCoverUpload =
                               </p>
 
                               {starClubId && (
-                                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                                <p className="mt-0.5 truncate text-[11px] text-neutral-500">
                                   @{starClubId}
                                 </p>
                               )}
@@ -3446,7 +3445,7 @@ const handleConfirmCoverUpload =
                                   followUser.id,
                                 )
                               }}
-                              className="shrink-0 rounded-full border border-border bg-white px-3.5 py-2 text-xs font-medium transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="shrink-0 rounded-full border border-neutral-200 bg-white px-3.5 py-2 text-xs font-medium text-neutral-700 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {unfollowingUserId ===
                               followUser.id

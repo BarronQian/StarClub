@@ -195,7 +195,7 @@ export function HeaderUserAuth() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group flex items-center gap-2.5 rounded-full border border-[#d7b47a]/60 bg-white px-2 py-1.5 transition-all hover:border-[#b87300] hover:shadow-sm"
+        className="group flex items-center gap-2.5 rounded-full border border-[#d7b47a]/60 bg-white px-2 py-1.5 transition-all hover:border-[#b87300] hover:shadow-sm dark:border-white/12 dark:bg-[#37332f] dark:hover:border-[#d79a3b]/70 dark:hover:bg-[#3d3934]"
       >
         <div className="relative size-8 overflow-hidden rounded-full border border-border bg-muted">
           <Image
@@ -228,14 +228,14 @@ export function HeaderUserAuth() {
 
       {/* 右侧账户栏 */}
       <aside
-        className={`fixed right-0 top-0 z-100 flex h-dvh w-90 max-w-[92vw] flex-col overscroll-contain border-l border-black/10 bg-[#faf9f7] shadow-xl transition-transform duration-200 ease-out will-change-transform ${
+        className={`fixed right-0 top-0 z-100 flex h-dvh w-90 max-w-[92vw] flex-col overscroll-contain border-l border-black/10 bg-[#faf9f7] text-foreground shadow-xl transition-transform duration-200 ease-out will-change-transform dark:border-white/10 dark:bg-[#302d29] ${
           open
             ? 'translate-x-0'
             : 'translate-x-full'
         }`}
       >
         {/* 顶部 */}
-        <div className="flex items-center justify-between border-b border-black/10 px-6 py-5">
+        <div className="flex items-center justify-between border-b border-black/10 px-6 py-5 dark:border-white/10">
           <div>
             <p className="text-[10px] tracking-[0.25em] text-[#a66a12]">
               STARCLUB ACCOUNT
@@ -249,7 +249,7 @@ export function HeaderUserAuth() {
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="flex size-9 items-center justify-center rounded-full transition-colors hover:bg-black/5"
+            className="flex size-9 items-center justify-center rounded-full transition-colors hover:bg-black/5 dark:hover:bg-white/8"
             aria-label="关闭账户栏"
           >
             <X className="size-4" />
@@ -259,7 +259,7 @@ export function HeaderUserAuth() {
         {/* 用户资料 */}
         <div className="px-6 py-7">
           <div className="flex items-center gap-4">
-            <div className="relative size-16 shrink-0 overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm">
+            <div className="relative size-16 shrink-0 overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm dark:border-white/10 dark:bg-[#37332f]">
               <Image
                 src={avatar}
                 alt={`${username} 头像`}
@@ -284,7 +284,7 @@ export function HeaderUserAuth() {
 
         {/* 菜单 */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-3">
-          <div className="border-t border-black/10 py-3">
+          <div className="border-t border-black/10 py-3 dark:border-white/10">
             {menuItems.map((item) => {
               const Icon = item.icon
 
@@ -295,7 +295,7 @@ export function HeaderUserAuth() {
                   onClick={() => setOpen(false)}
                   className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors hover:bg-[#b87300]/[0.07]"
                 >
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-black/[0.035]">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-black/[0.035] dark:bg-white/6">
                     <Icon className="size-4 text-[#8d5a10]" />
                   </div>
 
@@ -309,13 +309,13 @@ export function HeaderUserAuth() {
             })}
           </div>
 
-          <div className="border-t border-black/10 py-3">
+          <div className="border-t border-black/10 py-3 dark:border-white/10">
             <Link
               href="/profile/settings"
               onClick={() => setOpen(false)}
               className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors hover:bg-[#b87300]/[0.07]"
             >
-              <div className="flex size-9 items-center justify-center rounded-lg bg-black/[0.035]">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-black/[0.035] dark:bg-white/6">
                 <Settings className="size-4 text-[#8d5a10]" />
               </div>
 
@@ -343,7 +343,7 @@ export function HeaderUserAuth() {
         </div>
 
         {/* 底部 */}
-        <div className="border-t border-black/10 px-6 py-5">
+        <div className="border-t border-black/10 px-6 py-5 dark:border-white/10">
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
             <span className="size-1.5 rounded-full bg-green-500" />
             Discord Authentication
