@@ -169,13 +169,13 @@ export function SponsorGiftWall({
     gifts.length === 0
   ) {
     return (
-      <div className="flex min-h-140 items-center justify-center border-y border-[#e8e2d8]">
+      <div className="flex min-h-140 items-center justify-center border-y border-[#e8e2d8] transition-colors dark:border-white/8 dark:bg-[#2f2b27]">
         <div className="text-center">
           <span className="font-display text-[0.62rem] tracking-[0.3em] text-[#a66716]">
             COMMUNITY SUPPORT STREAM
           </span>
 
-          <p className="mt-4 text-sm text-[#91897d]">
+          <p className="mt-4 text-sm text-[#91897d] dark:text-[#aaa39b]">
             暂无社区赞助记录
           </p>
         </div>
@@ -230,7 +230,7 @@ export function SponsorGiftWall({
   }
 
   return (
-    <div className="relative overflow-hidden border-y border-[#eeeae4] bg-white">
+    <div className="relative overflow-hidden border-y border-[#eeeae4] bg-white transition-colors dark:border-white/8 dark:bg-[#302d29]">
       <style jsx>{`
         @keyframes sponsor-danmaku {
           from {
@@ -256,13 +256,13 @@ export function SponsorGiftWall({
       {/* 左侧淡出 */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 left-0 z-40 w-24 bg-linear-to-r from-white to-transparent sm:w-44"
+        className="pointer-events-none absolute inset-y-0 left-0 z-40 w-24 bg-linear-to-r from-white to-transparent dark:from-[#302d29] sm:w-44"
       />
 
       {/* 右侧淡出 */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 right-0 z-40 w-24 bg-linear-to-l from-white to-transparent sm:w-44"
+        className="pointer-events-none absolute inset-y-0 right-0 z-40 w-24 bg-linear-to-l from-white to-transparent dark:from-[#302d29] sm:w-44"
       />
 
       <div className="relative h-[85vh] min-h-190 lg:h-[calc(100vh-72px)] lg:min-h-220">
@@ -468,12 +468,12 @@ export function SponsorGiftWall({
             COMMUNITY SUPPORT STREAM
           </span>
 
-          <p className="mt-1 text-[0.65rem] tracking-[0.08em] text-[#9a9185]">
+          <p className="mt-1 text-[0.65rem] tracking-[0.08em] text-[#9a9185] dark:text-[#aaa39b]">
             社区赞助记录
           </p>
         </div>
 
-        <span className="hidden text-[0.58rem] tracking-[0.18em] text-[#b1a89b] sm:block">
+        <span className="hidden text-[0.58rem] tracking-[0.18em] text-[#b1a89b] dark:text-[#8f8982] sm:block">
           DIRECT COMMUNITY GIFTS
         </span>
       </div>

@@ -38,6 +38,16 @@ type CommunityPost = {
   like_count: number
   comment_count: number
   liked_by_me: boolean
+
+  sticker_id?: string | null
+
+  sticker?: {
+    id: string
+    name: string
+    optimized_url: string
+    optimized_width: number | null
+    optimized_height: number | null
+  } | null
 }
 
 function getPostAuthor(
@@ -256,11 +266,27 @@ export function CommunityPostCard({
 
           </div>
 
-          <p className="mt-4 whitespace-pre-wrap wrap-break-word text-[15px] leading-7 text-neutral-800 dark:text-[#e5e1dc]">
-            {post.content}
-          </p>
+            <p className="mt-4 whitespace-pre-wrap wrap-break-word text-[15px] leading-7 text-neutral-800 dark:text-[#e5e1dc]">
+              {post.content}
+            </p>
 
-          <div className="mt-5 flex items-center gap-6 border-t border-border pt-4 dark:border-white/8">
+            {post.sticker && (
+              <div className="mt-3">
+                <img
+                  src={
+                    post.sticker
+                      .optimized_url
+                  }
+                  alt={
+                    post.sticker.name
+                  }
+                  loading="lazy"
+                  className="h-auto max-w-[min(280px,75vw)] rounded-xl object-contain sm:max-w-[320px]"
+                />
+              </div>
+            )}
+
+            <div className="mt-5 flex items-center gap-6 border-t border-border pt-4 dark:border-white/8">
 
             <button
               type="button"

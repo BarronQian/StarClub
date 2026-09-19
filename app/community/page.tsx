@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -19,6 +20,7 @@ import {
   FileText,
   CheckCheck,
   ArrowUp,
+  Loader2,
 } from 'lucide-react'
 
 import {
@@ -57,16 +59,36 @@ type PostAuthor = {
   profile_slug: string | null
 }
 
+type CommunitySticker = {
+  id: string
+  name: string
+  optimized_url: string
+  optimized_width: number | null
+  optimized_height: number | null
+}
+
 type CommunityPost = {
   id: string
   content: string
+  sticker_id?: string | null
+
+  sticker?: {
+    id: string
+    name: string
+    optimized_url: string
+    optimized_width: number | null
+    optimized_height: number | null
+  } | null
+
   created_at: string
   updated_at: string
   author_id: string
+
   profiles:
     | PostAuthor
     | PostAuthor[]
     | null
+
   like_count: number
   comment_count: number
   liked_by_me: boolean
@@ -331,6 +353,31 @@ export default function CommunityPage() {
   setEmojiOpen,
 ] = useState(false)
 
+  const [
+    stickerOpen,
+    setStickerOpen,
+  ] = useState(false)
+
+  const [
+    communityStickers,
+    setCommunityStickers,
+  ] = useState<CommunitySticker[]>([])
+
+  const [
+    stickersLoading,
+    setStickersLoading,
+  ] = useState(false)
+
+  const [
+    stickersLoaded,
+    setStickersLoaded,
+  ] = useState(false)
+
+  const [
+    selectedStickerId,
+    setSelectedStickerId,
+  ] = useState<string | null>(null)
+
 const feedScrollRef =
   useRef<HTMLDivElement>(null)
 
@@ -347,6 +394,25 @@ const textareaRef =
 const emojiPickerRef =
   useRef<HTMLDivElement>(
     null,
+  )
+
+const stickerPickerRef =
+  useRef<HTMLDivElement>(
+    null,
+  )
+
+const selectedSticker =
+  useMemo(
+    () =>
+      communityStickers.find(
+        (sticker) =>
+          sticker.id ===
+          selectedStickerId,
+      ) ?? null,
+    [
+      communityStickers,
+      selectedStickerId,
+    ],
   )
 
   const [
@@ -1727,6 +1793,115 @@ useEffect(() => {
 }, [emojiOpen])
 
   useEffect(() => {
+    if (!stickerOpen) {
+      return
+    }
+
+    const handlePointerDown = (
+      event: MouseEvent,
+    ) => {
+      const target =
+        event.target as Node
+
+      if (
+        stickerPickerRef.current &&
+        !stickerPickerRef.current.contains(
+          target,
+        )
+      ) {
+        setStickerOpen(false)
+      }
+    }
+
+    document.addEventListener(
+      'mousedown',
+      handlePointerDown,
+    )
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handlePointerDown,
+      )
+    }
+  }, [stickerOpen])
+
+  useEffect(() => {
+    if (
+      !stickerOpen ||
+      stickersLoaded ||
+      stickersLoading
+    ) {
+      return
+    }
+
+    let cancelled = false
+
+    const loadStickers =
+      async () => {
+        setStickersLoading(true)
+
+        try {
+          const response =
+            await fetch(
+              '/api/community/stickers',
+              {
+                cache: 'no-store',
+              },
+            )
+
+          const data =
+            await response.json()
+
+          if (
+            !response.ok ||
+            !data.ok
+          ) {
+            throw new Error(
+              data.error ||
+                '读取表情包失败',
+            )
+          }
+
+          if (!cancelled) {
+            setCommunityStickers(
+              Array.isArray(
+                data.stickers,
+              )
+                ? data.stickers
+                : [],
+            )
+
+            setStickersLoaded(true)
+          }
+        } catch (error) {
+          console.error(
+            'Failed to load community stickers:',
+            error,
+          )
+
+          if (!cancelled) {
+            setCommunityStickers([])
+          }
+        } finally {
+          if (!cancelled) {
+            setStickersLoading(false)
+          }
+        }
+      }
+
+    void loadStickers()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    stickerOpen,
+    stickersLoaded,
+    stickersLoading,
+  ])
+
+  useEffect(() => {
     if (
       feedMode ===
       'comments'
@@ -1999,13 +2174,16 @@ useEffect(() => {
                   `Bearer ${session.access_token}`,
               },
 
-              body:
-                JSON.stringify(
-                  {
-                    content:
-                      trimmed,
-                  },
-                ),
+            body:
+              JSON.stringify(
+                {
+                  content:
+                    trimmed,
+
+                  stickerId:
+                    selectedStickerId,
+                },
+              ),
             },
           )
 
@@ -2023,10 +2201,12 @@ useEffect(() => {
           return
         }
 
-        setContent('')
-        setEmojiOpen(false)
+          setContent('')
+          setEmojiOpen(false)
+          setStickerOpen(false)
+          setSelectedStickerId(null)
 
-        await loadPosts(
+          await loadPosts(
           null,
           false,
           feedMode,
@@ -2859,6 +3039,36 @@ const pageDescription =
                         className="w-full resize-none border-none bg-transparent p-0 text-sm leading-7 outline-none placeholder:text-muted-foreground"
                       />
 
+                      {selectedSticker && (
+                        <div className="mt-3">
+                          <div className="relative inline-block max-w-[320px]">
+                            <img
+                              src={
+                                selectedSticker.optimized_url
+                              }
+                              alt={
+                                selectedSticker.name
+                              }
+                              className="max-h-65 max-w-full rounded-xl object-contain"
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedStickerId(
+                                  null,
+                                )
+                              }
+                              aria-label="移除梗图"
+                              title="移除梗图"
+                              className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full border border-border bg-background text-sm text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {error && (
                         <p className="mt-3 text-xs text-red-600">
                           {error}
@@ -2971,6 +3181,116 @@ const pageDescription =
     )}
   </div>
 
+  <div
+    ref={stickerPickerRef}
+    className="relative"
+  >
+    <button
+      type="button"
+      onClick={() => {
+        setStickerOpen(
+          (current) =>
+            !current,
+        )
+
+        setEmojiOpen(false)
+      }}
+      aria-label="添加星际公民梗图"
+      title="添加星际公民梗图"
+      className={[
+        'inline-flex size-9 items-center justify-center rounded-full transition-colors',
+        stickerOpen ||
+        selectedStickerId
+          ? 'bg-muted'
+          : 'hover:bg-muted',
+      ].join(' ')}
+    >
+      <img
+        src="/images/star-citizen-logo.png"
+        alt=""
+        className="h-5.5 w-5.5 object-contain"
+      />
+    </button>
+
+    {stickerOpen && (
+      <div className="absolute bottom-11 left-0 z-50 w-[320px] overflow-hidden rounded-xl border border-border bg-popover shadow-xl sm:w-90">
+        <div className="border-b border-border px-4 py-3">
+          <p className="text-sm font-medium text-foreground">
+            星际公民梗图
+          </p>
+
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            选择一张梗图添加到动态
+          </p>
+        </div>
+
+        <div className="max-h-90 overflow-y-auto p-3">
+          {stickersLoading ? (
+            <div className="flex min-h-32 items-center justify-center">
+              <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : communityStickers.length ===
+            0 ? (
+            <div className="flex min-h-32 flex-col items-center justify-center px-4 text-center">
+              <p className="text-sm text-foreground">
+                暂无可用梗图
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                管理员上传并上架后会显示在这里。
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {communityStickers.map(
+                (sticker) => {
+                  const selected =
+                    selectedStickerId ===
+                    sticker.id
+
+                  return (
+                    <button
+                      key={sticker.id}
+                      type="button"
+                      title={
+                        sticker.name
+                      }
+                      onClick={() => {
+                        setSelectedStickerId(
+                          sticker.id,
+                        )
+
+                        setStickerOpen(
+                          false,
+                        )
+                      }}
+                      className={[
+                        'group relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border bg-muted/30 p-1.5 transition',
+                        selected
+                          ? 'border-primary ring-2 ring-primary/20'
+                          : 'border-border hover:border-foreground/30 hover:bg-muted',
+                      ].join(' ')}
+                    >
+                      <img
+                        src={
+                          sticker.optimized_url
+                        }
+                        alt={
+                          sticker.name
+                        }
+                        loading="lazy"
+                        className="max-h-full max-w-full object-contain transition-transform group-hover:scale-[1.03]"
+                      />
+                    </button>
+                  )
+                },
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
 
   <span className="text-xs text-muted-foreground">
     {content.length}/1000
