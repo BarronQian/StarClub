@@ -9,6 +9,7 @@ type AdminSection =
   | 'gallery'
   | 'news'
   | 'community'
+  | 'community-stickers'
   | 'users'
   | 'market'
   | 'events'
@@ -94,6 +95,20 @@ export function AdminHeader({
           }
         >
           社区管理
+        </Button>
+        
+        <Button
+          variant={
+            active === 'community-stickers'
+              ? 'default'
+              : 'outline'
+          }
+          size="sm"
+          onClick={() =>
+            go('/admin/community-stickers')
+          }
+        >
+          社区表情包
         </Button>
 
         <Button
