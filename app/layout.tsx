@@ -6,6 +6,7 @@ import './globals.css'
 import { PageNavigation } from '@/components/page-navigation'
 import { SiteHeader } from '@/components/site-header'
 import { ThemePullSwitch } from '@/components/theme-pull-switch'
+import { AiAssistant } from '@/components/ai-assistant/ai-assistant'
 
 const orbitron = Orbitron({
   subsets: ['latin'],
@@ -144,6 +145,7 @@ export default function RootLayout({
         <ThemePullSwitch />
         {children}
         <PageNavigation />
+        <AiAssistant />
         <Toaster />
         {process.env.NODE_ENV ===
           'production' && <Analytics />}
