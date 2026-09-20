@@ -24,6 +24,14 @@ type ChatMessage = {
 
 const MAX_MESSAGE_LENGTH = 300
 
+const CHAT_STORAGE_PREFIX =
+  'starclub-ai-chat'
+
+const CHAT_STORAGE_TTL =
+  7 * 24 * 60 * 60 * 1000
+
+const MAX_STORED_MESSAGES = 20
+
 export function AiAssistant() {
   const [open, setOpen] =
     useState(false)
@@ -35,6 +43,13 @@ export function AiAssistant() {
     loggedIn,
     setLoggedIn,
   ] = useState<boolean | null>(
+    null,
+  )
+
+  const [
+    userId,
+    setUserId,
+  ] = useState<string | null>(
     null,
   )
 
@@ -58,6 +73,11 @@ export function AiAssistant() {
       null,
     )
 
+  const loadedUserRef =
+  useRef<string | null>(
+    null,
+  )
+
   useEffect(() => {
     const supabase =
       getSupabaseBrowser()
@@ -72,6 +92,9 @@ export function AiAssistant() {
         setLoggedIn(
           Boolean(session?.user),
         )
+        setUserId(
+          session?.user?.id ?? null,
+        )
       }
 
     void checkSession()
@@ -84,6 +107,9 @@ export function AiAssistant() {
           setLoggedIn(
             Boolean(session?.user),
           )
+          setUserId(
+            session?.user?.id ?? null,
+          )
         },
       )
 
@@ -91,6 +117,140 @@ export function AiAssistant() {
       authListener.subscription.unsubscribe()
     }
   }, [])
+
+  useEffect(() => {
+  if (!userId) {
+    setMessages([])
+    loadedUserRef.current =
+      null
+
+    return
+  }
+
+  if (
+    loadedUserRef.current ===
+    userId
+  ) {
+    return
+  }
+
+  loadedUserRef.current =
+    userId
+
+  try {
+    const key =
+      `${CHAT_STORAGE_PREFIX}:${userId}`
+
+    const raw =
+      window.localStorage.getItem(
+        key,
+      )
+
+    if (!raw) {
+      setMessages([])
+      return
+    }
+
+    const parsed =
+      JSON.parse(raw) as {
+        savedAt?: number
+        messages?: ChatMessage[]
+      }
+
+    if (
+      !parsed.savedAt ||
+      Date.now() -
+        parsed.savedAt >
+        CHAT_STORAGE_TTL
+    ) {
+      window.localStorage.removeItem(
+        key,
+      )
+
+      setMessages([])
+      return
+    }
+
+    const storedMessages =
+      Array.isArray(
+        parsed.messages,
+      )
+        ? parsed.messages
+            .filter(
+              (message) =>
+                message &&
+                (
+                  message.role ===
+                    'user' ||
+                  message.role ===
+                    'assistant'
+                ) &&
+                typeof message.content ===
+                  'string',
+            )
+            .slice(
+              -MAX_STORED_MESSAGES,
+            )
+        : []
+
+    setMessages(
+      storedMessages,
+    )
+  } catch (error) {
+    console.error(
+      'Failed to load AI chat history:',
+      error,
+    )
+
+    setMessages([])
+  }
+}, [userId])
+
+  useEffect(() => {
+  if (
+    !userId ||
+    loadedUserRef.current !==
+      userId
+  ) {
+    return
+  }
+
+  try {
+    const key =
+      `${CHAT_STORAGE_PREFIX}:${userId}`
+
+    if (
+      messages.length === 0
+    ) {
+      window.localStorage.removeItem(
+        key,
+      )
+
+      return
+    }
+
+    window.localStorage.setItem(
+      key,
+      JSON.stringify({
+        savedAt:
+          Date.now(),
+
+        messages:
+          messages.slice(
+            -MAX_STORED_MESSAGES,
+          ),
+      }),
+    )
+  } catch (error) {
+    console.error(
+      'Failed to save AI chat history:',
+      error,
+    )
+  }
+}, [
+  messages,
+  userId,
+])
 
   useEffect(() => {
     if (!open) {
@@ -201,6 +361,19 @@ export function AiAssistant() {
                 JSON.stringify({
                   message:
                     content,
+
+                  history:
+                    messages
+                      .slice(-6)
+                      .map(
+                        (message) => ({
+                          role:
+                            message.role,
+
+                          content:
+                            message.content,
+                        }),
+                      ),
                 }),
             },
           )
