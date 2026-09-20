@@ -4,7 +4,7 @@ import {
 } from 'next/server'
 
 import {
-  getAdminSession,
+  requireAdminApi,
 } from '@/lib/admin-auth'
 
 import {
@@ -43,20 +43,12 @@ export async function PATCH(
   context: RouteContext,
 ) {
   try {
-    const session =
-      await getAdminSession()
+      const auth =
+        await requireAdminApi()
 
-    if (!session) {
-      return NextResponse.json(
-        {
-          error:
-            '管理员登录状态已失效',
-        },
-        {
-          status: 401,
-        },
-      )
-    }
+      if (auth.response) {
+        return auth.response
+      }
 
     const {
       id,
@@ -379,20 +371,12 @@ export async function DELETE(
   context: RouteContext,
 ) {
   try {
-    const session =
-      await getAdminSession()
+      const auth =
+        await requireAdminApi()
 
-    if (!session) {
-      return NextResponse.json(
-        {
-          error:
-            '管理员登录状态已失效',
-        },
-        {
-          status: 401,
-        },
-      )
-    }
+      if (auth.response) {
+        return auth.response
+      }
 
     const {
       id,
