@@ -129,6 +129,53 @@ export async function POST(
             .filter(Boolean)
             .slice(0, 50)
         : []
+    
+    if (
+  url.length > 500
+) {
+  return NextResponse.json(
+    {
+      error:
+        '相关页面 URL 不能超过 500 个字符',
+    },
+    {
+      status: 400,
+    },
+  )
+}
+
+if (
+  sortOrder < -10000 ||
+  sortOrder > 10000
+) {
+  return NextResponse.json(
+    {
+      error:
+        '优先级必须在 -10000 到 10000 之间',
+    },
+    {
+      status: 400,
+    },
+  )
+}
+
+const cleanKeywords =
+  Array.from(
+    new Set(
+      keywords
+        .map(
+          (item) =>
+            item.slice(
+              0,
+              60,
+            ),
+        )
+        .filter(Boolean),
+    ),
+  ).slice(
+    0,
+    50,
+  )
 
     if (!title) {
       return NextResponse.json(
@@ -222,7 +269,8 @@ export async function POST(
             url ||
             null,
 
-          keywords,
+          keywords:
+            cleanKeywords,
 
           sort_order:
             sortOrder,
