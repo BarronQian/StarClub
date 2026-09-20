@@ -201,6 +201,19 @@ export function AiAssistant() {
                 JSON.stringify({
                   message:
                     content,
+
+                  history:
+                    messages
+                      .slice(-6)
+                      .map(
+                        (message) => ({
+                          role:
+                            message.role,
+
+                          content:
+                            message.content,
+                        }),
+                      ),
                 }),
             },
           )
