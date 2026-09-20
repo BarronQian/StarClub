@@ -18,6 +18,10 @@ import {
   AdminHeader,
 } from '@/components/admin/admin-header'
 
+import {
+  AIKnowledgeAdmin,
+} from '@/components/admin/ai-knowledge-admin'
+
 export const metadata: Metadata = {
   title:
     'AI 知识库 | 星际酒馆 StarClub',
@@ -146,71 +150,12 @@ export default async function AdminAIKnowledgePage() {
           </div>
         </div>
 
-        {knowledge.length ===
-        0 ? (
-          <div className="rounded-xl border border-dashed border-border px-6 py-16 text-center">
-            <p className="text-sm font-medium text-foreground">
-              AI 知识库目前为空
-            </p>
-
-            <p className="mt-2 text-xs text-muted-foreground">
-              下一步我们将在这里加入新增、编辑、停用和删除功能。
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {knowledge.map(
-              (item) => (
-                <article
-                  key={item.id}
-                  className="rounded-xl border border-border bg-background p-5"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-medium text-foreground">
-                          {item.title}
-                        </h3>
-
-                        <span className="rounded-full border border-border px-2 py-0.5 text-[0.65rem] text-muted-foreground">
-                          {item.category}
-                        </span>
-
-                        <span className="text-[0.65rem] text-muted-foreground">
-                          {item.is_active
-                            ? '启用中'
-                            : '已停用'}
-                        </span>
-                      </div>
-
-                      <p className="mt-3 line-clamp-3 max-w-3xl whitespace-pre-wrap text-xs leading-5 text-muted-foreground">
-                        {item.content}
-                      </p>
-
-                      {item.keywords
-                        .length >
-                        0 && (
-                        <p className="mt-3 text-[0.7rem] text-muted-foreground">
-                          关键词：
-                          {item.keywords.join(
-                            ' / ',
-                          )}
-                        </p>
-                      )}
-                    </div>
-
-                    <span className="text-[0.65rem] text-muted-foreground">
-                      优先级{' '}
-                      {
-                        item.sort_order
-                      }
-                    </span>
-                  </div>
-                </article>
-              ),
-            )}
-          </div>
-        )}
+        <AIKnowledgeAdmin
+          initialKnowledge={
+            knowledge
+          }
+        />
+        
       </section>
     </main>
   )
