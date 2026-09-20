@@ -85,6 +85,36 @@ export async function PATCH(
       )
     }
 
+    const hasEditableField =
+  [
+    'title',
+    'category',
+    'content',
+    'url',
+    'keywords',
+    'sort_order',
+    'is_active',
+  ].some(
+    (key) =>
+      Object.prototype
+        .hasOwnProperty.call(
+          body,
+          key,
+        ),
+  )
+
+if (!hasEditableField) {
+  return NextResponse.json(
+    {
+      error:
+        '没有需要更新的内容',
+    },
+    {
+      status: 400,
+    },
+  )
+}
+
     const updateData:
       Record<string, unknown> = {
         updated_at:
@@ -215,51 +245,109 @@ export async function PATCH(
       typeof body.url ===
       'string'
     ) {
+      const url =
+        body.url.trim()
+
+      if (
+        url.length > 500
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              '相关页面 URL 不能超过 500 个字符',
+          },
+          {
+            status: 400,
+          },
+        )
+      }
+
       updateData.url =
-        body.url.trim() ||
-        null
+        url || null
     }
 
     /*
      * 关键词
      */
-    if (
-      Array.isArray(
-        body.keywords,
-      )
-    ) {
-      updateData.keywords =
-        body.keywords
-          .filter(
-            (
-              item,
-            ): item is string =>
-              typeof item ===
-              'string',
+      if (
+        Array.isArray(
+          body.keywords,
+        )
+      ) {
+        updateData.keywords =
+          Array.from(
+            new Set(
+              body.keywords
+                .filter(
+                  (
+                    item,
+                  ): item is string =>
+                    typeof item ===
+                    'string',
+                )
+                .map(
+                  (item) =>
+                    item
+                      .trim()
+                      .slice(
+                        0,
+                        60,
+                      ),
+                )
+                .filter(Boolean),
+            ),
+          ).slice(
+            0,
+            50,
           )
-          .map(
-            (item) =>
-              item.trim(),
-          )
-          .filter(Boolean)
-          .slice(0, 50)
-    }
+      }
 
     /*
      * 优先级
      */
-    if (
-      typeof body.sort_order ===
-        'number' &&
-      Number.isFinite(
-        body.sort_order,
-      )
-    ) {
-      updateData.sort_order =
-        Math.trunc(
-          body.sort_order,
-        )
-    }
+      if (
+        typeof body.sort_order ===
+        'number'
+      ) {
+        if (
+          !Number.isFinite(
+            body.sort_order,
+          )
+        ) {
+          return NextResponse.json(
+            {
+              error:
+                '优先级格式无效',
+            },
+            {
+              status: 400,
+            },
+          )
+        }
+
+        const sortOrder =
+          Math.trunc(
+            body.sort_order,
+          )
+
+        if (
+          sortOrder < -10000 ||
+          sortOrder > 10000
+        ) {
+          return NextResponse.json(
+            {
+              error:
+                '优先级必须在 -10000 到 10000 之间',
+            },
+            {
+              status: 400,
+            },
+          )
+        }
+
+        updateData.sort_order =
+          sortOrder
+      }
 
     /*
      * 启用 / 停用
