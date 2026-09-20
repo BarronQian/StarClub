@@ -738,7 +738,7 @@ export function AIKnowledgeAdmin({
                   20000
                 }
                 placeholder="填写希望小萝卜掌握的准确资料。可以包含步骤、规则、说明、注意事项等。"
-                className="min-h-[220px] resize-y"
+                className="min-h-55 resize-y"
               />
             </label>
 
@@ -783,7 +783,7 @@ export function AIKnowledgeAdmin({
                   )
                 }
                 placeholder="例如：Handle, 验证, 游戏ID, RSI, 绑定"
-                className="min-h-[90px] resize-y"
+                className="min-h-22.5 resize-y"
               />
 
               <span className="text-[0.65rem] leading-4 text-muted-foreground">
@@ -817,7 +817,7 @@ export function AIKnowledgeAdmin({
                 </span>
               </label>
 
-              <label className="flex min-h-[88px] items-center gap-3 rounded-lg border border-border px-4">
+              <label className="flex min-h-22 items-center gap-3 rounded-lg border border-border px-4">
                 <input
                   type="checkbox"
                   checked={
