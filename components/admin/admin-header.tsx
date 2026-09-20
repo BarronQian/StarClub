@@ -16,6 +16,7 @@ type AdminSection =
   | 'guides'
   | 'sponsors'
   | 'executive-hangar'
+  | 'ai-knowledge'
 
 export function AdminHeader({
   adminEmail,
@@ -193,6 +194,20 @@ export function AdminHeader({
           }
         >
           行政机库
+        </Button>
+        
+        <Button
+          variant={
+            active === 'ai-knowledge'
+              ? 'default'
+              : 'outline'
+          }
+          size="sm"
+          onClick={() =>
+            go('/admin/ai-knowledge')
+          }
+        >
+          AI 知识库
         </Button>
 
       </nav>
