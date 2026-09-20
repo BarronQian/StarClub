@@ -2,17 +2,27 @@
 
 import {
   Bot,
+  Loader2,
   Send,
   X,
 } from 'lucide-react'
 import {
   useEffect,
+  useRef,
   useState,
 } from 'react'
 
 import {
   getSupabaseBrowser,
 } from '@/lib/supabase-browser'
+
+type ChatMessage = {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+}
+
+const MAX_MESSAGE_LENGTH = 300
 
 export function AiAssistant() {
   const [open, setOpen] =
@@ -27,6 +37,26 @@ export function AiAssistant() {
   ] = useState<boolean | null>(
     null,
   )
+
+  const [
+    sending,
+    setSending,
+  ] = useState(false)
+
+  const [
+    remaining,
+    setRemaining,
+  ] = useState(20)
+
+  const [
+    messages,
+    setMessages,
+  ] = useState<ChatMessage[]>([])
+
+  const messagesEndRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    )
 
   useEffect(() => {
     const supabase =
@@ -62,6 +92,20 @@ export function AiAssistant() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    messagesEndRef.current?.scrollIntoView({
+      behavior: 'smooth',
+    })
+  }, [
+    messages,
+    sending,
+    open,
+  ])
+
   const requireLogin = () => {
     if (loggedIn === false) {
       window.alert(
@@ -73,6 +117,159 @@ export function AiAssistant() {
 
     return loggedIn === true
   }
+
+  const sendMessage =
+    async () => {
+      const content =
+        input.trim()
+
+      if (
+        !content ||
+        sending
+      ) {
+        return
+      }
+
+      if (!requireLogin()) {
+        return
+      }
+
+      if (
+        content.length >
+        MAX_MESSAGE_LENGTH
+      ) {
+        window.alert(
+          `单次提问不能超过 ${MAX_MESSAGE_LENGTH} 个字符。`,
+        )
+
+        return
+      }
+
+      const userMessage:
+        ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content,
+      }
+
+      setMessages(
+        (current) => [
+          ...current,
+          userMessage,
+        ],
+      )
+
+      setInput('')
+      setSending(true)
+
+      try {
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase.auth.getSession()
+
+        if (
+          !session?.access_token
+        ) {
+          setLoggedIn(false)
+
+          throw new Error(
+            '登录状态已失效，请重新登录',
+          )
+        }
+
+        const response =
+          await fetch(
+            '/api/ai-assistant',
+            {
+              method: 'POST',
+
+              headers: {
+                'Content-Type':
+                  'application/json',
+
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+
+              body:
+                JSON.stringify({
+                  message:
+                    content,
+                }),
+            },
+          )
+
+        const data =
+          await response.json()
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+              '小萝卜暂时无法回答',
+          )
+        }
+
+        const assistantMessage:
+          ChatMessage = {
+          id:
+            `assistant-${Date.now()}`,
+
+          role:
+            'assistant',
+
+          content:
+            typeof data.reply ===
+            'string'
+              ? data.reply
+              : '小萝卜暂时没有返回内容。',
+        }
+
+        setMessages(
+          (current) => [
+            ...current,
+            assistantMessage,
+          ],
+        )
+
+        if (
+          typeof data.remaining ===
+          'number'
+        ) {
+          setRemaining(
+            data.remaining,
+          )
+        }
+      } catch (error) {
+        const errorMessage:
+          ChatMessage = {
+          id:
+            `error-${Date.now()}`,
+
+          role:
+            'assistant',
+
+          content:
+            error instanceof Error
+              ? error.message
+              : '小萝卜暂时无法回答，请稍后再试。',
+        }
+
+        setMessages(
+          (current) => [
+            ...current,
+            errorMessage,
+          ],
+        )
+      } finally {
+        setSending(false)
+      }
+    }
 
   return (
     <>
@@ -218,6 +415,7 @@ export function AiAssistant() {
               dark:bg-[#302d29]
             "
           >
+            {/* 欢迎消息 */}
             <div className="flex items-start gap-2.5">
               <div
                 className="
@@ -274,6 +472,145 @@ export function AiAssistant() {
                 </p>
               </div>
             </div>
+
+            {/* 对话消息 */}
+            <div className="mt-4 space-y-4">
+              {messages.map(
+                (message) =>
+                  message.role ===
+                  'user' ? (
+                    <div
+                      key={
+                        message.id
+                      }
+                      className="flex justify-end"
+                    >
+                      <div
+                        className="
+                          max-w-[82%]
+                          whitespace-pre-wrap
+                          wrap-break-word
+                          rounded-2xl
+                          rounded-tr-md
+                          bg-[#a66700]
+                          px-4
+                          py-3
+                          text-sm
+                          leading-6
+                          text-white
+                        "
+                      >
+                        {
+                          message.content
+                        }
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      key={
+                        message.id
+                      }
+                      className="flex items-start gap-2.5"
+                    >
+                      <div
+                        className="
+                          flex
+                          size-8
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-full
+                          bg-[#a66700]
+                          text-white
+                        "
+                      >
+                        <Bot
+                          className="size-4"
+                          strokeWidth={
+                            1.8
+                          }
+                        />
+                      </div>
+
+                      <div
+                        className="
+                          max-w-[82%]
+                          whitespace-pre-wrap
+                          wrap-break-word
+                          rounded-2xl
+                          rounded-tl-md
+                          bg-white
+                          px-4
+                          py-3
+                          text-sm
+                          leading-6
+                          text-foreground
+                          shadow-sm
+                          dark:bg-[#37332f]
+                        "
+                      >
+                        {
+                          message.content
+                        }
+                      </div>
+                    </div>
+                  ),
+              )}
+
+              {/* 正在思考 */}
+              {sending && (
+                <div className="flex items-start gap-2.5">
+                  <div
+                    className="
+                      flex
+                      size-8
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-full
+                      bg-[#a66700]
+                      text-white
+                    "
+                  >
+                    <Bot
+                      className="size-4"
+                      strokeWidth={
+                        1.8
+                      }
+                    />
+                  </div>
+
+                  <div
+                    className="
+                      flex
+                      items-center
+                      gap-2
+                      rounded-2xl
+                      rounded-tl-md
+                      bg-white
+                      px-4
+                      py-3
+                      text-sm
+                      text-muted-foreground
+                      shadow-sm
+                      dark:bg-[#37332f]
+                    "
+                  >
+                    <Loader2 className="size-4 animate-spin" />
+
+                    <span>
+                      小萝卜正在思考...
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div
+                ref={
+                  messagesEndRef
+                }
+              />
+            </div>
           </div>
 
           {/* 每日次数 */}
@@ -290,7 +627,7 @@ export function AiAssistant() {
             "
           >
             {loggedIn
-              ? '今日剩余 20 / 20 次'
+              ? `今日剩余 ${remaining} / 20 次`
               : '登录后即可使用'}
           </div>
 
@@ -314,26 +651,48 @@ export function AiAssistant() {
             >
               <textarea
                 value={input}
-                maxLength={500}
+                maxLength={
+                  MAX_MESSAGE_LENGTH
+                }
                 rows={1}
+                disabled={sending}
                 placeholder={
                   loggedIn === false
                     ? '登录后与小萝卜聊天...'
-                    : '问问小萝卜...'
+                    : sending
+                      ? '小萝卜正在回复...'
+                      : '问问小萝卜...'
                 }
                 onFocus={(event) => {
-                  if (!requireLogin()) {
+                  if (
+                    !requireLogin()
+                  ) {
                     event.currentTarget.blur()
                   }
                 }}
                 onChange={(event) => {
-                  if (!requireLogin()) {
+                  if (
+                    !requireLogin()
+                  ) {
                     return
                   }
 
                   setInput(
                     event.target.value,
                   )
+                }}
+                onKeyDown={(
+                  event,
+                ) => {
+                  if (
+                    event.key ===
+                      'Enter' &&
+                    !event.shiftKey
+                  ) {
+                    event.preventDefault()
+
+                    void sendMessage()
+                  }
                 }}
                 className="
                   max-h-28
@@ -348,14 +707,20 @@ export function AiAssistant() {
                   text-foreground
                   outline-none
                   placeholder:text-muted-foreground
+                  disabled:cursor-not-allowed
+                  disabled:opacity-60
                 "
               />
 
               <button
                 type="button"
+                onClick={() => {
+                  void sendMessage()
+                }}
                 disabled={
                   !loggedIn ||
-                  !input.trim()
+                  !input.trim() ||
+                  sending
                 }
                 className="
                   flex
@@ -372,15 +737,33 @@ export function AiAssistant() {
                   disabled:opacity-40
                 "
               >
-                <Send
-                  className="size-4"
-                  strokeWidth={1.8}
-                />
+                {sending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send
+                    className="size-4"
+                    strokeWidth={
+                      1.8
+                    }
+                  />
+                )}
               </button>
             </div>
 
-            <div className="mt-2 text-center text-[10px] text-muted-foreground">
-              AI 生成内容可能存在错误，请注意核实重要信息。
+            <div className="mt-2 flex min-h-4 items-center justify-between gap-3">
+              <div className="text-[10px] text-muted-foreground">
+                AI 生成内容可能存在错误，请注意核实重要信息。
+              </div>
+
+              {input.length >=
+                250 && (
+                <div className="shrink-0 text-[10px] text-muted-foreground">
+                  {input.length} /{' '}
+                  {
+                    MAX_MESSAGE_LENGTH
+                  }
+                </div>
+              )}
             </div>
           </div>
         </div>
