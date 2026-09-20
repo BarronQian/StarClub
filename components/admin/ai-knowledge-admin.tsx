@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  useMemo,
   useState,
 } from 'react'
 
@@ -68,6 +69,17 @@ const CATEGORY_OPTIONS = [
   },
 ]
 
+function getCategoryLabel(
+  value: string,
+) {
+  return (
+    CATEGORY_OPTIONS.find(
+      (option) =>
+        option.value === value,
+    )?.label ?? value
+  )
+}
+
 export function AIKnowledgeAdmin({
   initialKnowledge,
 }: Props) {
@@ -80,14 +92,48 @@ export function AIKnowledgeAdmin({
   ] = useState(false)
 
   const [
+    editingId,
+    setEditingId,
+  ] = useState<string | null>(
+    null,
+  )
+
+  const [
     saving,
     setSaving,
   ] = useState(false)
 
   const [
+    operatingId,
+    setOperatingId,
+  ] = useState<string | null>(
+    null,
+  )
+
+  const [
     error,
     setError,
   ] = useState('')
+
+  const [
+    listError,
+    setListError,
+  ] = useState('')
+
+  const [
+    search,
+    setSearch,
+  ] = useState('')
+
+  const [
+    categoryFilter,
+    setCategoryFilter,
+  ] = useState('all')
+
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState('all')
 
   const [
     title,
@@ -126,7 +172,74 @@ export function AIKnowledgeAdmin({
     setIsActive,
   ] = useState(true)
 
+  const activeCount =
+    initialKnowledge.filter(
+      (item) =>
+        item.is_active,
+    ).length
+
+  const filteredKnowledge =
+    useMemo(() => {
+      const cleanSearch =
+        search
+          .trim()
+          .toLowerCase()
+
+      return initialKnowledge.filter(
+        (item) => {
+          if (
+            categoryFilter !==
+              'all' &&
+            item.category !==
+              categoryFilter
+          ) {
+            return false
+          }
+
+          if (
+            statusFilter ===
+              'active' &&
+            !item.is_active
+          ) {
+            return false
+          }
+
+          if (
+            statusFilter ===
+              'inactive' &&
+            item.is_active
+          ) {
+            return false
+          }
+
+          if (!cleanSearch) {
+            return true
+          }
+
+          const searchableText = [
+            item.title,
+            item.category,
+            item.content,
+            item.url ?? '',
+            ...item.keywords,
+          ]
+            .join(' ')
+            .toLowerCase()
+
+          return searchableText.includes(
+            cleanSearch,
+          )
+        },
+      )
+    }, [
+      initialKnowledge,
+      search,
+      categoryFilter,
+      statusFilter,
+    ])
+
   function resetForm() {
+    setEditingId(null)
     setTitle('')
     setCategory('general')
     setContent('')
@@ -142,11 +255,66 @@ export function AIKnowledgeAdmin({
     setShowForm(false)
   }
 
-  async function createKnowledge() {
-    if (saving) {
-      return
-    }
+  function openCreateForm() {
+    resetForm()
+    setShowForm(true)
 
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
+  }
+
+  function openEditForm(
+    item: AIKnowledge,
+  ) {
+    setEditingId(
+      item.id,
+    )
+
+    setTitle(
+      item.title,
+    )
+
+    setCategory(
+      item.category,
+    )
+
+    setContent(
+      item.content,
+    )
+
+    setUrl(
+      item.url ?? '',
+    )
+
+    setKeywords(
+      item.keywords.join(
+        ', ',
+      ),
+    )
+
+    setSortOrder(
+      String(
+        item.sort_order,
+      ),
+    )
+
+    setIsActive(
+      item.is_active,
+    )
+
+    setError('')
+    setListError('')
+    setShowForm(true)
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
+  }
+
+  function buildPayload() {
     const cleanTitle =
       title.trim()
 
@@ -157,24 +325,32 @@ export function AIKnowledgeAdmin({
       setError(
         '请输入知识标题',
       )
-      return
+
+      return null
     }
 
     if (!cleanContent) {
       setError(
         '请输入知识内容',
       )
-      return
+
+      return null
     }
 
     const parsedKeywords =
-      keywords
-        .split(/[,，\n]/)
-        .map(
-          (item) =>
-            item.trim(),
-        )
-        .filter(Boolean)
+      Array.from(
+        new Set(
+          keywords
+            .split(
+              /[,，\n]/,
+            )
+            .map(
+              (item) =>
+                item.trim(),
+            )
+            .filter(Boolean),
+        ),
+      )
 
     const parsedSortOrder =
       Number.parseInt(
@@ -182,15 +358,128 @@ export function AIKnowledgeAdmin({
         10,
       )
 
+    return {
+      title:
+        cleanTitle,
+
+      category,
+
+      content:
+        cleanContent,
+
+      url:
+        url.trim() ||
+        null,
+
+      keywords:
+        parsedKeywords,
+
+      sort_order:
+        Number.isFinite(
+          parsedSortOrder,
+        )
+          ? parsedSortOrder
+          : 0,
+
+      is_active:
+        isActive,
+    }
+  }
+
+  async function saveKnowledge() {
+    if (saving) {
+      return
+    }
+
+    const payload =
+      buildPayload()
+
+    if (!payload) {
+      return
+    }
+
     setSaving(true)
     setError('')
+    setListError('')
+
+    try {
+      const endpoint =
+        editingId
+          ? `/api/admin/ai-knowledge/${editingId}`
+          : '/api/admin/ai-knowledge'
+
+      const response =
+        await fetch(
+          endpoint,
+          {
+            method:
+              editingId
+                ? 'PATCH'
+                : 'POST',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
+
+            body:
+              JSON.stringify(
+                payload,
+              ),
+          },
+        )
+
+      const data =
+        await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            (editingId
+              ? '更新知识失败'
+              : '新增知识失败'),
+        )
+      }
+
+      closeForm()
+
+      router.refresh()
+    } catch (error) {
+      console.error(
+        '[AI KNOWLEDGE ADMIN] Save failed:',
+        error,
+      )
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : '保存知识失败',
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function toggleKnowledge(
+    item: AIKnowledge,
+  ) {
+    if (operatingId) {
+      return
+    }
+
+    setOperatingId(
+      item.id,
+    )
+
+    setListError('')
 
     try {
       const response =
         await fetch(
-          '/api/admin/ai-knowledge',
+          `/api/admin/ai-knowledge/${item.id}`,
           {
-            method: 'POST',
+            method:
+              'PATCH',
 
             headers: {
               'Content-Type':
@@ -199,30 +488,8 @@ export function AIKnowledgeAdmin({
 
             body:
               JSON.stringify({
-                title:
-                  cleanTitle,
-
-                category,
-
-                content:
-                  cleanContent,
-
-                url:
-                  url.trim() ||
-                  null,
-
-                keywords:
-                  parsedKeywords,
-
-                sort_order:
-                  Number.isFinite(
-                    parsedSortOrder,
-                  )
-                    ? parsedSortOrder
-                    : 0,
-
                 is_active:
-                  isActive,
+                  !item.is_active,
               }),
           },
         )
@@ -233,27 +500,94 @@ export function AIKnowledgeAdmin({
       if (!response.ok) {
         throw new Error(
           data.error ||
-            '新增知识失败',
+            '修改状态失败',
         )
       }
-
-      resetForm()
-      setShowForm(false)
 
       router.refresh()
     } catch (error) {
       console.error(
-        '[AI KNOWLEDGE ADMIN] Create failed:',
+        '[AI KNOWLEDGE ADMIN] Toggle failed:',
         error,
       )
 
-      setError(
+      setListError(
         error instanceof Error
           ? error.message
-          : '新增知识失败',
+          : '修改状态失败',
       )
     } finally {
-      setSaving(false)
+      setOperatingId(
+        null,
+      )
+    }
+  }
+
+  async function deleteKnowledge(
+    item: AIKnowledge,
+  ) {
+    if (operatingId) {
+      return
+    }
+
+    const confirmed =
+      window.confirm(
+        `确定要永久删除「${item.title}」吗？\n\n删除后无法恢复。`,
+      )
+
+    if (!confirmed) {
+      return
+    }
+
+    setOperatingId(
+      item.id,
+    )
+
+    setListError('')
+
+    try {
+      const response =
+        await fetch(
+          `/api/admin/ai-knowledge/${item.id}`,
+          {
+            method:
+              'DELETE',
+          },
+        )
+
+      const data =
+        await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            '删除知识失败',
+        )
+      }
+
+      if (
+        editingId ===
+        item.id
+      ) {
+        closeForm()
+      }
+
+      router.refresh()
+    } catch (error) {
+      console.error(
+        '[AI KNOWLEDGE ADMIN] Delete failed:',
+        error,
+      )
+
+      setListError(
+        error instanceof Error
+          ? error.message
+          : '删除知识失败',
+      )
+    } finally {
+      setOperatingId(
+        null,
+      )
     }
   }
 
@@ -267,10 +601,7 @@ export function AIKnowledgeAdmin({
           }{' '}
           条知识 ·{' '}
           {
-            initialKnowledge.filter(
-              (item) =>
-                item.is_active,
-            ).length
+            activeCount
           }{' '}
           条启用
         </div>
@@ -278,15 +609,19 @@ export function AIKnowledgeAdmin({
         <Button
           type="button"
           onClick={() => {
-            setShowForm(
-              (value) =>
-                !value,
-            )
+            if (
+              showForm &&
+              !editingId
+            ) {
+              closeForm()
+              return
+            }
 
-            setError('')
+            openCreateForm()
           }}
         >
-          {showForm
+          {showForm &&
+          !editingId
             ? '收起'
             : '+ 新增知识'}
         </Button>
@@ -296,11 +631,15 @@ export function AIKnowledgeAdmin({
         <section className="rounded-xl border border-border bg-background p-5 sm:p-6">
           <div>
             <h3 className="font-display text-sm tracking-[0.12em] text-foreground">
-              新增 AI 知识
+              {editingId
+                ? '编辑 AI 知识'
+                : '新增 AI 知识'}
             </h3>
 
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              保存并启用后，小萝卜即可在相关问题中检索这条知识。
+              {editingId
+                ? '修改并保存后，小萝卜将使用最新版本的知识。'
+                : '保存并启用后，小萝卜即可在相关问题中检索这条知识。'}
             </p>
           </div>
 
@@ -311,7 +650,9 @@ export function AIKnowledgeAdmin({
               </span>
 
               <Input
-                value={title}
+                value={
+                  title
+                }
                 onChange={(
                   event,
                 ) =>
@@ -320,7 +661,9 @@ export function AIKnowledgeAdmin({
                       .value,
                   )
                 }
-                maxLength={120}
+                maxLength={
+                  120
+                }
                 placeholder="例如：如何完成 Handle Name 验证"
               />
             </label>
@@ -345,7 +688,9 @@ export function AIKnowledgeAdmin({
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {CATEGORY_OPTIONS.map(
-                  (option) => (
+                  (
+                    option,
+                  ) => (
                     <option
                       key={
                         option.value
@@ -373,7 +718,7 @@ export function AIKnowledgeAdmin({
                   {
                     content.length
                   }{' '}
-                  字符
+                  / 20000
                 </span>
               </div>
 
@@ -388,6 +733,9 @@ export function AIKnowledgeAdmin({
                     event.target
                       .value,
                   )
+                }
+                maxLength={
+                  20000
                 }
                 placeholder="填写希望小萝卜掌握的准确资料。可以包含步骤、规则、说明、注意事项等。"
                 className="min-h-[220px] resize-y"
@@ -439,7 +787,7 @@ export function AIKnowledgeAdmin({
               />
 
               <span className="text-[0.65rem] leading-4 text-muted-foreground">
-                支持中文逗号、英文逗号或换行分隔。建议同时填写用户可能使用的不同说法。
+                支持中文逗号、英文逗号或换行分隔。建议填写用户可能使用的不同说法。
               </span>
             </label>
 
@@ -488,7 +836,7 @@ export function AIKnowledgeAdmin({
 
                 <div>
                   <div className="text-xs font-medium text-foreground">
-                    立即启用
+                    启用知识
                   </div>
 
                   <div className="mt-1 text-[0.65rem] leading-4 text-muted-foreground">
@@ -524,16 +872,120 @@ export function AIKnowledgeAdmin({
                   saving
                 }
                 onClick={
-                  createKnowledge
+                  saveKnowledge
                 }
               >
                 {saving
                   ? '保存中...'
-                  : '保存知识'}
+                  : editingId
+                    ? '保存修改'
+                    : '保存知识'}
               </Button>
             </div>
           </div>
         </section>
+      )}
+
+      <section className="rounded-xl border border-border bg-background p-4 sm:p-5">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_150px]">
+          <Input
+            value={
+              search
+            }
+            onChange={(
+              event,
+            ) =>
+              setSearch(
+                event.target
+                  .value,
+              )
+            }
+            placeholder="搜索标题、内容、关键词、URL..."
+          />
+
+          <select
+            value={
+              categoryFilter
+            }
+            onChange={(
+              event,
+            ) =>
+              setCategoryFilter(
+                event.target
+                  .value,
+              )
+            }
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="all">
+              全部分类
+            </option>
+
+            {CATEGORY_OPTIONS.map(
+              (
+                option,
+              ) => (
+                <option
+                  key={
+                    option.value
+                  }
+                  value={
+                    option.value
+                  }
+                >
+                  {
+                    option.label
+                  }
+                </option>
+              ),
+            )}
+          </select>
+
+          <select
+            value={
+              statusFilter
+            }
+            onChange={(
+              event,
+            ) =>
+              setStatusFilter(
+                event.target
+                  .value,
+              )
+            }
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="all">
+              全部状态
+            </option>
+
+            <option value="active">
+              启用中
+            </option>
+
+            <option value="inactive">
+              已停用
+            </option>
+          </select>
+        </div>
+
+        <div className="mt-3 text-[0.7rem] text-muted-foreground">
+          当前显示{' '}
+          {
+            filteredKnowledge.length
+          }{' '}
+          /{' '}
+          {
+            initialKnowledge.length
+          }{' '}
+          条
+        </div>
+      </section>
+
+      {listError && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive">
+          {listError}
+        </div>
       )}
 
       {initialKnowledge.length ===
@@ -547,91 +999,172 @@ export function AIKnowledgeAdmin({
             点击右上角「新增知识」，开始给小萝卜添加动态知识。
           </p>
         </div>
+      ) : filteredKnowledge.length ===
+        0 ? (
+        <div className="rounded-xl border border-dashed border-border px-6 py-14 text-center">
+          <p className="text-sm font-medium text-foreground">
+            没有找到符合条件的知识
+          </p>
+
+          <p className="mt-2 text-xs text-muted-foreground">
+            可以尝试更换关键词、分类或状态筛选。
+          </p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {initialKnowledge.map(
-            (item) => (
-              <article
-                key={
-                  item.id
-                }
-                className="rounded-xl border border-border bg-background p-5"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-5">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-medium text-foreground">
-                        {
-                          item.title
-                        }
-                      </h3>
+          {filteredKnowledge.map(
+            (item) => {
+              const operating =
+                operatingId ===
+                item.id
 
-                      <span className="rounded-full border border-border px-2 py-0.5 text-[0.65rem] text-muted-foreground">
-                        {
-                          item.category
-                        }
-                      </span>
+              return (
+                <article
+                  key={
+                    item.id
+                  }
+                  className="rounded-xl border border-border bg-background p-5"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-5">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-medium text-foreground">
+                          {
+                            item.title
+                          }
+                        </h3>
 
-                      <span
-                        className={
-                          item.is_active
-                            ? 'text-[0.65rem] text-emerald-600'
-                            : 'text-[0.65rem] text-muted-foreground'
-                        }
-                      >
-                        {item.is_active
-                          ? '启用中'
-                          : '已停用'}
-                      </span>
-                    </div>
+                        <span className="rounded-full border border-border px-2 py-0.5 text-[0.65rem] text-muted-foreground">
+                          {getCategoryLabel(
+                            item.category,
+                          )}
+                        </span>
 
-                    <p className="mt-3 line-clamp-4 whitespace-pre-wrap text-xs leading-5 text-muted-foreground">
-                      {
-                        item.content
-                      }
-                    </p>
-
-                    {item.keywords
-                      .length >
-                      0 && (
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {item.keywords.map(
-                          (
-                            keyword,
-                          ) => (
-                            <span
-                              key={
-                                keyword
-                              }
-                              className="rounded-md bg-muted px-2 py-1 text-[0.65rem] text-muted-foreground"
-                            >
-                              {
-                                keyword
-                              }
-                            </span>
-                          ),
-                        )}
+                        <span
+                          className={
+                            item.is_active
+                              ? 'rounded-full bg-emerald-500/10 px-2 py-0.5 text-[0.65rem] text-emerald-600 dark:text-emerald-400'
+                              : 'rounded-full bg-muted px-2 py-0.5 text-[0.65rem] text-muted-foreground'
+                          }
+                        >
+                          {item.is_active
+                            ? '启用中'
+                            : '已停用'}
+                        </span>
                       </div>
-                    )}
 
-                    {item.url && (
-                      <p className="mt-3 break-all text-[0.65rem] text-muted-foreground">
+                      <p className="mt-3 line-clamp-4 whitespace-pre-wrap text-xs leading-5 text-muted-foreground">
                         {
-                          item.url
+                          item.content
                         }
                       </p>
-                    )}
-                  </div>
 
-                  <div className="shrink-0 text-right text-[0.65rem] text-muted-foreground">
-                    优先级{' '}
-                    {
-                      item.sort_order
-                    }
+                      {item.keywords
+                        .length >
+                        0 && (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {item.keywords.map(
+                            (
+                              keyword,
+                            ) => (
+                              <span
+                                key={
+                                  keyword
+                                }
+                                className="rounded-md bg-muted px-2 py-1 text-[0.65rem] text-muted-foreground"
+                              >
+                                {
+                                  keyword
+                                }
+                              </span>
+                            ),
+                          )}
+                        </div>
+                      )}
+
+                      {item.url && (
+                        <p className="mt-3 break-all text-[0.65rem] text-muted-foreground">
+                          {
+                            item.url
+                          }
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex shrink-0 flex-col items-end gap-3">
+                      <span className="text-[0.65rem] text-muted-foreground">
+                        优先级{' '}
+                        {
+                          item.sort_order
+                        }
+                      </span>
+
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={
+                            Boolean(
+                              operatingId,
+                            )
+                          }
+                          onClick={() =>
+                            openEditForm(
+                              item,
+                            )
+                          }
+                        >
+                          编辑
+                        </Button>
+
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={
+                            Boolean(
+                              operatingId,
+                            )
+                          }
+                          onClick={() =>
+                            void toggleKnowledge(
+                              item,
+                            )
+                          }
+                        >
+                          {operating
+                            ? '处理中...'
+                            : item.is_active
+                              ? '停用'
+                              : '启用'}
+                        </Button>
+
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          disabled={
+                            Boolean(
+                              operatingId,
+                            )
+                          }
+                          onClick={() =>
+                            void deleteKnowledge(
+                              item,
+                            )
+                          }
+                        >
+                          {operating
+                            ? '处理中...'
+                            : '删除'}
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ),
+                </article>
+              )
+            },
           )}
         </div>
       )}
