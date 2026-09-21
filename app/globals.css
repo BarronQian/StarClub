@@ -396,3 +396,12 @@ body {
     animation: none;
   }
 }
+
+body.account-sidebar-open
+  .page-floating-navigation,
+body.account-sidebar-open
+  .ai-assistant-floating-button {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -73,21 +74,49 @@ export function HeaderUserAuth() {
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
 
+  const [mounted, setMounted] =
+    useState(false)
+
+    useEffect(() => {
+      setMounted(true)
+    }, [])
+
   // 账户侧栏打开时锁死背景页面滚动
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      document.body.classList.remove(
+        'account-sidebar-open',
+      )
 
-    const previousBodyOverflow = document.body.style.overflow
+      return
+    }
+
+    const previousBodyOverflow =
+      document.body.style.overflow
+
     const previousHtmlOverflow =
       document.documentElement.style.overflow
 
-    document.body.style.overflow = 'hidden'
-    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow =
+      'hidden'
+
+    document.documentElement.style.overflow =
+      'hidden'
+
+    document.body.classList.add(
+      'account-sidebar-open',
+    )
 
     return () => {
-      document.body.style.overflow = previousBodyOverflow
+      document.body.style.overflow =
+        previousBodyOverflow
+
       document.documentElement.style.overflow =
         previousHtmlOverflow
+
+      document.body.classList.remove(
+        'account-sidebar-open',
+      )
     }
   }, [open])
 
@@ -216,144 +245,173 @@ export function HeaderUserAuth() {
         </span>
       </button>
 
-      {/* 背景遮罩 */}
-      <div
-        onClick={() => setOpen(false)}
-        className={`fixed inset-0 z-90 bg-black/20 transition-opacity duration-200 ${
-          open
-            ? 'pointer-events-auto opacity-100'
-            : 'pointer-events-none opacity-0'
-        }`}
-      />
+      {mounted &&
+        createPortal(
+          <>
+            {/* 全页面磨砂层 */}
+            <div
+              onClick={() =>
+                setOpen(false)
+              }
+              className={`fixed inset-0 z-90 bg-white/5 backdrop-blur-[6px] transition-all duration-300 dark:bg-black/5 ${
+                open
+                  ? 'pointer-events-auto opacity-100'
+                  : 'pointer-events-none opacity-0 backdrop-blur-none'
+              }`}
+              aria-hidden="true"
+            />
 
-      {/* 右侧账户栏 */}
-      <aside
-        className={`fixed right-0 top-0 z-100 flex h-dvh w-90 max-w-[92vw] flex-col overscroll-contain border-l border-black/10 bg-[#faf9f7] text-foreground shadow-xl transition-transform duration-200 ease-out will-change-transform dark:border-white/10 dark:bg-[#302d29] ${
-          open
-            ? 'translate-x-0'
-            : 'translate-x-full'
-        }`}
-      >
-        {/* 顶部 */}
-        <div className="flex items-center justify-between border-b border-black/10 px-6 py-5 dark:border-white/10">
-          <div>
-            <p className="text-[10px] tracking-[0.25em] text-[#a66a12]">
-              STARCLUB ACCOUNT
-            </p>
+            {/* 右侧账户栏 */}
+            <aside
+              className={`fixed right-0 top-0 z-100 flex h-dvh w-90 max-w-[92vw] flex-col overscroll-contain border-l border-black/10 bg-[#faf9f7] text-foreground shadow-xl transition-transform duration-300 ease-out will-change-transform dark:border-white/10 dark:bg-[#302d29] ${
+                open
+                  ? 'translate-x-0'
+                  : 'translate-x-full'
+              }`}
+            >
+              {/* 顶部 */}
+                <div className="flex items-center justify-between border-b border-black/10 px-6 py-5 dark:border-white/10">
+                  <div>
+                    <p className="text-[10px] tracking-[0.25em] text-[#a66a12]">
+                      STARCLUB ACCOUNT
+                    </p>
 
-            <p className="mt-1 text-sm font-medium">
-              酒馆账户
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="flex size-9 items-center justify-center rounded-full transition-colors hover:bg-black/5 dark:hover:bg-white/8"
-            aria-label="关闭账户栏"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-
-        {/* 用户资料 */}
-        <div className="px-6 py-7">
-          <div className="flex items-center gap-4">
-            <div className="relative size-16 shrink-0 overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm dark:border-white/10 dark:bg-[#37332f]">
-              <Image
-                src={avatar}
-                alt={`${username} 头像`}
-                fill
-                sizes="64px"
-                className="object-cover"
-              />
-            </div>
-
-            <div className="min-w-0">
-              <h2 className="truncate text-xl font-semibold">
-                {username}
-              </h2>
-
-              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="size-1.5 rounded-full bg-green-500" />
-                已连接 Discord
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 菜单 */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-3">
-          <div className="border-t border-black/10 py-3 dark:border-white/10">
-            {menuItems.map((item) => {
-              const Icon = item.icon
-
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors hover:bg-[#b87300]/[0.07]"
-                >
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-black/[0.035] dark:bg-white/6">
-                    <Icon className="size-4 text-[#8d5a10]" />
+                    <p className="mt-1 text-sm font-medium">
+                      酒馆账户
+                    </p>
                   </div>
 
-                  <span className="flex-1">
-                    {item.label}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpen(false)
+                    }
+                    className="flex size-9 items-center justify-center rounded-full transition-colors hover:bg-black/5 dark:hover:bg-white/8"
+                    aria-label="关闭账户栏"
+                    title="关闭"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
 
-                  <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-                </Link>
-              )
-            })}
-          </div>
+                {/* 用户资料 */}
+                <div className="px-6 py-7">
+                  <div className="flex items-center gap-4">
+                    <div className="relative size-16 shrink-0 overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm dark:border-white/10 dark:bg-[#37332f]">
+                      <Image
+                        src={avatar}
+                        alt={`${username} 头像`}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    </div>
 
-          <div className="border-t border-black/10 py-3 dark:border-white/10">
-            <Link
-              href="/profile/settings"
-              onClick={() => setOpen(false)}
-              className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors hover:bg-[#b87300]/[0.07]"
-            >
-              <div className="flex size-9 items-center justify-center rounded-lg bg-black/[0.035] dark:bg-white/6">
-                <Settings className="size-4 text-[#8d5a10]" />
-              </div>
+                    <div className="min-w-0">
+                      <h2 className="truncate text-xl font-semibold">
+                        {username}
+                      </h2>
 
-              <span className="flex-1">
-                账号设置
-              </span>
+                      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="size-1.5 rounded-full bg-green-500" />
+                        已连接 Discord
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-              <ChevronRight className="size-4 text-muted-foreground" />
-            </Link>
+                {/* 菜单 */}
+                <div className="flex-1 overflow-y-auto overscroll-contain px-3">
+                  <div className="border-t border-black/10 py-3 dark:border-white/10">
+                    {menuItems.map(
+                      (item) => {
+                        const Icon =
+                          item.icon
 
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors hover:bg-red-500/6"
-            >
-              <div className="flex size-9 items-center justify-center rounded-lg bg-red-500/6">
-                <LogOut className="size-4 text-red-500" />
-              </div>
+                        return (
+                          <Link
+                            key={
+                              item.label
+                            }
+                            href={
+                              item.href
+                            }
+                            onClick={() =>
+                              setOpen(
+                                false,
+                              )
+                            }
+                            className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors hover:bg-[#b87300]/[0.07]"
+                          >
+                            <div className="flex size-9 items-center justify-center rounded-lg bg-black/[0.035] dark:bg-white/6">
+                              <Icon className="size-4 text-[#8d5a10]" />
+                            </div>
 
-              <span className="flex-1 text-left">
-                退出登录
-              </span>
-            </button>
-          </div>
-        </div>
+                            <span className="flex-1">
+                              {
+                                item.label
+                              }
+                            </span>
 
-        {/* 底部 */}
-        <div className="border-t border-black/10 px-6 py-5 dark:border-white/10">
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-green-500" />
-            Discord Authentication
-          </div>
+                            <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                          </Link>
+                        )
+                      },
+                    )}
+                  </div>
 
-          <p className="mt-1 text-[10px] text-muted-foreground/70">
-            STARCLUB · 星际酒馆
-          </p>
-        </div>
-      </aside>
+                  <div className="border-t border-black/10 py-3 dark:border-white/10">
+                    <Link
+                      href="/profile/settings"
+                      onClick={() =>
+                        setOpen(false)
+                      }
+                      className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors hover:bg-[#b87300]/[0.07]"
+                    >
+                      <div className="flex size-9 items-center justify-center rounded-lg bg-black/[0.035] dark:bg-white/6">
+                        <Settings className="size-4 text-[#8d5a10]" />
+                      </div>
+
+                      <span className="flex-1">
+                        账号设置
+                      </span>
+
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={
+                        handleLogout
+                      }
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors hover:bg-red-500/6"
+                    >
+                      <div className="flex size-9 items-center justify-center rounded-lg bg-red-500/6">
+                        <LogOut className="size-4 text-red-500" />
+                      </div>
+
+                      <span className="flex-1 text-left">
+                        退出登录
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 底部 */}
+                <div className="border-t border-black/10 px-6 py-5 dark:border-white/10">
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <span className="size-1.5 rounded-full bg-green-500" />
+                    Discord Authentication
+                  </div>
+
+                  <p className="mt-1 text-[10px] text-muted-foreground/70">
+                    STARCLUB · 星际酒馆
+                  </p>
+                </div>
+            </aside>
+          </>,
+          document.body,
+        )}
     </>
   )
 }

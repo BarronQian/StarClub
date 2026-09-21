@@ -1164,10 +1164,10 @@ export default function MarketPage() {
                           listing.id
                         }
                         href={`/market/${listing.id}`}
-                        className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-border/50 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.025)] transition-all duration-300 ${
+                        className={`group flex h-full flex-col overflow-hidden rounded-[20px] border border-border/55 bg-card shadow-[0_2px_8px_rgba(0,0,0,0.035)] transition-[transform,box-shadow,border-color] duration-300 ease-out ${
                           isClosed
                             ? 'opacity-60'
-                            : 'hover:-translate-y-1 hover:border-foreground/15 hover:shadow-[0_18px_50px_rgba(0,0,0,0.10)]'
+                            : 'hover:-translate-y-1 hover:border-[#b87300]/25 hover:shadow-[0_16px_40px_rgba(0,0,0,0.09)] dark:hover:border-[#d89b43]/25 dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.22)]'
                         }`}
                       >
                         <div className="relative aspect-4/3 overflow-hidden bg-muted shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]">
@@ -1191,7 +1191,7 @@ export default function MarketPage() {
                               alt={
                                 listing.title
                               }
-                              className={`h-full w-full object-cover transition-transform duration-500 ease-out ${
+                              className={`h-full w-full object-cover transition-transform duration-700 ease-out ${
                                 isClosed
                                   ? 'grayscale'
                                   : 'group-hover:scale-[1.035]'
@@ -1232,29 +1232,29 @@ export default function MarketPage() {
                               {listing.title}
                             </h2>
 
-                            <div className="mt-2.5 flex items-baseline gap-1.5">
-                              {listing.listing_type ===
-                              'wtt' ? (
-                                <span className="text-[14px] font-semibold tracking-[-0.02em] text-foreground/85">
-                                  交换
-                                </span>
-                              ) : listing.price_uec ===
-                                null ? (
-                                <span className="text-[14px] font-semibold tracking-[-0.02em] text-foreground/85">
-                                  面议
-                                </span>
-                              ) : (
-                                <>
-                                  <span className="text-[15px] font-semibold tabular-nums tracking-tight text-foreground/90">
-                                    {listing.price_uec.toLocaleString()}
+                              <div className="mt-2.5">
+                                {listing.listing_type ===
+                                'wtt' ? (
+                                  <span className="text-[14px] font-semibold tracking-[-0.02em] text-[#9a671f] dark:text-[#e3ad5c]">
+                                    交换
                                   </span>
+                                ) : listing.price_uec ===
+                                  null ? (
+                                  <span className="text-[14px] font-semibold tracking-[-0.02em] text-[#9a671f] dark:text-[#e3ad5c]">
+                                    面议
+                                  </span>
+                                ) : (
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-[17px] font-bold tabular-nums tracking-tight text-[#ad6b0b] dark:text-[#e3ad5c]">
+                                      {listing.price_uec.toLocaleString()}
+                                    </span>
 
-                                  <span className="text-[10px] font-medium tracking-wide text-muted-foreground">
-                                    aUEC
-                                  </span>
-                                </>
-                              )}
-                            </div>
+                                    <span className="text-[9px] font-semibold uppercase tracking-widest text-[#ad6b0b]/55 dark:text-[#e3ad5c]/65">
+                                      aUEC
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
 
                             <div className="mt-3 min-h-5">
                               {(listing.location ||
@@ -1287,7 +1287,7 @@ export default function MarketPage() {
                             </div>
                           </div>
 
-                          <div className="-mx-4 -mb-4 mt-4 flex min-h-11 items-center gap-2 border-t border-border/50 bg-muted/20 px-4 py-3">
+                          <div className="-mx-4 -mb-4 mt-4 flex min-h-12 items-center gap-2 border-t border-border/40 bg-muted/[0.14] px-4 py-3 transition-colors group-hover:bg-muted/25">
                             {listing.profiles
                               ?.avatar_url ? (
                               <img
@@ -1296,7 +1296,7 @@ export default function MarketPage() {
                                     .avatar_url
                                 }
                                 alt=""
-                                className="size-6 shrink-0 rounded-full object-cover ring-1 ring-border/80"
+                                className="size-6 shrink-0 rounded-full object-cover ring-1 ring-border/70 shadow-sm"
                               />
                             ) : (
                               <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[8px] font-semibold text-muted-foreground ring-1 ring-border/80">

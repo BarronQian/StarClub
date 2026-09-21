@@ -27,7 +27,7 @@ export function PageNavigation() {
   useEffect(() => {
     const handleScroll = () => {
       setShowTop(
-        window.scrollY > 500
+        window.scrollY > 500,
       )
     }
 
@@ -38,13 +38,13 @@ export function PageNavigation() {
       handleScroll,
       {
         passive: true,
-      }
+      },
     )
 
     return () =>
       window.removeEventListener(
         'scroll',
-        handleScroll
+        handleScroll,
       )
   }, [])
 
@@ -64,7 +64,7 @@ export function PageNavigation() {
   if (
     pathname === '/gallery' ||
     pathname.startsWith(
-      '/gallery/'
+      '/gallery/',
     )
   ) {
     return null
@@ -72,12 +72,13 @@ export function PageNavigation() {
 
   return (
     <div
-        className={`fixed bottom-6 right-6 z-50 items-center gap-2 ${
-          pathname === '/community'
-            ? 'hidden xl:flex'
-            : 'flex'
-        }`}
-      >
+      className={`page-floating-navigation fixed bottom-7.5 right-22 z-50 ${
+        pathname === '/community'
+          ? 'hidden xl:block'
+          : 'block'
+      }`}
+    >
+      {/* 返回上一页：位于 AI 按钮左侧 */}
       <button
         type="button"
         onClick={() =>
@@ -90,12 +91,13 @@ export function PageNavigation() {
         <ArrowLeft className="size-4" />
       </button>
 
+      {/* 回到顶部：位于 AI 按钮正上方 */}
       <button
         type="button"
         onClick={
           scrollToTop
         }
-        className={`flex size-11 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-lg backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:text-primary ${
+        className={`absolute bottom-14.5 left-14.5 flex size-11 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-lg backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:text-primary ${
           showTop
             ? 'pointer-events-auto translate-y-0 opacity-100'
             : 'pointer-events-none translate-y-2 opacity-0'

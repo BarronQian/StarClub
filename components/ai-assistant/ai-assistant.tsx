@@ -455,6 +455,7 @@ export function AiAssistant() {
           }
           aria-label="打开酒馆智能助手"
           className="
+            ai-assistant-floating-button
             fixed
             bottom-6
             right-6
