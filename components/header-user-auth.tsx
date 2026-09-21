@@ -75,19 +75,40 @@ export function HeaderUserAuth() {
 
   // 账户侧栏打开时锁死背景页面滚动
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      document.body.classList.remove(
+        'account-sidebar-open',
+      )
 
-    const previousBodyOverflow = document.body.style.overflow
+      return
+    }
+
+    const previousBodyOverflow =
+      document.body.style.overflow
+
     const previousHtmlOverflow =
       document.documentElement.style.overflow
 
-    document.body.style.overflow = 'hidden'
-    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow =
+      'hidden'
+
+    document.documentElement.style.overflow =
+      'hidden'
+
+    document.body.classList.add(
+      'account-sidebar-open',
+    )
 
     return () => {
-      document.body.style.overflow = previousBodyOverflow
+      document.body.style.overflow =
+        previousBodyOverflow
+
       document.documentElement.style.overflow =
         previousHtmlOverflow
+
+      document.body.classList.remove(
+        'account-sidebar-open',
+      )
     }
   }, [open])
 
