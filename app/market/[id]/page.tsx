@@ -55,6 +55,7 @@ type MarketListing = {
   description: string
   price_uec: number | null
   quantity: number
+  completed_quantity: number
   quality: number | null
   location: string | null
   negotiable: boolean
@@ -646,12 +647,44 @@ export default function MarketListingPage({
 
   const sellerName =
     listing.profiles
+      ?.rsi_handle ??
+    listing.profiles
       ?.display_name ??
     listing.profiles
       ?.username ??
-    listing.profiles
-      ?.rsi_handle ??
     'StarClub 玩家'
+
+  const sellerDiscordName =
+    listing.profiles
+      ?.display_name ??
+    listing.profiles
+      ?.username ??
+    null
+  
+  const completedQuantity =
+  Math.max(
+    0,
+    Number(
+      listing.completed_quantity ??
+        0,
+    ),
+  )
+
+const quantityLabels =
+  listing.listing_type === 'wtb'
+    ? {
+        completed: '已收',
+        remaining: '需求',
+      }
+    : listing.listing_type === 'wtt'
+      ? {
+          completed: '已换',
+          remaining: '剩余',
+        }
+      : {
+          completed: '已售',
+          remaining: '库存',
+        }
 
   const sellerProfileHref =
     listing.profiles
@@ -1396,22 +1429,28 @@ async function submitReport() {
               )}
 
                 <div className="mt-8 grid grid-cols-2 gap-3 border-y border-border/70 py-5">
-                  {/* 数量 */}
-                  <div className="flex items-center gap-3 rounded-xl bg-muted/25 px-3.5 py-3">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm ring-1 ring-border/60">
-                      <Layers3 className="size-3.5" />
-                    </div>
+                      {/* 成交数量 / 当前数量 */}
+                      <div className="flex items-center gap-3 rounded-xl bg-muted/25 px-3.5 py-3">
+                        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm ring-1 ring-border/60">
+                          <Layers3 className="size-3.5" />
+                        </div>
 
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-medium text-muted-foreground">
-                        数量
-                      </div>
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-medium text-muted-foreground">
+                            {quantityLabels.remaining}
+                          </div>
 
-                      <div className="mt-0.5 text-sm font-semibold tabular-nums">
-                        ×{listing.quantity}
+                          <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                            <span className="text-sm font-semibold tabular-nums">
+                              ×{listing.quantity}
+                            </span>
+
+                            <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+                              {quantityLabels.completed} {completedQuantity}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
                   {/* 品质 */}
                   <div className="flex items-center gap-3 rounded-xl bg-muted/25 px-3.5 py-3">
@@ -1549,18 +1588,11 @@ async function submitReport() {
                         />
                       </div>
 
-                      {listing
-                        .profiles
-                        ?.rsi_handle && (
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          RSI @
-                          {
-                            listing
-                              .profiles
-                              .rsi_handle
-                          }
-                        </div>
-                      )}
+                        {sellerDiscordName && (
+                          <div className="mt-1 truncate text-xs text-muted-foreground">
+                            Discord @{sellerDiscordName}
+                          </div>
+                        )}
 
                       {listing
                         .profiles
@@ -1626,18 +1658,11 @@ async function submitReport() {
                         />
                       </div>
 
-                      {listing
-                        .profiles
-                        ?.rsi_handle && (
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          RSI @
-                          {
-                            listing
-                              .profiles
-                              .rsi_handle
-                          }
-                        </div>
-                      )}
+                        {sellerDiscordName && (
+                          <div className="mt-1 truncate text-xs text-muted-foreground">
+                            Discord @{sellerDiscordName}
+                          </div>
+                        )}
 
                       {listing
                         .profiles

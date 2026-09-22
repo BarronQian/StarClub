@@ -169,9 +169,78 @@ export async function GET(
     )
   }
 
+  /*
+  * 统计当前商单真正完成的成交数量。
+  *
+  * 只计算 status = completed 的交易，
+  * Pending / Accepted / Declined / Cancelled
+  * 均不会计入已售数量。
+  */
+  const {
+    data: completedTrades,
+    error: completedTradesError,
+  } = await supabase
+    .from('market_trade_requests')
+    .select(`
+      quantity
+    `)
+    .eq(
+      'listing_id',
+      id,
+    )
+    .eq(
+      'status',
+      'completed',
+    )
+
+  if (completedTradesError) {
+    console.error(
+      'Failed to load completed market trade quantities:',
+      completedTradesError,
+    )
+  }
+
+  const completedQuantity =
+    completedTradesError
+      ? 0
+      : (
+          completedTrades ??
+          []
+        ).reduce(
+          (
+            total,
+            trade,
+          ) => {
+            const quantity =
+              Number(
+                trade.quantity ??
+                  0,
+              )
+
+            if (
+              !Number.isFinite(
+                quantity,
+              ) ||
+              quantity <= 0
+            ) {
+              return total
+            }
+
+            return (
+              total +
+              quantity
+            )
+          },
+          0,
+        )
+
   return NextResponse.json(
     {
-      listing,
+      listing: {
+        ...listing,
+        completed_quantity:
+          completedQuantity,
+      },
     },
     {
       headers: {
