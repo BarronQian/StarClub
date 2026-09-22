@@ -1325,7 +1325,7 @@ export default function MarketPage() {
                                       ?.username ??
                                     'StarClub 玩家'
                               }
-                              className="ml-2 min-w-0 flex-1 truncate text-[10px] font-medium leading-none text-muted-foreground"
+                              className="ml-2 min-w-0 flex-1 truncate pb-px text-[10px] font-medium leading-[1.3] text-muted-foreground"
                             >
                               {listing.profiles
                                 ?.rsi_handle
