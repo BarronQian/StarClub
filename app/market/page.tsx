@@ -56,6 +56,9 @@ type MarketListing = {
   created_at: string
   closed_at: string | null
 
+  seller_rating_average: number | null
+  seller_rating_count: number
+
   profiles: {
     id: string
     username: string | null
@@ -1326,6 +1329,26 @@ export default function MarketPage() {
                               }
                               size="sm"
                             />
+
+                            {listing.seller_rating_count > 0 &&
+                              listing.seller_rating_average !== null && (
+                                <div className="ml-auto flex shrink-0 items-center gap-1">
+                                  <span className="text-[11px] leading-none text-amber-500">
+                                    ★
+                                  </span>
+
+                                  <span className="text-[10px] font-semibold tabular-nums text-foreground/80">
+                                    {listing.seller_rating_average.toFixed(
+                                      1,
+                                    )}
+                                  </span>
+
+                                  <span className="text-[9px] tabular-nums text-muted-foreground/60">
+                                    ({listing.seller_rating_count})
+                                  </span>
+                                </div>
+                              )}
+
                           </div>
                         </div>
                       </Link>
