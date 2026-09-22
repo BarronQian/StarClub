@@ -26,6 +26,10 @@ import {
 } from '@/components/market-rsi-required-dialog'
 
 import {
+  MarketRulesDialog,
+} from '@/components/market-rules-dialog'
+
+import {
   RsiVerificationModal,
 } from '@/components/rsi-verification-modal'
 
@@ -253,6 +257,11 @@ export default function MarketPage() {
     setError,
   ] =
     useState('')
+
+  const [
+    marketRulesOpen,
+    setMarketRulesOpen,
+  ] = useState(false)
 
   const [
     listingDialogOpen,
@@ -728,7 +737,7 @@ export default function MarketPage() {
       return
     }
 
-    setListingDialogOpen(true)
+    setMarketRulesOpen(true)
   }
 
   function scrollToMarket() {
@@ -1789,9 +1798,23 @@ export default function MarketPage() {
             )
 
             window.setTimeout(() => {
-              setListingDialogOpen(true)
+              setMarketRulesOpen(true)
             }, 150)
           }
+        }}
+      />
+
+      <MarketRulesDialog
+        open={marketRulesOpen}
+        onClose={() => {
+          setMarketRulesOpen(false)
+        }}
+        onAccept={() => {
+          setMarketRulesOpen(false)
+
+          window.setTimeout(() => {
+            setListingDialogOpen(true)
+          }, 150)
         }}
       />
 
