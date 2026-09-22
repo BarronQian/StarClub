@@ -22,6 +22,18 @@ import {
 } from '@/components/market-listing-dialog'
 
 import {
+  MarketRsiRequiredDialog,
+} from '@/components/market-rsi-required-dialog'
+
+import {
+  RsiVerificationModal,
+} from '@/components/rsi-verification-modal'
+
+import {
+  getSupabaseBrowser,
+} from '@/lib/supabase-browser'
+
+import {
   UserVerificationBadges,
 } from '@/components/user-verification-badges'
 
@@ -137,6 +149,45 @@ async function readJsonSafely(
 }
 
 export default function MarketPage() {
+    const [
+    currentUser,
+    setCurrentUser,
+  ] = useState<{
+    loggedIn: boolean
+    star_citizen_handle: string | null
+    rsi_verified: boolean
+    rsi_verification_handle: string | null
+    rsi_verification_code: string | null
+    rsi_verification_expires_at: string | null
+  }>({
+    loggedIn: false,
+    star_citizen_handle: null,
+    rsi_verified: false,
+    rsi_verification_handle: null,
+    rsi_verification_code: null,
+    rsi_verification_expires_at: null,
+  })
+
+  const [
+    rsiRequiredOpen,
+    setRsiRequiredOpen,
+  ] = useState(false)
+
+  const [
+    rsiVerificationOpen,
+    setRsiVerificationOpen,
+  ] = useState(false)
+
+  const [
+    pendingPublishAfterVerify,
+    setPendingPublishAfterVerify,
+  ] = useState(false)
+
+  const [
+  currentUserLoading,
+  setCurrentUserLoading,
+] = useState(true)
+
   const [
     listings,
     setListings,
@@ -449,16 +500,103 @@ export default function MarketPage() {
     void loadListings()
   }, [loadListings])
 
+    useEffect(() => {
+    let cancelled = false
+
+    async function loadCurrentUser() {
+      try {
+        const supabase =
+          getSupabaseBrowser()
+
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession()
+
+        if (cancelled) {
+          return
+        }
+
+        if (!session?.user) {
+          setCurrentUser({
+            loggedIn: false,
+            star_citizen_handle: null,
+            rsi_verified: false,
+            rsi_verification_handle: null,
+            rsi_verification_code: null,
+            rsi_verification_expires_at: null,
+          })
+
+          return
+        }
+
+        const {
+          data,
+          error,
+        } = await supabase
+          .from('profiles')
+          .select(`
+            star_citizen_handle,
+            rsi_verified,
+            rsi_verification_handle,
+            rsi_verification_code,
+            rsi_verification_expires_at
+          `)
+          .eq(
+            'id',
+            session.user.id,
+          )
+          .maybeSingle()
+
+        if (error) {
+          throw error
+        }
+
+        if (cancelled) {
+          return
+        }
+
+        setCurrentUser({
+          loggedIn: true,
+          star_citizen_handle:
+            data?.star_citizen_handle ??
+            null,
+          rsi_verified:
+            data?.rsi_verified === true,
+          rsi_verification_handle:
+            data?.rsi_verification_handle ??
+            null,
+          rsi_verification_code:
+            data?.rsi_verification_code ??
+            null,
+          rsi_verification_expires_at:
+            data?.rsi_verification_expires_at ??
+            null,
+        })
+      } catch (error) {
+        console.error(
+          'Failed to load market user:',
+          error,
+        )
+      } finally {
+        if (!cancelled) {
+          setCurrentUserLoading(false)
+        }
+      }
+    }
+
+    void loadCurrentUser()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   useEffect(() => {
   let cancelled = false
 
   async function loadTradeNotifications() {
     try {
-      const {
-        getSupabaseBrowser,
-      } = await import(
-        '@/lib/supabase-browser'
-      )
 
       const supabase =
         getSupabaseBrowser()
@@ -547,6 +685,47 @@ export default function MarketPage() {
     window.clearTimeout(timer)
   }
 }, [publishSuccess])
+
+    async function handlePublishListing() {
+      if (currentUserLoading) {
+        return
+      }
+    if (!currentUser.loggedIn) {
+      const supabase =
+        getSupabaseBrowser()
+
+      const { error } =
+        await supabase.auth.signInWithOAuth({
+          provider: 'discord',
+          options: {
+            redirectTo:
+              `${window.location.origin}/market`,
+            scopes: 'identify email',
+          },
+        })
+
+      if (error) {
+        console.error(
+          'Discord login error:',
+          error,
+        )
+
+        alert(
+          'Discord 登录失败，请稍后再试。',
+        )
+      }
+
+      return
+    }
+
+    if (!currentUser.rsi_verified) {
+      setPendingPublishAfterVerify(true)
+      setRsiRequiredOpen(true)
+      return
+    }
+
+    setListingDialogOpen(true)
+  }
 
   function scrollToMarket() {
     window.setTimeout(
@@ -687,11 +866,9 @@ export default function MarketPage() {
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setListingDialogOpen(
-                        true,
-                      )
-                    }
+                        onClick={() => {
+                          void handlePublishListing()
+                        }}
                     className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-sm font-medium text-background shadow-sm transition-all hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md"
                   >
                     <Plus className="size-4" />
@@ -1127,11 +1304,9 @@ export default function MarketPage() {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setListingDialogOpen(
-                      true,
-                    )
-                  }
+                    onClick={() => {
+                      void handlePublishListing()
+                    }}
                   className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-foreground px-4 text-xs font-medium text-background transition-opacity hover:opacity-90"
                 >
                   <Plus className="size-3.5" />
@@ -1558,6 +1733,62 @@ export default function MarketPage() {
           )}
         </section>
       </main>
+
+            <MarketRsiRequiredDialog
+        open={rsiRequiredOpen}
+        onClose={() => {
+          setRsiRequiredOpen(false)
+          setPendingPublishAfterVerify(false)
+        }}
+        onVerify={() => {
+          setRsiRequiredOpen(false)
+          setRsiVerificationOpen(true)
+        }}
+      />
+
+      <RsiVerificationModal
+        open={rsiVerificationOpen}
+        onClose={() => {
+          setRsiVerificationOpen(false)
+          setPendingPublishAfterVerify(false)
+        }}
+        currentHandle={
+          currentUser.star_citizen_handle
+        }
+        verificationHandle={
+          currentUser.rsi_verification_handle
+        }
+        verificationCode={
+          currentUser.rsi_verification_code
+        }
+        verificationExpiresAt={
+          currentUser.rsi_verification_expires_at
+        }
+        onVerified={(handle) => {
+          setCurrentUser((current) => ({
+            ...current,
+            star_citizen_handle: handle,
+            rsi_verified: true,
+            rsi_verification_handle: null,
+            rsi_verification_code: null,
+            rsi_verification_expires_at: null,
+          }))
+
+          setRsiVerificationOpen(false)
+
+          if (
+            pendingPublishAfterVerify
+          ) {
+            setPendingPublishAfterVerify(
+              false,
+            )
+
+            window.setTimeout(() => {
+              setListingDialogOpen(true)
+            }, 150)
+          }
+        }}
+      />
 
       <MarketListingDialog
         open={

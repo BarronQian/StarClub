@@ -29,6 +29,14 @@ import {
   UserVerificationBadges,
 } from '@/components/user-verification-badges'
 
+import {
+  RsiVerificationModal,
+} from '@/components/rsi-verification-modal'
+
+import {
+  MarketRsiRequiredDialog,
+} from '@/components/market-rsi-required-dialog'
+
 type ListingType =
   | 'wts'
   | 'wtb'
@@ -295,40 +303,148 @@ export default function MarketListingPage({
       setCurrentUserId,
     ] = useState<string | null>(null)
 
-    useEffect(() => {
-      let active = true
+    const [
+      currentUser,
+      setCurrentUser,
+    ] = useState<{
+      loggedIn: boolean
+      star_citizen_handle: string | null
+      rsi_verified: boolean
+      rsi_verification_handle: string | null
+      rsi_verification_code: string | null
+      rsi_verification_expires_at: string | null
+    }>({
+      loggedIn: false,
+      star_citizen_handle: null,
+      rsi_verified: false,
+      rsi_verification_handle: null,
+      rsi_verification_code: null,
+      rsi_verification_expires_at: null,
+    })
 
-      async function loadCurrentUser() {
+    const [
+      currentUserLoading,
+      setCurrentUserLoading,
+    ] = useState(true)
+
+    const [
+      rsiRequiredOpen,
+      setRsiRequiredOpen,
+    ] = useState(false)
+
+    const [
+      rsiVerificationOpen,
+      setRsiVerificationOpen,
+    ] = useState(false)
+
+    const [
+      pendingTradeAfterVerify,
+      setPendingTradeAfterVerify,
+    ] = useState(false)
+
+  useEffect(() => {
+    let active = true
+
+    async function loadCurrentUser() {
+      try {
         const {
           getSupabaseBrowser,
-        } =
-          await import(
-            '@/lib/supabase-browser'
-          )
+        } = await import(
+          '@/lib/supabase-browser'
+        )
 
         const supabase =
           getSupabaseBrowser()
 
         const {
-          data: {
-            session,
-          },
+          data: { session },
         } =
           await supabase.auth.getSession()
 
-        if (active) {
-          setCurrentUserId(
-            session?.user.id ?? null,
+        if (!active) {
+          return
+        }
+
+        if (!session?.user) {
+          setCurrentUserId(null)
+
+          setCurrentUser({
+            loggedIn: false,
+            star_citizen_handle: null,
+            rsi_verified: false,
+            rsi_verification_handle: null,
+            rsi_verification_code: null,
+            rsi_verification_expires_at: null,
+          })
+
+          return
+        }
+
+        setCurrentUserId(
+          session.user.id,
+        )
+
+        const {
+          data,
+          error,
+        } = await supabase
+          .from('profiles')
+          .select(`
+            star_citizen_handle,
+            rsi_verified,
+            rsi_verification_handle,
+            rsi_verification_code,
+            rsi_verification_expires_at
+          `)
+          .eq(
+            'id',
+            session.user.id,
           )
+          .maybeSingle()
+
+        if (error) {
+          throw error
+        }
+
+        if (!active) {
+          return
+        }
+
+        setCurrentUser({
+          loggedIn: true,
+          star_citizen_handle:
+            data?.star_citizen_handle ??
+            null,
+          rsi_verified:
+            data?.rsi_verified === true,
+          rsi_verification_handle:
+            data?.rsi_verification_handle ??
+            null,
+          rsi_verification_code:
+            data?.rsi_verification_code ??
+            null,
+          rsi_verification_expires_at:
+            data?.rsi_verification_expires_at ??
+            null,
+        })
+      } catch (error) {
+        console.error(
+          'Failed to load current market user:',
+          error,
+        )
+      } finally {
+        if (active) {
+          setCurrentUserLoading(false)
         }
       }
+    }
 
-      void loadCurrentUser()
+    void loadCurrentUser()
 
-      return () => {
-        active = false
-      }
-    }, [])
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     async function loadListing() {
@@ -565,7 +681,7 @@ export default function MarketListingPage({
     )
   }
 
-  function openTradeDialog() {
+  function showTradeDialog() {
     if (
       !listing ||
       listing.closed_at
@@ -592,9 +708,61 @@ export default function MarketListingPage({
     setTradeError('')
     setTradeSuccess('')
 
-    setTradeDialogOpen(
-      true,
-    )
+    setTradeDialogOpen(true)
+  }
+
+  async function openTradeDialog() {
+    if (
+      !listing ||
+      listing.closed_at ||
+      currentUserLoading ||
+      currentUserId ===
+        listing.seller_id
+    ) {
+      return
+    }
+
+    if (!currentUser.loggedIn) {
+      const {
+        getSupabaseBrowser,
+      } = await import(
+        '@/lib/supabase-browser'
+      )
+
+      const supabase =
+        getSupabaseBrowser()
+
+      const { error } =
+        await supabase.auth.signInWithOAuth({
+          provider: 'discord',
+          options: {
+            redirectTo:
+              window.location.href,
+            scopes: 'identify email',
+          },
+        })
+
+      if (error) {
+        console.error(
+          'Discord login error:',
+          error,
+        )
+
+        alert(
+          'Discord 登录失败，请稍后再试。',
+        )
+      }
+
+      return
+    }
+
+    if (!currentUser.rsi_verified) {
+      setPendingTradeAfterVerify(true)
+      setRsiRequiredOpen(true)
+      return
+    }
+
+    showTradeDialog()
   }
 
   async function sendTradeRequest() {
@@ -1650,13 +1818,17 @@ async function submitReport() {
                 <button
                   type="button"
                   disabled={
-                    isClosed
+                    isClosed ||
+                    currentUserId ===
+                      listing.seller_id
                   }
                   onClick={
                     openTradeDialog
                   }
                   className={`inline-flex h-12 items-center justify-center gap-2 rounded-full text-sm font-medium transition-opacity ${
-                    isClosed
+                    isClosed ||
+                    currentUserId ===
+                      listing.seller_id
                       ? 'cursor-not-allowed bg-muted text-muted-foreground'
                       : 'bg-foreground text-background hover:opacity-85'
                   }`}
@@ -1665,6 +1837,12 @@ async function submitReport() {
                     <>
                       <X className="size-4" />
                       {closedLabel}
+                    </>
+                  ) : currentUserId ===
+                    listing.seller_id ? (
+                    <>
+                      <User className="size-4" />
+                      这是你的交易
                     </>
                   ) : (
                     <>
@@ -2216,6 +2394,68 @@ async function submitReport() {
           </div>
         </div>
       )}
+
+            <MarketRsiRequiredDialog
+        open={rsiRequiredOpen}
+        onClose={() => {
+          setRsiRequiredOpen(false)
+          setPendingTradeAfterVerify(false)
+        }}
+        onVerify={() => {
+          setRsiRequiredOpen(false)
+          setRsiVerificationOpen(true)
+        }}
+      />
+
+      <RsiVerificationModal
+        open={rsiVerificationOpen}
+        onClose={() => {
+          setRsiVerificationOpen(false)
+          setPendingTradeAfterVerify(false)
+        }}
+        currentHandle={
+          currentUser.star_citizen_handle
+        }
+        verificationHandle={
+          currentUser.rsi_verification_handle
+        }
+        verificationCode={
+          currentUser.rsi_verification_code
+        }
+        verificationExpiresAt={
+          currentUser.rsi_verification_expires_at
+        }
+        onVerified={(handle) => {
+          setCurrentUser(
+            (current) => ({
+              ...current,
+              star_citizen_handle:
+                handle,
+              rsi_verified: true,
+              rsi_verification_handle:
+                null,
+              rsi_verification_code:
+                null,
+              rsi_verification_expires_at:
+                null,
+            }),
+          )
+
+          setRsiVerificationOpen(false)
+
+          if (
+            pendingTradeAfterVerify
+          ) {
+            setPendingTradeAfterVerify(
+              false,
+            )
+
+            window.setTimeout(() => {
+              showTradeDialog()
+            }, 150)
+          }
+        }}
+      />
 
     </>
   )
