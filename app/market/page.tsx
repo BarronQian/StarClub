@@ -1290,9 +1290,9 @@ export default function MarketPage() {
                             </div>
                           </div>
 
-                          <div className="-mx-4 -mb-4 mt-4 flex h-12 items-center gap-2 border-t border-border/40 bg-muted/[0.14] px-4 transition-colors group-hover:bg-muted/25">
-                            {listing.profiles
-                              ?.avatar_url ? (
+                          <div className="-mx-4 -mb-4 mt-4 flex h-12 items-center border-t border-border/40 bg-muted/[0.14] px-4 transition-colors group-hover:bg-muted/25">
+                            {/* Seller avatar */}
+                            {listing.profiles?.avatar_url ? (
                               <img
                                 src={
                                   listing.profiles
@@ -1302,61 +1302,76 @@ export default function MarketPage() {
                                 className="size-6 shrink-0 rounded-full object-cover ring-1 ring-border/70 shadow-sm"
                               />
                             ) : (
-                              <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[8px] font-semibold text-muted-foreground ring-1 ring-border/80">
+                              <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[8px] font-semibold leading-none text-muted-foreground ring-1 ring-border/80">
                                 SC
                               </div>
                             )}
 
-                                <span
-                                  title={
-                                    listing.profiles?.rsi_handle
-                                      ? `@${listing.profiles.rsi_handle}`
-                                      : listing.profiles?.display_name ??
-                                        listing.profiles?.username ??
-                                        'StarClub 玩家'
-                                  }
-                                  className="min-w-0 flex-1 truncate text-[10px] font-medium leading-none text-muted-foreground"
-                                >
-                                  {listing.profiles?.rsi_handle
-                                    ? `@${listing.profiles.rsi_handle}`
-                                    : listing.profiles?.display_name ??
-                                      listing.profiles?.username ??
-                                      'StarClub 玩家'}
-                                </span>
+                            {/* Seller name */}
+                            <span
+                              title={
+                                listing.profiles
+                                  ?.rsi_handle
+                                  ? `@${listing.profiles.rsi_handle}`
+                                  : listing.profiles
+                                        ?.display_name ??
+                                    listing.profiles
+                                      ?.username ??
+                                    'StarClub 玩家'
+                              }
+                              className="ml-2 min-w-0 flex-1 truncate text-[10px] font-medium leading-none text-muted-foreground"
+                            >
+                              {listing.profiles
+                                ?.rsi_handle
+                                ? `@${listing.profiles.rsi_handle}`
+                                : listing.profiles
+                                      ?.display_name ??
+                                  listing.profiles
+                                    ?.username ??
+                                  'StarClub 玩家'}
+                            </span>
 
-                                <div className="flex shrink-0 items-center justify-center">
-                                  <UserVerificationBadges
-                                    rsiVerified={
-                                      listing.profiles
-                                        ?.rsi_verified === true
-                                    }
-                                    handle={
-                                      listing.profiles
-                                        ?.rsi_handle
-                                    }
-                                    size="sm"
-                                  />
-                                </div>
+                            {/* Verification */}
+                            <div className="ml-1.5 flex h-6 shrink-0 items-center justify-center">
+                              <UserVerificationBadges
+                                rsiVerified={
+                                  listing.profiles
+                                    ?.rsi_verified ===
+                                  true
+                                }
+                                handle={
+                                  listing.profiles
+                                    ?.rsi_handle
+                                }
+                                size="sm"
+                              />
+                            </div>
 
-                                  {listing.seller_rating_count > 0 &&
-                                    listing.seller_rating_average !== null && (
-                                      <div className="ml-auto flex h-5 shrink-0 items-center gap-1 leading-none">
-                                        <span className="flex h-4 items-center text-[11px] leading-none text-amber-500">
-                                          ★
-                                        </span>
+                            {/* Seller rating */}
+                            {listing.seller_rating_count >
+                              0 &&
+                              listing.seller_rating_average !==
+                                null && (
+                                <div className="ml-2 flex h-6 shrink-0 items-center gap-1 leading-none">
+                                  <span className="flex items-center text-[11px] leading-none text-amber-500">
+                                    ★
+                                  </span>
 
-                                        <span className="flex h-4 items-center text-[10px] font-semibold tabular-nums leading-none text-foreground/80">
-                                          {listing.seller_rating_average.toFixed(
-                                            1,
-                                          )}
-                                        </span>
-
-                                        <span className="flex h-4 items-center text-[9px] tabular-nums leading-none text-muted-foreground/60">
-                                          ({listing.seller_rating_count})
-                                        </span>
-                                      </div>
+                                  <span className="flex items-center text-[10px] font-semibold tabular-nums leading-none text-foreground/80">
+                                    {listing.seller_rating_average.toFixed(
+                                      1,
                                     )}
+                                  </span>
 
+                                  <span className="flex items-center text-[9px] tabular-nums leading-none text-muted-foreground/60">
+                                    (
+                                    {
+                                      listing.seller_rating_count
+                                    }
+                                    )
+                                  </span>
+                                </div>
+                              )}
                           </div>
                         </div>
                       </Link>
