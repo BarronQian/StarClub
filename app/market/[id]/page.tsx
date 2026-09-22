@@ -1148,14 +1148,27 @@ async function submitReport() {
                 {listing.title}
               </h1>
 
-              {listing.listing_type !==
-              'wtt' ? (
-                <div className="mt-6 text-3xl font-semibold tracking-tight">
-                  {formatPrice(
-                    listing.price_uec,
-                  )}
-                </div>
-              ) : (
+                  {listing.listing_type !==
+                  'wtt' ? (
+                    <div className="mt-6 flex items-baseline gap-2">
+                      {listing.price_uec !== null ? (
+                        <>
+                          <span className="text-3xl font-semibold tabular-nums tracking-tight text-[#b66f08] dark:text-[#e6a64b]">
+                            {listing.price_uec.toLocaleString()}
+                          </span>
+
+                          <span className="text-[13px] font-medium tracking-[0.08em] text-[#b66f08]/65 dark:text-[#e6a64b]/70">
+                            aUEC
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-3xl font-semibold tracking-tight text-[#b66f08] dark:text-[#e6a64b]">
+                          面议
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    
                 <div className="mt-6 rounded-2xl border border-border p-5">
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
