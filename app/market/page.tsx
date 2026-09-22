@@ -38,6 +38,10 @@ import {
 } from '@/components/user-verification-badges'
 
 import {
+  getMarketThumbnailUrl,
+} from '@/lib/market-images'
+
+import {
   ARMOR_PARTS,
   ARMOR_WEIGHTS,
   MARKET_CATEGORIES,
@@ -1362,14 +1366,15 @@ export default function MarketPage() {
                             .image_urls
                             ?.length >
                           0 ? (
-                            <img
-                              src={
-                                listing
-                                  .image_urls[0]
-                              }
-                              alt={
-                                listing.title
-                              }
+                              <img
+                                src={
+                                  getMarketThumbnailUrl(
+                                    listing.image_urls[0],
+                                  )
+                                }
+                                alt={
+                                  listing.title
+                                }
                               className={`h-full w-full object-cover transition-transform duration-700 ease-out ${
                                 isClosed
                                   ? 'grayscale'

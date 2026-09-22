@@ -37,6 +37,10 @@ import {
   MarketRsiRequiredDialog,
 } from '@/components/market-rsi-required-dialog'
 
+import {
+  getMarketThumbnailUrl,
+} from '@/lib/market-images'
+
 type ListingType =
   | 'wts'
   | 'wtb'
@@ -189,6 +193,11 @@ export default function MarketListingPage({
     setActiveImage,
   ] =
     useState(0)
+
+  const [
+    imageLightboxOpen,
+    setImageLightboxOpen,
+  ] = useState(false)
 
   const [
     tradeDialogOpen,
@@ -680,6 +689,54 @@ export default function MarketListingPage({
           : current + 1,
     )
   }
+  
+  useEffect(() => {
+  if (!imageLightboxOpen) {
+    return
+  }
+
+  function handleKeyDown(
+    event: KeyboardEvent,
+  ) {
+    if (event.key === 'Escape') {
+      setImageLightboxOpen(false)
+      return
+    }
+
+    if (event.key === 'ArrowLeft') {
+      previousImage()
+      return
+    }
+
+    if (event.key === 'ArrowRight') {
+      nextImage()
+    }
+  }
+
+  window.addEventListener(
+    'keydown',
+    handleKeyDown,
+  )
+
+  const previousOverflow =
+    document.body.style.overflow
+
+  document.body.style.overflow =
+    'hidden'
+
+  return () => {
+    window.removeEventListener(
+      'keydown',
+      handleKeyDown,
+    )
+
+    document.body.style.overflow =
+      previousOverflow
+  }
+}, [
+  imageLightboxOpen,
+  images.length,
+])
 
   function showTradeDialog() {
     if (
@@ -1188,17 +1245,26 @@ async function submitReport() {
               <div className="relative aspect-4/3 overflow-hidden rounded-3xl border border-border bg-muted">
                 {images.length >
                 0 ? (
-                  <img
-                    src={
-                      images[
-                        activeImage
-                      ]
-                    }
-                    alt={
-                      listing.title
-                    }
-                    className="h-full w-full object-cover"
-                  />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setImageLightboxOpen(true)
+                        }
+                        className="block h-full w-full cursor-zoom-in"
+                        aria-label="查看高清图片"
+                      >
+                        <img
+                          src={
+                            getMarketThumbnailUrl(
+                              images[activeImage],
+                            )
+                          }
+                          alt={
+                            listing.title
+                          }
+                          className="h-full w-full object-cover"
+                        />
+                      </button>
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
                     <Package className="size-8" />
@@ -1273,7 +1339,9 @@ async function submitReport() {
                       >
                         <img
                           src={
-                            image
+                            getMarketThumbnailUrl(
+                              image,
+                            )
                           }
                           alt={`商品图片 ${index + 1}`}
                           className="h-full w-full object-cover"
@@ -1856,7 +1924,82 @@ async function submitReport() {
           </div>
         </div>
       </main>
+          
+          {imageLightboxOpen &&
+  images.length > 0 && (
+    <div
+      className="fixed inset-0 z-150 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm sm:p-8"
+      role="dialog"
+      aria-modal="true"
+      aria-label="商品图片高清预览"
+      onMouseDown={(event) => {
+        if (
+          event.target ===
+          event.currentTarget
+        ) {
+          setImageLightboxOpen(
+            false,
+          )
+        }
+      }}
+    >
+      <button
+        type="button"
+        onClick={() =>
+          setImageLightboxOpen(
+            false,
+          )
+        }
+        aria-label="关闭图片预览"
+        className="absolute right-4 top-4 z-20 flex size-11 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-colors hover:bg-black/75 sm:right-6 sm:top-6"
+      >
+        <X className="size-5" />
+      </button>
 
+      <div className="pointer-events-none absolute left-4 top-4 z-20 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur sm:left-6 sm:top-6">
+        {activeImage + 1} /{' '}
+        {images.length}
+      </div>
+
+      <img
+        src={
+          images[activeImage]
+        }
+        alt={`${listing.title} - 高清图片 ${activeImage + 1}`}
+        className="max-h-[90vh] max-w-[92vw] select-none object-contain"
+        draggable={false}
+      />
+
+      {images.length > 1 && (
+        <>
+          <button
+            type="button"
+            aria-label="上一张图片"
+            onClick={(event) => {
+              event.stopPropagation()
+              previousImage()
+            }}
+            className="absolute left-3 top-1/2 z-20 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-all hover:scale-105 hover:bg-black/75 sm:left-6 sm:size-12"
+          >
+            <ChevronLeft className="size-6" />
+          </button>
+
+          <button
+            type="button"
+            aria-label="下一张图片"
+            onClick={(event) => {
+              event.stopPropagation()
+              nextImage()
+            }}
+            className="absolute right-3 top-1/2 z-20 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-all hover:scale-105 hover:bg-black/75 sm:right-6 sm:size-12"
+          >
+            <ChevronRight className="size-6" />
+          </button>
+        </>
+      )}
+    </div>
+  )}
+           
       {tradeDialogOpen && (
         <div className="fixed inset-0 z-120 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm">
           <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-background shadow-2xl">

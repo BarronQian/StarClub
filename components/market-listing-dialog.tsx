@@ -66,37 +66,34 @@ function createImageId() {
     .slice(2)}`
 }
 
-async function compressImage(
+async function createMarketImage(
   file: File,
+  maxSide: number,
+  quality: number,
+  suffix: string,
 ): Promise<File> {
   const image =
-    document.createElement(
-      'img',
-    )
+    document.createElement('img')
 
   const objectUrl =
     URL.createObjectURL(file)
 
   try {
     await new Promise<void>(
-      (
-        resolve,
-        reject,
-      ) => {
+      (resolve, reject) => {
         image.onload = () =>
           resolve()
+
         image.onerror = () =>
           reject(
             new Error(
               '图片读取失败',
             ),
           )
-        image.src =
-          objectUrl
+
+        image.src = objectUrl
       },
     )
-
-    const maxSide = 2200
 
     const scale =
       Math.min(
@@ -157,7 +154,7 @@ async function compressImage(
           canvas.toBlob(
             resolve,
             'image/webp',
-            0.82,
+            quality,
           )
         },
       )
@@ -175,10 +172,8 @@ async function compressImage(
       )
 
     return new File(
-      [
-        blob,
-      ],
-      `${baseName}.webp`,
+      [blob],
+      `${baseName}-${suffix}.webp`,
       {
         type: 'image/webp',
       },
@@ -617,104 +612,133 @@ const isCustomLocation =
     }
   }
 
-  async function uploadImages(
-    userId: string,
+async function uploadImages(
+  userId: string,
+) {
+  if (
+    selectedImages.length === 0
   ) {
-    if (
-      selectedImages.length ===
-      0
-    ) {
-      return []
-    }
-
-    const supabase =
-      getSupabaseBrowser()
-
-    const batchId =
-      `${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}`
-
-    const urls: string[] = []
-
-    for (
-      let index = 0;
-      index <
-      selectedImages.length;
-      index += 1
-    ) {
-      setUploadProgressText(
-        `正在处理图片 ${index + 1}/${selectedImages.length}`,
-      )
-
-      const compressedFile =
-        await compressImage(
-          selectedImages[
-            index
-          ].file,
-        )
-
-      if (
-        compressedFile.size >
-        5 *
-          1024 *
-          1024
-      ) {
-        throw new Error(
-          `第 ${index + 1} 张图片压缩后仍超过 5 MB`,
-        )
-      }
-
-      const path =
-        `${userId}/${batchId}/${index + 1}.webp`
-
-      setUploadProgressText(
-        `正在上传图片 ${index + 1}/${selectedImages.length}`,
-      )
-
-      const {
-        error:
-          uploadError,
-      } =
-        await supabase.storage
-          .from(
-            'market-listings',
-          )
-          .upload(
-            path,
-            compressedFile,
-            {
-              contentType:
-                'image/webp',
-              upsert: false,
-            },
-          )
-
-      if (uploadError) {
-        throw new Error(
-          `第 ${index + 1} 张图片上传失败：${uploadError.message}`,
-        )
-      }
-
-      const {
-        data:
-          publicUrlData,
-      } =
-        supabase.storage
-          .from(
-            'market-listings',
-          )
-          .getPublicUrl(
-            path,
-          )
-
-      urls.push(
-        publicUrlData.publicUrl,
-      )
-    }
-
-    return urls
+    return []
   }
+
+  const supabase =
+    getSupabaseBrowser()
+
+  const batchId =
+    `${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}`
+
+  const urls: string[] = []
+
+  for (
+    let index = 0;
+    index < selectedImages.length;
+    index += 1
+  ) {
+    setUploadProgressText(
+      `正在处理图片 ${index + 1}/${selectedImages.length}`,
+    )
+
+    const sourceFile =
+      selectedImages[index].file
+
+    const [
+      displayFile,
+      thumbnailFile,
+    ] = await Promise.all([
+      createMarketImage(
+        sourceFile,
+        2200,
+        0.82,
+        'display',
+      ),
+
+      createMarketImage(
+        sourceFile,
+        700,
+        0.76,
+        'thumb',
+      ),
+    ])
+
+    if (
+      displayFile.size >
+      5 * 1024 * 1024
+    ) {
+      throw new Error(
+        `第 ${index + 1} 张图片处理后仍超过 5 MB`,
+      )
+    }
+
+    const displayPath =
+      `${userId}/${batchId}/display/${index + 1}.webp`
+
+    const thumbnailPath =
+      `${userId}/${batchId}/thumbs/${index + 1}.webp`
+
+    setUploadProgressText(
+      `正在上传图片 ${index + 1}/${selectedImages.length}`,
+    )
+
+    const {
+      error: displayUploadError,
+    } =
+      await supabase.storage
+        .from('market-listings')
+        .upload(
+          displayPath,
+          displayFile,
+          {
+            contentType:
+              'image/webp',
+            upsert: false,
+          },
+        )
+
+    if (displayUploadError) {
+      throw new Error(
+        `第 ${index + 1} 张高清图片上传失败：${displayUploadError.message}`,
+      )
+    }
+
+    const {
+      error: thumbnailUploadError,
+    } =
+      await supabase.storage
+        .from('market-listings')
+        .upload(
+          thumbnailPath,
+          thumbnailFile,
+          {
+            contentType:
+              'image/webp',
+            upsert: false,
+          },
+        )
+
+    if (thumbnailUploadError) {
+      throw new Error(
+        `第 ${index + 1} 张缩略图上传失败：${thumbnailUploadError.message}`,
+      )
+    }
+
+    const {
+      data: publicUrlData,
+    } =
+      supabase.storage
+        .from('market-listings')
+        .getPublicUrl(
+          displayPath,
+        )
+
+    urls.push(
+      publicUrlData.publicUrl,
+    )
+  }
+
+  return urls
+}
 
   async function submitListing() {
     if (submitting) {
