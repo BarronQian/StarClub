@@ -689,54 +689,6 @@ export default function MarketListingPage({
           : current + 1,
     )
   }
-  
-  useEffect(() => {
-  if (!imageLightboxOpen) {
-    return
-  }
-
-  function handleKeyDown(
-    event: KeyboardEvent,
-  ) {
-    if (event.key === 'Escape') {
-      setImageLightboxOpen(false)
-      return
-    }
-
-    if (event.key === 'ArrowLeft') {
-      previousImage()
-      return
-    }
-
-    if (event.key === 'ArrowRight') {
-      nextImage()
-    }
-  }
-
-  window.addEventListener(
-    'keydown',
-    handleKeyDown,
-  )
-
-  const previousOverflow =
-    document.body.style.overflow
-
-  document.body.style.overflow =
-    'hidden'
-
-  return () => {
-    window.removeEventListener(
-      'keydown',
-      handleKeyDown,
-    )
-
-    document.body.style.overflow =
-      previousOverflow
-  }
-}, [
-  imageLightboxOpen,
-  images.length,
-])
 
   function showTradeDialog() {
     if (
@@ -1999,7 +1951,7 @@ async function submitReport() {
       )}
     </div>
   )}
-           
+
       {tradeDialogOpen && (
         <div className="fixed inset-0 z-120 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm">
           <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-background shadow-2xl">
