@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Flag,
+  Info,
   Layers3,
   Loader2,
   MapPin,
@@ -1307,8 +1308,8 @@ async function submitReport() {
                 </div>
               </div>
 
-              <div className="mt-10 rounded-2xl border border-border p-5">
-                <div className="mb-4 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              <div className="mt-8 rounded-2xl border border-border px-5 py-4">
+                <div className="mb-3 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
                   SELLER
                 </div>
 
@@ -1331,7 +1332,7 @@ async function submitReport() {
                         alt={
                           sellerName
                         }
-                        className="size-12 shrink-0 rounded-full object-cover"
+                        className="size-10 shrink-0 rounded-full object-cover"
                       />
                     ) : (
                       <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -1408,7 +1409,7 @@ async function submitReport() {
                         alt={
                           sellerName
                         }
-                        className="size-12 shrink-0 rounded-full object-cover"
+                        className="size-10 shrink-0 rounded-full object-cover"
                       />
                     ) : (
                       <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -1471,14 +1472,14 @@ async function submitReport() {
                   </div>
                 )}
 
-              <div className="mt-5 border-t border-border pt-4">
+              <div className="mt-4 border-t border-border/70 pt-3.5">
                 {sellerStatsLoading ? (
                     <div className="flex h-14 items-center justify-center">
                       <Loader2 className="size-4 animate-spin text-muted-foreground" />
                     </div>
 ) : sellerStats ? (
   <div>
-    <div className="mb-4 flex items-center justify-between">
+    <div className="mb-3 flex items-center justify-between">
       <div className="text-xs text-muted-foreground">
         交易评分
       </div>
@@ -1571,42 +1572,57 @@ async function submitReport() {
                 </div>
               </div>
 
-              <div className="mt-5 rounded-2xl border border-border bg-muted/30 p-5">
-                  
-                {currentUserId !==
-                  listing.seller_id ? (
-                  <div className="mt-4 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={openReportDialog}
-                        className="
-                          inline-flex h-10 items-center justify-center gap-2
-                          rounded-full
-                          border border-red-200
-                          bg-red-50
-                          px-5
-                          text-sm font-medium text-red-600
-                          transition-all
-                          hover:border-red-300
-                          hover:bg-red-100
-                          hover:text-red-700
-                          active:scale-[0.98]
-                        "
-                      >
-                        <Flag className="h-4 w-4" />
-                        举报此交易
-                      </button>
-                  </div>
-                ) : null}
-                <div className="flex gap-3">
-                  <RefreshCw className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <div className="mt-5 rounded-2xl border border-border/70 bg-muted/20 px-5 py-4">
+                  <div className="flex items-center gap-5">
+                    {/* 安全提示 */}
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-[#b66f08]/15 bg-[#b66f08]/8 dark:border-[#e6a64b]/15 dark:bg-[#e6a64b]/8">
+                          <Info className="size-3.5 text-[#b66f08] dark:text-[#e6a64b]" />
+                        </div>
 
-                  <p className="text-xs leading-6 text-muted-foreground">
-                    星际酒馆市场仅提供游戏内交易信息展示与撮合。
-                    请与对方确认物品、数量、品质及交易地点后，在游戏内完成交易。
-                  </p>
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold text-foreground/80">
+                          交易安全提示
+                        </div>
+
+                        <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                          星际酒馆市场仅提供游戏内交易信息展示与撮合。
+                          请确认物品、数量、品质及交易地点后，在游戏内完成交易。
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 举报 */}
+                    {currentUserId !== listing.seller_id ? (
+                        <button
+                          type="button"
+                          onClick={openReportDialog}
+                          className="
+                            group
+                            inline-flex h-9 shrink-0 items-center justify-center gap-1.5
+                            rounded-full
+                            border border-border/80
+                            bg-background
+                            px-3.5
+                            text-[11px] font-medium
+                            text-muted-foreground
+                            shadow-sm
+                            transition-all
+                            hover:border-red-500/25
+                            hover:bg-red-500/5
+                            active:scale-[0.97]
+                            dark:shadow-none
+                          "
+                        >
+                          <Flag className="size-3.5 text-red-500" />
+
+                          <span className="transition-colors group-hover:text-red-500">
+                            举报
+                          </span>
+                        </button>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 {listing.profiles
