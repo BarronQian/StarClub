@@ -67,6 +67,7 @@ type MarketListing = {
   description: string
   price_uec: number | null
   quantity: number
+  completed_quantity: number
   quality: number | null
   location: string | null
   negotiable: boolean
@@ -1350,6 +1351,31 @@ export default function MarketPage() {
                         listing.listing_type
                       ]
 
+                      const completedQuantity =
+                        Math.max(
+                          0,
+                          Number(
+                            listing.completed_quantity ??
+                              0,
+                          ),
+                        )
+
+                      const quantityLabels =
+                        listing.listing_type === 'wtb'
+                          ? {
+                              completed: '已收',
+                              remaining: '需求',
+                            }
+                          : listing.listing_type === 'wtt'
+                            ? {
+                                completed: '已换',
+                                remaining: '剩余',
+                              }
+                            : {
+                                completed: '已售',
+                                remaining: '库存',
+                              }
+
                     return (
                       <Link
                         key={
@@ -1415,9 +1441,27 @@ export default function MarketPage() {
                               {typeUI.label}
                             </span>
 
-                            <span className="text-[11px] font-medium tabular-nums text-muted-foreground/80">
-                              ×{listing.quantity}
-                            </span>
+                              <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[10px] font-medium tabular-nums">
+                                <span className="text-muted-foreground/60">
+                                  {quantityLabels.completed}
+                                </span>
+
+                                <span className="font-semibold text-foreground/80">
+                                  {completedQuantity}
+                                </span>
+
+                                <span className="text-muted-foreground/30">
+                                  ·
+                                </span>
+
+                                <span className="text-muted-foreground/60">
+                                  {quantityLabels.remaining}
+                                </span>
+
+                                <span className="font-semibold text-foreground/80">
+                                  {listing.quantity}
+                                </span>
+                              </div>
                           </div>
 
                           <div className="mt-3.5 flex-1">

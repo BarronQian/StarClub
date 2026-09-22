@@ -416,6 +416,18 @@ export async function GET(
   const rawListings =
     data ?? []
 
+  const listingIds =
+  rawListings.map(
+    (listing) =>
+      listing.id,
+  )
+
+  const completedQuantityMap =
+    new Map<
+      string,
+      number
+    >()
+
   const sellerIds =
     Array.from(
       new Set(
@@ -543,6 +555,74 @@ export async function GET(
     }
   }
 
+  if (listingIds.length > 0) {
+  const {
+    data: completedTrades,
+    error:
+      completedTradesError,
+  } =
+    await supabase
+      .from(
+        'market_trade_requests',
+      )
+      .select(`
+        listing_id,
+        quantity
+      `)
+      .in(
+        'listing_id',
+        listingIds,
+      )
+      .eq(
+        'status',
+        'completed',
+      )
+
+  if (
+    completedTradesError
+  ) {
+    console.error(
+      'Failed to load completed market trade quantities:',
+      completedTradesError,
+    )
+  } else {
+    for (
+      const trade of
+        completedTrades ?? []
+    ) {
+      const listingId =
+        trade.listing_id
+
+      const quantity =
+        Number(
+          trade.quantity ??
+            0,
+        )
+
+      if (
+        !listingId ||
+        !Number.isFinite(
+          quantity,
+        ) ||
+        quantity <= 0
+      ) {
+        continue
+      }
+
+      const currentQuantity =
+        completedQuantityMap.get(
+          listingId,
+        ) ?? 0
+
+      completedQuantityMap.set(
+        listingId,
+        currentQuantity +
+          quantity,
+      )
+    }
+  }
+}
+
   const listings =
     rawListings.map(
       (listing) => {
@@ -551,8 +631,16 @@ export async function GET(
             listing.seller_id,
           )
 
+        const completedQuantity =
+          completedQuantityMap.get(
+            listing.id,
+          ) ?? 0
+
         return {
           ...listing,
+
+          completed_quantity:
+            completedQuantity,
 
           seller_rating_average:
             sellerRating
