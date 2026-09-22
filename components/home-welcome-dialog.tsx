@@ -387,23 +387,21 @@ export function HomeWelcomeDialog() {
         verificationExpiresAt={
           profile?.rsi_verification_expires_at
         }
-        onVerified={(handle) => {
-          setProfile((current) => ({
-            star_citizen_handle: handle,
-            rsi_verified: true,
-            rsi_verification_handle: null,
-            rsi_verification_code: null,
-            rsi_verification_expires_at: null,
-            ...current,
-            star_citizen_handle: handle,
-            rsi_verified: true,
-          }))
+          onVerified={(handle) => {
+            setProfile((current) => ({
+              ...current,
+              star_citizen_handle: handle,
+              rsi_verified: true,
+              rsi_verification_handle: null,
+              rsi_verification_code: null,
+              rsi_verification_expires_at: null,
+            }))
 
-          sessionStorage.setItem(
-            SESSION_DISMISSED_KEY,
-            '1',
-          )
-        }}
+            sessionStorage.setItem(
+              SESSION_DISMISSED_KEY,
+              '1',
+            )
+          }}
       />
     </>
   )
