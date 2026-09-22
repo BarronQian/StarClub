@@ -111,18 +111,16 @@ export function HomeWelcomeDialog() {
           }
 
           /*
-           * 已登录但未认证：
-           * 本次浏览器 Session
-           * 没有点击过“已阅”才提醒。
-           */
-          const dismissed =
-            sessionStorage.getItem(
-              SESSION_DISMISSED_KEY,
-            )
+          * 已登录但未完成 RSI 认证：
+          * 登录是新的账号设置阶段，
+          * 因此即使登录前点过“稍后提醒”，
+          * 登录成功回到首页后仍然提醒一次。
+          */
+          sessionStorage.removeItem(
+            SESSION_DISMISSED_KEY,
+          )
 
-          if (!dismissed) {
-            setOpen(true)
-          }
+          setOpen(true)
         } catch (error) {
           console.error(
             'Failed to initialize homepage welcome dialog:',
@@ -145,37 +143,36 @@ export function HomeWelcomeDialog() {
     setOpen(false)
   }
 
-  const handleDiscordLogin =
-    async () => {
-      try {
-        const supabase =
-          getSupabaseBrowser()
+    const handleDiscordLogin =
+      async () => {
+        try {
+          const supabase =
+            getSupabaseBrowser()
 
-        const redirectTo =
-          `${window.location.origin}/auth/callback`
+          const { error } =
+            await supabase.auth.signInWithOAuth({
+              provider: 'discord',
+              options: {
+                redirectTo:
+                  `${window.location.origin}/`,
+                scopes: 'identify email',
+              },
+            })
 
-        const { error } =
-          await supabase.auth.signInWithOAuth({
-            provider: 'discord',
-            options: {
-              redirectTo,
-            },
-          })
+          if (error) {
+            throw error
+          }
+        } catch (error) {
+          console.error(
+            'Discord login failed:',
+            error,
+          )
 
-        if (error) {
-          throw error
+          alert(
+            'Discord 登录失败，请稍后再试。',
+          )
         }
-      } catch (error) {
-        console.error(
-          'Discord login failed:',
-          error,
-        )
-
-        alert(
-          'Discord 登录启动失败，请稍后再试。',
-        )
       }
-    }
 
   if (loading) {
     return null
@@ -185,24 +182,24 @@ export function HomeWelcomeDialog() {
     <>
       {open && (
         <div
-          className="fixed inset-0 z-120 flex items-center justify-center bg-black/35 px-4 py-8 backdrop-blur-sm"
+          className="fixed inset-0 z-120 flex items-center justify-center bg-black/25 px-4 py-6 backdrop-blur-[3px]"
           role="dialog"
           aria-modal="true"
         >
-          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-black/10 bg-white shadow-2xl dark:border-white/10 dark:bg-[#37332f]">
+          <div className="relative max-h-[82vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-black/10 bg-white shadow-2xl dark:border-white/10 dark:bg-[#37332f]">
             {/* Header */}
-            <div className="border-b border-border px-6 py-6 dark:border-white/8 sm:px-8">
+            <div className="border-b border-border px-6 py-5 dark:border-white/8 sm:px-7">
               <div className="flex items-center gap-2 text-xs font-medium tracking-[0.2em] text-[#a66700]">
                 <Sparkles className="size-4" />
 
                 STARCLUB UPDATE
               </div>
 
-              <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+              <h2 className="mt-2.5 text-2xl font-semibold tracking-tight sm:text-[1.7rem]">
                 欢迎来到星际酒馆
               </h2>
 
-              <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+              <p className="mt-1.5 max-w-xl text-sm leading-5 text-muted-foreground">
                 星际酒馆官网正在持续更新。登录并完成
                 Star Citizen 游戏 ID
                 认证，可以完整使用社区与玩家功能。
@@ -210,13 +207,13 @@ export function HomeWelcomeDialog() {
             </div>
 
             {/* Account status */}
-            <div className="px-6 pt-6 sm:px-8">
-              <div className="rounded-2xl border border-border bg-[#f7f7f5] p-5 dark:border-white/8 dark:bg-[#302d29]">
+            <div className="px-6 pt-5 sm:px-7">
+              <div className="rounded-2xl border border-border bg-[#f7f7f5] p-4.5 dark:border-white/8 dark:bg-[#302d29]">
                 <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground">
                   ACCOUNT STATUS
                 </p>
 
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 space-y-2.5">
                   {/* Discord */}
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -290,7 +287,7 @@ export function HomeWelcomeDialog() {
                     onClick={() => {
                       void handleDiscordLogin()
                     }}
-                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#5865F2] px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#5865F2] px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
                   >
                     <LogIn className="size-4" />
                     使用 Discord 登录
@@ -304,7 +301,7 @@ export function HomeWelcomeDialog() {
                         true,
                       )
                     }}
-                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-950 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-[#2b2825] dark:hover:bg-white/90"
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-950 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-[#2b2825] dark:hover:bg-white/90"
                   >
                     <UserRoundCheck className="size-4" />
                     认证游戏 ID
@@ -314,7 +311,7 @@ export function HomeWelcomeDialog() {
             </div>
 
             {/* Updates */}
-            <div className="px-6 py-6 sm:px-8">
+            <div className="px-6 py-5 sm:px-7">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold">
                   网站近期更新
@@ -325,7 +322,7 @@ export function HomeWelcomeDialog() {
                 </span>
               </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
                 <UpdateItem
                   icon={ShoppingBag}
                   title="玩家市场"
@@ -353,17 +350,17 @@ export function HomeWelcomeDialog() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between border-t border-border px-6 py-5 dark:border-white/8 sm:px-8">
+            <div className="flex items-center justify-between border-t border-border px-6 py-4 dark:border-white/8 sm:px-7">
               <p className="text-xs text-muted-foreground">
-                登录并完成认证后将不再显示账号提醒
+                未完成账号设置时，下次访问仍会提醒
               </p>
 
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="rounded-full border border-border px-5 py-2.5 text-xs font-medium transition-colors hover:bg-neutral-50 dark:border-white/10 dark:hover:bg-white/8"
+                className="rounded-xl bg-neutral-100 px-5 py-2.5 text-xs font-medium text-neutral-700 transition-all hover:bg-neutral-200 active:scale-[0.97] dark:bg-white/8 dark:text-white/80 dark:hover:bg-white/12"
               >
-                已阅
+                稍后提醒
               </button>
             </div>
           </div>
@@ -417,7 +414,7 @@ function UpdateItem({
   description: string
 }) {
   return (
-    <div className="flex gap-3 rounded-2xl border border-border p-4 dark:border-white/8">
+    <div className="flex gap-3 rounded-2xl border border-border p-3.5 dark:border-white/8">
       <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#a66700]/8">
         <Icon className="size-4 text-[#a66700]" />
       </div>

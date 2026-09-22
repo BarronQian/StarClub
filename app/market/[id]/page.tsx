@@ -29,6 +29,18 @@ import {
   UserVerificationBadges,
 } from '@/components/user-verification-badges'
 
+import {
+  RsiVerificationModal,
+} from '@/components/rsi-verification-modal'
+
+import {
+  MarketRsiRequiredDialog,
+} from '@/components/market-rsi-required-dialog'
+
+import {
+  getMarketThumbnailUrl,
+} from '@/lib/market-images'
+
 type ListingType =
   | 'wts'
   | 'wtb'
@@ -183,6 +195,11 @@ export default function MarketListingPage({
     useState(0)
 
   const [
+    imageLightboxOpen,
+    setImageLightboxOpen,
+  ] = useState(false)
+
+  const [
     tradeDialogOpen,
     setTradeDialogOpen,
   ] =
@@ -295,40 +312,148 @@ export default function MarketListingPage({
       setCurrentUserId,
     ] = useState<string | null>(null)
 
-    useEffect(() => {
-      let active = true
+    const [
+      currentUser,
+      setCurrentUser,
+    ] = useState<{
+      loggedIn: boolean
+      star_citizen_handle: string | null
+      rsi_verified: boolean
+      rsi_verification_handle: string | null
+      rsi_verification_code: string | null
+      rsi_verification_expires_at: string | null
+    }>({
+      loggedIn: false,
+      star_citizen_handle: null,
+      rsi_verified: false,
+      rsi_verification_handle: null,
+      rsi_verification_code: null,
+      rsi_verification_expires_at: null,
+    })
 
-      async function loadCurrentUser() {
+    const [
+      currentUserLoading,
+      setCurrentUserLoading,
+    ] = useState(true)
+
+    const [
+      rsiRequiredOpen,
+      setRsiRequiredOpen,
+    ] = useState(false)
+
+    const [
+      rsiVerificationOpen,
+      setRsiVerificationOpen,
+    ] = useState(false)
+
+    const [
+      pendingTradeAfterVerify,
+      setPendingTradeAfterVerify,
+    ] = useState(false)
+
+  useEffect(() => {
+    let active = true
+
+    async function loadCurrentUser() {
+      try {
         const {
           getSupabaseBrowser,
-        } =
-          await import(
-            '@/lib/supabase-browser'
-          )
+        } = await import(
+          '@/lib/supabase-browser'
+        )
 
         const supabase =
           getSupabaseBrowser()
 
         const {
-          data: {
-            session,
-          },
+          data: { session },
         } =
           await supabase.auth.getSession()
 
-        if (active) {
-          setCurrentUserId(
-            session?.user.id ?? null,
+        if (!active) {
+          return
+        }
+
+        if (!session?.user) {
+          setCurrentUserId(null)
+
+          setCurrentUser({
+            loggedIn: false,
+            star_citizen_handle: null,
+            rsi_verified: false,
+            rsi_verification_handle: null,
+            rsi_verification_code: null,
+            rsi_verification_expires_at: null,
+          })
+
+          return
+        }
+
+        setCurrentUserId(
+          session.user.id,
+        )
+
+        const {
+          data,
+          error,
+        } = await supabase
+          .from('profiles')
+          .select(`
+            star_citizen_handle,
+            rsi_verified,
+            rsi_verification_handle,
+            rsi_verification_code,
+            rsi_verification_expires_at
+          `)
+          .eq(
+            'id',
+            session.user.id,
           )
+          .maybeSingle()
+
+        if (error) {
+          throw error
+        }
+
+        if (!active) {
+          return
+        }
+
+        setCurrentUser({
+          loggedIn: true,
+          star_citizen_handle:
+            data?.star_citizen_handle ??
+            null,
+          rsi_verified:
+            data?.rsi_verified === true,
+          rsi_verification_handle:
+            data?.rsi_verification_handle ??
+            null,
+          rsi_verification_code:
+            data?.rsi_verification_code ??
+            null,
+          rsi_verification_expires_at:
+            data?.rsi_verification_expires_at ??
+            null,
+        })
+      } catch (error) {
+        console.error(
+          'Failed to load current market user:',
+          error,
+        )
+      } finally {
+        if (active) {
+          setCurrentUserLoading(false)
         }
       }
+    }
 
-      void loadCurrentUser()
+    void loadCurrentUser()
 
-      return () => {
-        active = false
-      }
-    }, [])
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     async function loadListing() {
@@ -564,8 +689,56 @@ export default function MarketListingPage({
           : current + 1,
     )
   }
+  
+  useEffect(() => {
+  if (!imageLightboxOpen) {
+    return
+  }
 
-  function openTradeDialog() {
+  function handleKeyDown(
+    event: KeyboardEvent,
+  ) {
+    if (event.key === 'Escape') {
+      setImageLightboxOpen(false)
+      return
+    }
+
+    if (event.key === 'ArrowLeft') {
+      previousImage()
+      return
+    }
+
+    if (event.key === 'ArrowRight') {
+      nextImage()
+    }
+  }
+
+  window.addEventListener(
+    'keydown',
+    handleKeyDown,
+  )
+
+  const previousOverflow =
+    document.body.style.overflow
+
+  document.body.style.overflow =
+    'hidden'
+
+  return () => {
+    window.removeEventListener(
+      'keydown',
+      handleKeyDown,
+    )
+
+    document.body.style.overflow =
+      previousOverflow
+  }
+}, [
+  imageLightboxOpen,
+  images.length,
+])
+
+  function showTradeDialog() {
     if (
       !listing ||
       listing.closed_at
@@ -592,9 +765,61 @@ export default function MarketListingPage({
     setTradeError('')
     setTradeSuccess('')
 
-    setTradeDialogOpen(
-      true,
-    )
+    setTradeDialogOpen(true)
+  }
+
+  async function openTradeDialog() {
+    if (
+      !listing ||
+      listing.closed_at ||
+      currentUserLoading ||
+      currentUserId ===
+        listing.seller_id
+    ) {
+      return
+    }
+
+    if (!currentUser.loggedIn) {
+      const {
+        getSupabaseBrowser,
+      } = await import(
+        '@/lib/supabase-browser'
+      )
+
+      const supabase =
+        getSupabaseBrowser()
+
+      const { error } =
+        await supabase.auth.signInWithOAuth({
+          provider: 'discord',
+          options: {
+            redirectTo:
+              window.location.href,
+            scopes: 'identify email',
+          },
+        })
+
+      if (error) {
+        console.error(
+          'Discord login error:',
+          error,
+        )
+
+        alert(
+          'Discord 登录失败，请稍后再试。',
+        )
+      }
+
+      return
+    }
+
+    if (!currentUser.rsi_verified) {
+      setPendingTradeAfterVerify(true)
+      setRsiRequiredOpen(true)
+      return
+    }
+
+    showTradeDialog()
   }
 
   async function sendTradeRequest() {
@@ -1020,17 +1245,26 @@ async function submitReport() {
               <div className="relative aspect-4/3 overflow-hidden rounded-3xl border border-border bg-muted">
                 {images.length >
                 0 ? (
-                  <img
-                    src={
-                      images[
-                        activeImage
-                      ]
-                    }
-                    alt={
-                      listing.title
-                    }
-                    className="h-full w-full object-cover"
-                  />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setImageLightboxOpen(true)
+                        }
+                        className="block h-full w-full cursor-zoom-in"
+                        aria-label="查看高清图片"
+                      >
+                        <img
+                          src={
+                            getMarketThumbnailUrl(
+                              images[activeImage],
+                            )
+                          }
+                          alt={
+                            listing.title
+                          }
+                          className="h-full w-full object-cover"
+                        />
+                      </button>
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
                     <Package className="size-8" />
@@ -1105,7 +1339,9 @@ async function submitReport() {
                       >
                         <img
                           src={
-                            image
+                            getMarketThumbnailUrl(
+                              image,
+                            )
                           }
                           alt={`商品图片 ${index + 1}`}
                           className="h-full w-full object-cover"
@@ -1650,13 +1886,17 @@ async function submitReport() {
                 <button
                   type="button"
                   disabled={
-                    isClosed
+                    isClosed ||
+                    currentUserId ===
+                      listing.seller_id
                   }
                   onClick={
                     openTradeDialog
                   }
                   className={`inline-flex h-12 items-center justify-center gap-2 rounded-full text-sm font-medium transition-opacity ${
-                    isClosed
+                    isClosed ||
+                    currentUserId ===
+                      listing.seller_id
                       ? 'cursor-not-allowed bg-muted text-muted-foreground'
                       : 'bg-foreground text-background hover:opacity-85'
                   }`}
@@ -1665,6 +1905,12 @@ async function submitReport() {
                     <>
                       <X className="size-4" />
                       {closedLabel}
+                    </>
+                  ) : currentUserId ===
+                    listing.seller_id ? (
+                    <>
+                      <User className="size-4" />
+                      这是你的交易
                     </>
                   ) : (
                     <>
@@ -1678,7 +1924,82 @@ async function submitReport() {
           </div>
         </div>
       </main>
+          
+          {imageLightboxOpen &&
+  images.length > 0 && (
+    <div
+      className="fixed inset-0 z-150 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm sm:p-8"
+      role="dialog"
+      aria-modal="true"
+      aria-label="商品图片高清预览"
+      onMouseDown={(event) => {
+        if (
+          event.target ===
+          event.currentTarget
+        ) {
+          setImageLightboxOpen(
+            false,
+          )
+        }
+      }}
+    >
+      <button
+        type="button"
+        onClick={() =>
+          setImageLightboxOpen(
+            false,
+          )
+        }
+        aria-label="关闭图片预览"
+        className="absolute right-4 top-4 z-20 flex size-11 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-colors hover:bg-black/75 sm:right-6 sm:top-6"
+      >
+        <X className="size-5" />
+      </button>
 
+      <div className="pointer-events-none absolute left-4 top-4 z-20 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur sm:left-6 sm:top-6">
+        {activeImage + 1} /{' '}
+        {images.length}
+      </div>
+
+      <img
+        src={
+          images[activeImage]
+        }
+        alt={`${listing.title} - 高清图片 ${activeImage + 1}`}
+        className="max-h-[90vh] max-w-[92vw] select-none object-contain"
+        draggable={false}
+      />
+
+      {images.length > 1 && (
+        <>
+          <button
+            type="button"
+            aria-label="上一张图片"
+            onClick={(event) => {
+              event.stopPropagation()
+              previousImage()
+            }}
+            className="absolute left-3 top-1/2 z-20 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-all hover:scale-105 hover:bg-black/75 sm:left-6 sm:size-12"
+          >
+            <ChevronLeft className="size-6" />
+          </button>
+
+          <button
+            type="button"
+            aria-label="下一张图片"
+            onClick={(event) => {
+              event.stopPropagation()
+              nextImage()
+            }}
+            className="absolute right-3 top-1/2 z-20 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-all hover:scale-105 hover:bg-black/75 sm:right-6 sm:size-12"
+          >
+            <ChevronRight className="size-6" />
+          </button>
+        </>
+      )}
+    </div>
+  )}
+           
       {tradeDialogOpen && (
         <div className="fixed inset-0 z-120 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm">
           <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-background shadow-2xl">
@@ -2216,6 +2537,68 @@ async function submitReport() {
           </div>
         </div>
       )}
+
+            <MarketRsiRequiredDialog
+        open={rsiRequiredOpen}
+        onClose={() => {
+          setRsiRequiredOpen(false)
+          setPendingTradeAfterVerify(false)
+        }}
+        onVerify={() => {
+          setRsiRequiredOpen(false)
+          setRsiVerificationOpen(true)
+        }}
+      />
+
+      <RsiVerificationModal
+        open={rsiVerificationOpen}
+        onClose={() => {
+          setRsiVerificationOpen(false)
+          setPendingTradeAfterVerify(false)
+        }}
+        currentHandle={
+          currentUser.star_citizen_handle
+        }
+        verificationHandle={
+          currentUser.rsi_verification_handle
+        }
+        verificationCode={
+          currentUser.rsi_verification_code
+        }
+        verificationExpiresAt={
+          currentUser.rsi_verification_expires_at
+        }
+        onVerified={(handle) => {
+          setCurrentUser(
+            (current) => ({
+              ...current,
+              star_citizen_handle:
+                handle,
+              rsi_verified: true,
+              rsi_verification_handle:
+                null,
+              rsi_verification_code:
+                null,
+              rsi_verification_expires_at:
+                null,
+            }),
+          )
+
+          setRsiVerificationOpen(false)
+
+          if (
+            pendingTradeAfterVerify
+          ) {
+            setPendingTradeAfterVerify(
+              false,
+            )
+
+            window.setTimeout(() => {
+              showTradeDialog()
+            }, 150)
+          }
+        }}
+      />
 
     </>
   )
