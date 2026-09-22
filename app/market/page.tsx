@@ -1346,32 +1346,31 @@ export default function MarketPage() {
                                 size="sm"
                               />
                             </div>
-
                             {/* Seller rating */}
-                            {listing.seller_rating_count >
-                              0 &&
-                              listing.seller_rating_average !==
-                                null && (
-                                <div className="ml-2 flex h-6 shrink-0 items-center gap-1 leading-none">
-                                  <span className="flex items-center text-[11px] leading-none text-amber-500">
+                            <div className="ml-2 flex h-6 shrink-0 items-center justify-end leading-none">
+                              {listing.seller_rating_count > 0 &&
+                              listing.seller_rating_average !== null ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[11px] leading-none text-amber-500">
                                     ★
                                   </span>
 
-                                  <span className="flex items-center text-[10px] font-semibold tabular-nums leading-none text-foreground/80">
+                                  <span className="text-[10px] font-semibold tabular-nums leading-none text-foreground/80">
                                     {listing.seller_rating_average.toFixed(
                                       1,
                                     )}
                                   </span>
 
-                                  <span className="flex items-center text-[9px] tabular-nums leading-none text-muted-foreground/60">
-                                    (
-                                    {
-                                      listing.seller_rating_count
-                                    }
-                                    )
+                                  <span className="text-[9px] tabular-nums leading-none text-muted-foreground/60">
+                                    ({listing.seller_rating_count})
                                   </span>
                                 </div>
+                              ) : (
+                                <span className="whitespace-nowrap text-[9px] font-medium leading-none text-muted-foreground/50">
+                                  暂无评分
+                                </span>
                               )}
+                            </div>
                           </div>
                         </div>
                       </Link>
