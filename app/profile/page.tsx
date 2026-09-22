@@ -2269,12 +2269,10 @@ const handleConfirmCoverUpload =
               {/* Avatar */}
               <div className="-mt-14 shrink-0 lg:-mt-16">
                 <div className="relative size-28 overflow-hidden rounded-3xl border-[5px] border-white bg-muted shadow-lg dark:border-card lg:size-32">
-                  <Image
+                  <img
                     src={avatar}
                     alt={`${username} 头像`}
-                    fill
-                    sizes="128px"
-                    className="object-cover"
+                    className="absolute inset-0 h-full w-full object-cover"
                   />
                 </div>
               </div>

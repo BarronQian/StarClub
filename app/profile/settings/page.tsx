@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import { TIMEZONES, formatTimezone } from '@/lib/timezones'
+import { RsiVerificationModal } from '@/components/rsi-verification-modal'
 import {
   ChevronDown,
   ChevronRight,
@@ -38,6 +39,9 @@ export default function ProfileSettingsPage() {
 
   const [saving, setSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
+
+  const [rsiVerificationOpen, setRsiVerificationOpen] =
+  useState(false)
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -183,7 +187,7 @@ export default function ProfileSettingsPage() {
 
       <div className="space-y-6">
         {/* Discord */}
-        <section className="overflow-hidden rounded-2xl border border-border bg-white">
+        <section className="overflow-hidden rounded-2xl border border-border bg-white dark:border-white/8 dark:bg-[#37332f]">
           <div className="flex items-center gap-3 border-b border-border px-6 py-5">
             <CircleUserRound className="size-5 text-[#a66700]" />
 
@@ -211,7 +215,7 @@ export default function ProfileSettingsPage() {
                   className="size-11 shrink-0 rounded-full object-cover"
                 />
               ) : (
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-neutral-100">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-neutral-100 dark:bg-white/10">
                   <CircleUserRound className="size-5 text-muted-foreground" />
                 </div>
               )}
@@ -241,14 +245,15 @@ export default function ProfileSettingsPage() {
               </div>
             </div>
 
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#b87300]/25 bg-linear-to-b from-[#fffaf0] to-[#f8ead1] px-3 py-1.5 text-xs font-medium text-[#9a6200] shadow-sm">
-              ✓ 已连接
+            <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              已连接
             </span>
           </div>
         </section>
 
         {/* RSI */}
-        <section className="overflow-hidden rounded-2xl border border-border bg-white">
+        <section className="overflow-hidden rounded-2xl border border-border bg-white dark:border-white/8 dark:bg-[#37332f]">
           <div className="flex items-center gap-3 border-b border-border px-6 py-5">
             <Gamepad2 className="size-5 text-[#a66700]" />
 
@@ -276,13 +281,15 @@ export default function ProfileSettingsPage() {
               </p>
             </div>
 
-            <Link
-              href="/profile"
-              className="inline-flex items-center gap-1 text-sm font-medium text-[#a66700] transition-opacity hover:opacity-70"
-            >
-              管理身份
-              <ChevronRight className="size-4" />
-            </Link>
+              <button
+                type="button"
+                onClick={() => setRsiVerificationOpen(true)}
+                className="inline-flex items-center gap-1 text-sm font-medium text-[#b87300] transition-colors hover:text-[#925b00] dark:text-[#e3ad5c] dark:hover:text-[#f0c47d]"
+              >
+                {profile?.rsi_verified ? '重新认证' : '立即认证'}
+
+                <ChevronRight className="size-4" />
+              </button>
           </div>
 
           <div className="flex items-center justify-between gap-5 border-t border-border px-6 py-5">
@@ -317,7 +324,7 @@ export default function ProfileSettingsPage() {
         </section>
 
         {/* 个人资料 */}
-        <section className="overflow-hidden rounded-2xl border border-border bg-white">
+        <section className="overflow-hidden rounded-2xl border border-border bg-white dark:border-white/8 dark:bg-[#37332f]">
           <div className="flex items-center gap-3 border-b border-border px-6 py-5">
             <Clock3 className="size-5 text-[#a66700]" />
 
@@ -350,7 +357,7 @@ export default function ProfileSettingsPage() {
                     setEditTimezone(event.target.value)
                     setSaveMessage('')
                   }}
-                  className="w-full appearance-none rounded-xl border border-border bg-white px-4 py-3 pr-11 text-sm outline-none transition-all focus:border-[#b87300]/50 focus:ring-4 focus:ring-[#b87300]/5"
+                  className="w-full appearance-none rounded-xl border border-border bg-white px-4 py-3 pr-11 text-sm text-foreground outline-none transition-all focus:border-[#b87300]/50 focus:ring-4 focus:ring-[#b87300]/5 dark:border-white/10 dark:bg-[#302d29] dark:scheme-dark"
                 >
                   <option value="">
                     未设置时区
@@ -396,7 +403,7 @@ export default function ProfileSettingsPage() {
                 }}
                 placeholder="简单介绍一下自己..."
                 rows={4}
-                className="mt-2 w-full resize-none rounded-xl border border-border bg-white px-4 py-3 text-sm leading-relaxed outline-none transition-all placeholder:text-muted-foreground focus:border-[#b87300]/50 focus:ring-4 focus:ring-[#b87300]/5"
+                className="mt-2 w-full resize-none rounded-xl border border-border bg-white px-4 py-3 text-sm leading-relaxed text-foreground outline-none transition-all placeholder:text-muted-foreground focus:border-[#b87300]/50 focus:ring-4 focus:ring-[#b87300]/5 dark:border-white/10 dark:bg-[#302d29]"
               />
             </div>
 
@@ -419,7 +426,7 @@ export default function ProfileSettingsPage() {
                 type="button"
                 onClick={handleSaveProfile}
                 disabled={saving || loading}
-                className="rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-[#2b2825] dark:hover:bg-white/90"
               >
                 {saving ? '保存中...' : '保存修改'}
               </button>
@@ -428,7 +435,7 @@ export default function ProfileSettingsPage() {
         </section>
 
         {/* 账号操作 */}
-        <section className="overflow-hidden rounded-2xl border border-border bg-white">
+        <section className="overflow-hidden rounded-2xl border border-border bg-white dark:border-white/8 dark:bg-[#37332f]">
           <div className="px-6 py-5">
             <h2 className="font-medium">
               账号
@@ -442,7 +449,7 @@ export default function ProfileSettingsPage() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="flex w-full items-center justify-between border-t border-border px-6 py-5 text-left transition-colors hover:bg-neutral-50"
+            className="flex w-full items-center justify-between border-t border-border px-6 py-5 text-left transition-colors hover:bg-neutral-50 dark:border-white/8 dark:hover:bg-white/4"
           >
             <div className="flex items-center gap-3">
               <LogOut className="size-4 text-red-500" />
@@ -456,6 +463,23 @@ export default function ProfileSettingsPage() {
           </button>
         </section>
       </div>
+
+      <RsiVerificationModal
+        open={rsiVerificationOpen}
+        onClose={() => setRsiVerificationOpen(false)}
+        currentHandle={profile?.star_citizen_handle}
+        onVerified={(handle) => {
+          setProfile((current) =>
+            current
+              ? {
+                  ...current,
+                  star_citizen_handle: handle,
+                  rsi_verified: true,
+                }
+              : current,
+          )
+        }}
+      />
     </main>
   )
 }
