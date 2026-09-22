@@ -1115,14 +1115,21 @@ async function submitReport() {
 
             <div className="lg:pt-2">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background">
-                  {
-                    TYPE_LABELS[
-                      listing
-                        .listing_type
-                    ]
-                  }
-                </span>
+                  <span
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                      listing.listing_type === 'wts'
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300'
+                        : listing.listing_type === 'wtb'
+                          ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-300'
+                          : 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/25 dark:bg-violet-500/10 dark:text-violet-300'
+                    }`}
+                  >
+                    {
+                      TYPE_LABELS[
+                        listing.listing_type
+                      ]
+                    }
+                  </span>
 
                 {isClosed && (
                   <span className="rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
@@ -1168,7 +1175,7 @@ async function submitReport() {
                       )}
                     </div>
                   ) : (
-                    
+
                 <div className="mt-6 rounded-2xl border border-border p-5">
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
