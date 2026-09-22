@@ -3,17 +3,21 @@
 import Link from 'next/link'
 import {
   ArrowLeft,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Flag,
+  Info,
+  Layers3,
   Loader2,
   MapPin,
   MessageCircle,
   Package,
   RefreshCw,
   Send,
+  Sparkles,
   User,
   X,
-  Flag,
 } from 'lucide-react'
 import {
   use,
@@ -1115,14 +1119,21 @@ async function submitReport() {
 
             <div className="lg:pt-2">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background">
-                  {
-                    TYPE_LABELS[
-                      listing
-                        .listing_type
-                    ]
-                  }
-                </span>
+                  <span
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                      listing.listing_type === 'wts'
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300'
+                        : listing.listing_type === 'wtb'
+                          ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-300'
+                          : 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/25 dark:bg-violet-500/10 dark:text-violet-300'
+                    }`}
+                  >
+                    {
+                      TYPE_LABELS[
+                        listing.listing_type
+                      ]
+                    }
+                  </span>
 
                 {isClosed && (
                   <span className="rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
@@ -1148,14 +1159,27 @@ async function submitReport() {
                 {listing.title}
               </h1>
 
-              {listing.listing_type !==
-              'wtt' ? (
-                <div className="mt-6 text-3xl font-semibold tracking-tight">
-                  {formatPrice(
-                    listing.price_uec,
-                  )}
-                </div>
-              ) : (
+                  {listing.listing_type !==
+                  'wtt' ? (
+                    <div className="mt-6 flex items-baseline gap-2">
+                      {listing.price_uec !== null ? (
+                        <>
+                          <span className="text-3xl font-semibold tabular-nums tracking-tight text-[#b66f08] dark:text-[#e6a64b]">
+                            {listing.price_uec.toLocaleString()}
+                          </span>
+
+                          <span className="text-[13px] font-medium tracking-[0.08em] text-[#b66f08]/65 dark:text-[#e6a64b]/70">
+                            aUEC
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-3xl font-semibold tracking-tight text-[#b66f08] dark:text-[#e6a64b]">
+                          面议
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+
                 <div className="mt-6 rounded-2xl border border-border p-5">
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
@@ -1183,58 +1207,82 @@ async function submitReport() {
                 </div>
               )}
 
-              <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-5 border-y border-border py-6">
-                <div>
-                  <div className="text-xs text-muted-foreground">
-                    数量
+                <div className="mt-8 grid grid-cols-2 gap-3 border-y border-border/70 py-5">
+                  {/* 数量 */}
+                  <div className="flex items-center gap-3 rounded-xl bg-muted/25 px-3.5 py-3">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm ring-1 ring-border/60">
+                      <Layers3 className="size-3.5" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-medium text-muted-foreground">
+                        数量
+                      </div>
+
+                      <div className="mt-0.5 text-sm font-semibold tabular-nums">
+                        ×{listing.quantity}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="mt-1 text-sm font-medium">
-                    ×
-                    {
-                      listing.quantity
-                    }
+                  {/* 品质 */}
+                  <div className="flex items-center gap-3 rounded-xl bg-muted/25 px-3.5 py-3">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm ring-1 ring-border/60">
+                      <Sparkles className="size-3.5" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-medium text-muted-foreground">
+                        品质
+                      </div>
+
+                      <div className="mt-0.5 text-sm font-semibold">
+                        {listing.quality !== null
+                          ? listing.quality
+                          : '未注明'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 交易地点 */}
+                  <div className="flex items-center gap-3 rounded-xl bg-muted/25 px-3.5 py-3">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm ring-1 ring-border/60">
+                      <MapPin className="size-3.5" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-medium text-muted-foreground">
+                        交易地点
+                      </div>
+
+                      <div
+                        title={listing.location || '双方协商'}
+                        className="mt-0.5 truncate text-sm font-semibold"
+                      >
+                        {listing.location || '双方协商'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 发布时间 */}
+                  <div className="flex items-center gap-3 rounded-xl bg-muted/25 px-3.5 py-3">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm ring-1 ring-border/60">
+                      <CalendarDays className="size-3.5" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-medium text-muted-foreground">
+                        发布时间
+                      </div>
+
+                      <div className="mt-0.5 truncate text-sm font-semibold">
+                        {formatDate(
+                          listing.created_at,
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                <div>
-                  <div className="text-xs text-muted-foreground">
-                    品质
-                  </div>
-
-                  <div className="mt-1 text-sm font-medium">
-                      {listing.quality !==
-                      null
-                        ? listing.quality
-                        : '未注明'}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-xs text-muted-foreground">
-                    交易地点
-                  </div>
-
-                  <div className="mt-1 flex items-center gap-1.5 text-sm font-medium">
-                    <MapPin className="size-3.5 text-muted-foreground" />
-
-                    {listing.location ||
-                      '双方协商'}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-xs text-muted-foreground">
-                    发布时间
-                  </div>
-
-                  <div className="mt-1 text-sm font-medium">
-                    {formatDate(
-                      listing.created_at,
-                    )}
-                  </div>
-                </div>
-              </div>
 
               <div className="mt-8">
                 <h2 className="text-sm font-semibold">
@@ -1260,8 +1308,8 @@ async function submitReport() {
                 </div>
               </div>
 
-              <div className="mt-10 rounded-2xl border border-border p-5">
-                <div className="mb-4 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              <div className="mt-8 rounded-2xl border border-border px-5 py-4">
+                <div className="mb-3 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
                   SELLER
                 </div>
 
@@ -1284,7 +1332,7 @@ async function submitReport() {
                         alt={
                           sellerName
                         }
-                        className="size-12 shrink-0 rounded-full object-cover"
+                        className="size-10 shrink-0 rounded-full object-cover"
                       />
                     ) : (
                       <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -1361,7 +1409,7 @@ async function submitReport() {
                         alt={
                           sellerName
                         }
-                        className="size-12 shrink-0 rounded-full object-cover"
+                        className="size-10 shrink-0 rounded-full object-cover"
                       />
                     ) : (
                       <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -1424,14 +1472,14 @@ async function submitReport() {
                   </div>
                 )}
 
-              <div className="mt-5 border-t border-border pt-4">
+              <div className="mt-4 border-t border-border/70 pt-3.5">
                 {sellerStatsLoading ? (
                     <div className="flex h-14 items-center justify-center">
                       <Loader2 className="size-4 animate-spin text-muted-foreground" />
                     </div>
 ) : sellerStats ? (
   <div>
-    <div className="mb-4 flex items-center justify-between">
+    <div className="mb-3 flex items-center justify-between">
       <div className="text-xs text-muted-foreground">
         交易评分
       </div>
@@ -1524,42 +1572,57 @@ async function submitReport() {
                 </div>
               </div>
 
-              <div className="mt-5 rounded-2xl border border-border bg-muted/30 p-5">
-                  
-                {currentUserId !==
-                  listing.seller_id ? (
-                  <div className="mt-4 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={openReportDialog}
-                        className="
-                          inline-flex h-10 items-center justify-center gap-2
-                          rounded-full
-                          border border-red-200
-                          bg-red-50
-                          px-5
-                          text-sm font-medium text-red-600
-                          transition-all
-                          hover:border-red-300
-                          hover:bg-red-100
-                          hover:text-red-700
-                          active:scale-[0.98]
-                        "
-                      >
-                        <Flag className="h-4 w-4" />
-                        举报此交易
-                      </button>
-                  </div>
-                ) : null}
-                <div className="flex gap-3">
-                  <RefreshCw className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <div className="mt-5 rounded-2xl border border-border/70 bg-muted/20 px-5 py-4">
+                  <div className="flex items-center gap-5">
+                    {/* 安全提示 */}
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-[#b66f08]/15 bg-[#b66f08]/8 dark:border-[#e6a64b]/15 dark:bg-[#e6a64b]/8">
+                          <Info className="size-3.5 text-[#b66f08] dark:text-[#e6a64b]" />
+                        </div>
 
-                  <p className="text-xs leading-6 text-muted-foreground">
-                    星际酒馆市场仅提供游戏内交易信息展示与撮合。
-                    请与对方确认物品、数量、品质及交易地点后，在游戏内完成交易。
-                  </p>
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold text-foreground/80">
+                          交易安全提示
+                        </div>
+
+                        <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                          星际酒馆市场仅提供游戏内交易信息展示与撮合。
+                          请确认物品、数量、品质及交易地点后，在游戏内完成交易。
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 举报 */}
+                    {currentUserId !== listing.seller_id ? (
+                        <button
+                          type="button"
+                          onClick={openReportDialog}
+                          className="
+                            group
+                            inline-flex h-9 shrink-0 items-center justify-center gap-1.5
+                            rounded-full
+                            border border-border/80
+                            bg-background
+                            px-3.5
+                            text-[11px] font-medium
+                            text-muted-foreground
+                            shadow-sm
+                            transition-all
+                            hover:border-red-500/25
+                            hover:bg-red-500/5
+                            active:scale-[0.97]
+                            dark:shadow-none
+                          "
+                        >
+                          <Flag className="size-3.5 text-red-500" />
+
+                          <span className="transition-colors group-hover:text-red-500">
+                            举报
+                          </span>
+                        </button>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 {listing.profiles

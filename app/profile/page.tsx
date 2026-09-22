@@ -2219,17 +2219,13 @@ const handleConfirmCoverUpload =
 
           {/* Banner */}
           <div className="relative h-44 overflow-hidden bg-[#ece8e1] dark:bg-[#302d29] lg:h-56">
-            {profile?.cover_url ? (
-              <Image
-                src={
-                  profile.cover_url
-                }
-                alt={`${username} 封面`}
-                fill
-                sizes="100vw"
-                className="object-cover"
-              />
-            ) : (
+              {profile?.cover_url ? (
+                <img
+                  src={profile.cover_url}
+                  alt={`${username} 封面`}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
               <div className="absolute inset-0 bg-linear-to-r from-[#f4eee5] via-[#ebe5db] to-[#ded7ca] dark:from-[#39342f] dark:via-[#332f2b] dark:to-[#2d2a27]" />
             )}
 

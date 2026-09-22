@@ -38,63 +38,72 @@ export function HallOfFameHistory({
                   {edition.date}
                 </span>
               </div>
-                <div className="grid grid-cols-3 gap-6 sm:w-105">
+                <div className="grid w-full grid-cols-3 gap-3 sm:w-125 lg:w-135">
                   {/* 冠军 */}
                   <div className="flex min-w-0 flex-col items-center text-center">
-                    <div className="mb-1.5 flex items-center gap-1.5">
+                    <div className="mb-1.5 flex items-center justify-center gap-1.5">
                       <span
-                        className="text-base leading-none"
+                        className="text-sm leading-none"
                         aria-hidden="true"
                       >
                         🥇
                       </span>
 
-                      <span className="text-[0.6rem] tracking-[0.2em] text-muted-foreground uppercase">
+                      <span className="text-[0.58rem] tracking-[0.16em] text-muted-foreground uppercase">
                         冠军
                       </span>
                     </div>
 
-                    <span className="w-full truncate font-display text-lg font-medium text-foreground">
+                    <span
+                      title={edition.champion}
+                      className="w-full truncate px-1 font-display text-[0.95rem] font-medium leading-tight text-foreground lg:text-base"
+                    >
                       {edition.champion}
                     </span>
                   </div>
 
                   {/* 亚军 */}
                   <div className="flex min-w-0 flex-col items-center text-center">
-                    <div className="mb-1.5 flex items-center gap-1.5">
+                    <div className="mb-1.5 flex items-center justify-center gap-1.5">
                       <span
-                        className="text-base leading-none"
+                        className="text-sm leading-none"
                         aria-hidden="true"
                       >
                         🥈
                       </span>
 
-                      <span className="text-[0.6rem] tracking-[0.2em] text-muted-foreground uppercase">
+                      <span className="text-[0.58rem] tracking-[0.16em] text-muted-foreground uppercase">
                         亚军
                       </span>
                     </div>
 
-                    <span className="w-full truncate font-display text-lg font-medium text-foreground">
+                    <span
+                      title={edition.runnerUp}
+                      className="w-full truncate px-1 font-display text-[0.95rem] font-medium leading-tight text-foreground lg:text-base"
+                    >
                       {edition.runnerUp}
                     </span>
                   </div>
 
                   {/* 季军 */}
                   <div className="flex min-w-0 flex-col items-center text-center">
-                    <div className="mb-1.5 flex items-center gap-1.5">
+                    <div className="mb-1.5 flex items-center justify-center gap-1.5">
                       <span
-                        className="text-base leading-none"
+                        className="text-sm leading-none"
                         aria-hidden="true"
                       >
                         🥉
                       </span>
 
-                      <span className="text-[0.6rem] tracking-[0.2em] text-muted-foreground uppercase">
+                      <span className="text-[0.58rem] tracking-[0.16em] text-muted-foreground uppercase">
                         季军
                       </span>
                     </div>
 
-                    <span className="w-full truncate font-display text-lg font-medium text-foreground">
+                    <span
+                      title={edition.thirdPlace}
+                      className="w-full truncate px-1 font-display text-[0.95rem] font-medium leading-tight text-foreground lg:text-base"
+                    >
                       {edition.thirdPlace}
                     </span>
                   </div>

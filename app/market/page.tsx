@@ -5,6 +5,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  MapPin,
   PackageSearch,
   Plus,
   Search,
@@ -55,6 +56,9 @@ type MarketListing = {
   status: string
   created_at: string
   closed_at: string | null
+
+  seller_rating_average: number | null
+  seller_rating_count: number
 
   profiles: {
     id: string
@@ -1209,13 +1213,13 @@ export default function MarketPage() {
                             </div>
                           )}
 
-                          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-linear-to-t from-black/12 to-transparent" />
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/18 via-black/5 to-transparent opacity-80" />
                         </div>
 
-                        <div className="flex min-h-49 flex-1 flex-col p-4">
+                        <div className="flex min-h-42 flex-1 flex-col p-4">
                           <div className="flex items-center justify-between gap-2">
                             <span
-                              className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.04em] shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] ${
+                              className={`inline-flex h-6 items-center rounded-full border px-2.5 text-[9px] font-semibold tracking-[0.045em] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-sm ${
                                 typeUI.className
                               }`}
                             >
@@ -1232,7 +1236,7 @@ export default function MarketPage() {
                               {listing.title}
                             </h2>
 
-                              <div className="mt-2.5">
+                              <div className="mt-1.5">
                                 {listing.listing_type ===
                                 'wtt' ? (
                                   <span className="text-[14px] font-semibold tracking-[-0.02em] text-[#9a671f] dark:text-[#e3ad5c]">
@@ -1248,38 +1252,43 @@ export default function MarketPage() {
                                     <span className="text-[17px] font-bold tabular-nums tracking-tight text-[#ad6b0b] dark:text-[#e3ad5c]">
                                       {listing.price_uec.toLocaleString()}
                                     </span>
-
-                                    <span className="text-[9px] font-semibold uppercase tracking-widest text-[#ad6b0b]/55 dark:text-[#e3ad5c]/65">
-                                      aUEC
-                                    </span>
+                                      <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#ad6b0b]/70 dark:text-[#e3ad5c]/75">
+                                        aUEC
+                                      </span>
                                   </div>
                                 )}
                               </div>
 
-                            <div className="mt-3 min-h-5">
+                            <div className="mt-2 min-h-4">
                               {(listing.location ||
-                                listing.quality !==
-                                  null) && (
-                                <div className="flex flex-wrap items-center gap-x-2 text-[10px] text-muted-foreground/80">
+                                listing.quality !== null) && (
+                                <div className="flex min-w-0 items-center text-[9px] font-medium text-muted-foreground/65">
                                   {listing.location && (
-                                    <span className="max-w-31.25 truncate">
-                                      {listing.location}
+                                    <span
+                                      title={listing.location}
+                                      className="flex min-w-0 items-center gap-1"
+                                    >
+                                      <MapPin
+                                        className="size-3 shrink-0 text-muted-foreground/55"
+                                        strokeWidth={1.8}
+                                      />
+
+                                      <span className="min-w-0 truncate">
+                                        {listing.location}
+                                      </span>
                                     </span>
                                   )}
 
                                   {listing.location &&
-                                    listing.quality !==
-                                      null && (
-                                      <span className="opacity-35">
-                                        ·
+                                    listing.quality !== null && (
+                                      <span className="mx-2 shrink-0 text-muted-foreground/25">
+                                        •
                                       </span>
                                     )}
 
-                                  {listing.quality !==
-                                    null && (
-                                    <span>
-                                      品质{' '}
-                                      {listing.quality}
+                                  {listing.quality !== null && (
+                                    <span className="shrink-0 whitespace-nowrap">
+                                      品质 {listing.quality}
                                     </span>
                                   )}
                                 </div>
@@ -1287,9 +1296,9 @@ export default function MarketPage() {
                             </div>
                           </div>
 
-                          <div className="-mx-4 -mb-4 mt-4 flex min-h-12 items-center gap-2 border-t border-border/40 bg-muted/[0.14] px-4 py-3 transition-colors group-hover:bg-muted/25">
-                            {listing.profiles
-                              ?.avatar_url ? (
+                          <div className="-mx-4 -mb-4 mt-4 flex h-10 items-center border-t border-border/25 bg-muted/[0.14] px-4 transition-colors group-hover:bg-muted/25">
+                            {/* Seller avatar */}
+                            {listing.profiles?.avatar_url ? (
                               <img
                                 src={
                                   listing.profiles
@@ -1299,12 +1308,25 @@ export default function MarketPage() {
                                 className="size-6 shrink-0 rounded-full object-cover ring-1 ring-border/70 shadow-sm"
                               />
                             ) : (
-                              <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[8px] font-semibold text-muted-foreground ring-1 ring-border/80">
+                              <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[8px] font-semibold leading-none text-muted-foreground ring-1 ring-border/80">
                                 SC
                               </div>
                             )}
 
-                            <span className="min-w-0 max-w-[calc(100%-3rem)] truncate text-[10px] font-medium text-muted-foreground">
+                            {/* Seller name */}
+                            <span
+                              title={
+                                listing.profiles
+                                  ?.rsi_handle
+                                  ? `@${listing.profiles.rsi_handle}`
+                                  : listing.profiles
+                                        ?.display_name ??
+                                    listing.profiles
+                                      ?.username ??
+                                    'StarClub 玩家'
+                              }
+                              className="ml-2 min-w-0 flex-1 truncate pb-px text-[10px] font-medium leading-[1.3] text-muted-foreground"
+                            >
                               {listing.profiles
                                 ?.rsi_handle
                                 ? `@${listing.profiles.rsi_handle}`
@@ -1315,17 +1337,46 @@ export default function MarketPage() {
                                   'StarClub 玩家'}
                             </span>
 
-                            <UserVerificationBadges
-                              rsiVerified={
-                                listing.profiles
-                                  ?.rsi_verified === true
-                              }
-                              handle={
-                                listing.profiles
-                                  ?.rsi_handle
-                              }
-                              size="sm"
-                            />
+                            {/* Verification */}
+                            <div className="ml-1.5 flex h-6 shrink-0 items-center justify-center">
+                              <UserVerificationBadges
+                                rsiVerified={
+                                  listing.profiles
+                                    ?.rsi_verified ===
+                                  true
+                                }
+                                handle={
+                                  listing.profiles
+                                    ?.rsi_handle
+                                }
+                                size="sm"
+                              />
+                            </div>
+                              {/* Seller rating */}
+                              <div className="ml-2 flex h-6 w-12 shrink-0 items-center justify-end leading-none">
+                              {listing.seller_rating_count > 0 &&
+                              listing.seller_rating_average !== null ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[11px] leading-none text-amber-500">
+                                    ★
+                                  </span>
+
+                                  <span className="text-[10px] font-semibold tabular-nums leading-none text-foreground/80">
+                                    {listing.seller_rating_average.toFixed(
+                                      1,
+                                    )}
+                                  </span>
+
+                                  <span className="text-[9px] tabular-nums leading-none text-muted-foreground/60">
+                                    ({listing.seller_rating_count})
+                                  </span>
+                                </div>
+                              ) : (
+                                  <span className="whitespace-nowrap text-[9px] font-normal leading-none text-muted-foreground/40">
+                                  暂无评分
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </Link>

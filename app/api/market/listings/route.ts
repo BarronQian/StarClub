@@ -413,8 +413,159 @@ export async function GET(
     )
   }
 
-  const listings =
+  const rawListings =
     data ?? []
+
+  const sellerIds =
+    Array.from(
+      new Set(
+        rawListings
+          .map(
+            (listing) =>
+              listing.seller_id,
+          )
+          .filter(Boolean),
+      ),
+    )
+
+  const sellerRatingMap =
+    new Map<
+      string,
+      {
+        ratingAverage:
+          | number
+          | null
+        ratingCount: number
+      }
+    >()
+
+  if (sellerIds.length > 0) {
+    const {
+      data: reviews,
+      error: reviewsError,
+    } =
+      await supabase
+        .from(
+          'market_trade_reviews',
+        )
+        .select(`
+          reviewee_id,
+          rating
+        `)
+        .in(
+          'reviewee_id',
+          sellerIds,
+        )
+
+    if (reviewsError) {
+      console.error(
+        'Failed to load market seller ratings:',
+        reviewsError,
+      )
+    } else {
+      const ratingBuckets =
+        new Map<
+          string,
+          number[]
+        >()
+
+      for (
+        const review of
+          reviews ?? []
+      ) {
+        const sellerId =
+          review.reviewee_id
+
+        const rating =
+          Number(
+            review.rating,
+          )
+
+        if (
+          !sellerId ||
+          !Number.isFinite(
+            rating,
+          )
+        ) {
+          continue
+        }
+
+        const ratings =
+          ratingBuckets.get(
+            sellerId,
+          ) ?? []
+
+        ratings.push(
+          rating,
+        )
+
+        ratingBuckets.set(
+          sellerId,
+          ratings,
+        )
+      }
+
+      for (
+        const sellerId of
+          sellerIds
+      ) {
+        const ratings =
+          ratingBuckets.get(
+            sellerId,
+          ) ?? []
+
+        sellerRatingMap.set(
+          sellerId,
+          {
+            ratingAverage:
+              ratings.length > 0
+                ? Number(
+                    (
+                      ratings.reduce(
+                        (
+                          total,
+                          rating,
+                        ) =>
+                          total +
+                          rating,
+                        0,
+                      ) /
+                      ratings.length
+                    ).toFixed(1),
+                  )
+                : null,
+
+            ratingCount:
+              ratings.length,
+          },
+        )
+      }
+    }
+  }
+
+  const listings =
+    rawListings.map(
+      (listing) => {
+        const sellerRating =
+          sellerRatingMap.get(
+            listing.seller_id,
+          )
+
+        return {
+          ...listing,
+
+          seller_rating_average:
+            sellerRating
+              ?.ratingAverage ??
+            null,
+
+          seller_rating_count:
+            sellerRating
+              ?.ratingCount ??
+            0,
+        }
+      },
+    )
 
   const total =
     count ?? 0
