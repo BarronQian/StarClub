@@ -5,6 +5,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  MapPin,
   PackageSearch,
   Plus,
   Search,
@@ -1212,13 +1213,13 @@ export default function MarketPage() {
                             </div>
                           )}
 
-                          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-linear-to-t from-black/12 to-transparent" />
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/18 via-black/5 to-transparent opacity-80" />
                         </div>
 
                         <div className="flex min-h-49 flex-1 flex-col p-4">
                           <div className="flex items-center justify-between gap-2">
                             <span
-                              className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.04em] shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] ${
+                              className={`inline-flex h-6 items-center rounded-full border px-2.5 text-[9px] font-semibold tracking-[0.045em] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-sm ${
                                 typeUI.className
                               }`}
                             >
@@ -1265,9 +1266,16 @@ export default function MarketPage() {
                                   {listing.location && (
                                     <span
                                       title={listing.location}
-                                      className="min-w-0 truncate"
+                                      className="flex min-w-0 items-center gap-1"
                                     >
-                                      {listing.location}
+                                      <MapPin
+                                        className="size-3 shrink-0 text-muted-foreground/55"
+                                        strokeWidth={1.8}
+                                      />
+
+                                      <span className="min-w-0 truncate">
+                                        {listing.location}
+                                      </span>
                                     </span>
                                   )}
 
