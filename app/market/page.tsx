@@ -1290,7 +1290,7 @@ export default function MarketPage() {
                             </div>
                           </div>
 
-                          <div className="-mx-4 -mb-4 mt-4 flex min-h-12 items-center gap-2 border-t border-border/40 bg-muted/[0.14] px-4 py-3 transition-colors group-hover:bg-muted/25">
+                          <div className="-mx-4 -mb-4 mt-4 flex h-12 items-center gap-2 border-t border-border/40 bg-muted/[0.14] px-4 transition-colors group-hover:bg-muted/25">
                             {listing.profiles
                               ?.avatar_url ? (
                               <img
@@ -1307,47 +1307,55 @@ export default function MarketPage() {
                               </div>
                             )}
 
-                            <span className="min-w-0 max-w-[calc(100%-3rem)] truncate text-[10px] font-medium text-muted-foreground">
-                              {listing.profiles
-                                ?.rsi_handle
-                                ? `@${listing.profiles.rsi_handle}`
-                                : listing.profiles
-                                      ?.display_name ??
-                                  listing.profiles
-                                    ?.username ??
-                                  'StarClub 玩家'}
-                            </span>
+                                <span
+                                  title={
+                                    listing.profiles?.rsi_handle
+                                      ? `@${listing.profiles.rsi_handle}`
+                                      : listing.profiles?.display_name ??
+                                        listing.profiles?.username ??
+                                        'StarClub 玩家'
+                                  }
+                                  className="min-w-0 flex-1 truncate text-[10px] font-medium leading-none text-muted-foreground"
+                                >
+                                  {listing.profiles?.rsi_handle
+                                    ? `@${listing.profiles.rsi_handle}`
+                                    : listing.profiles?.display_name ??
+                                      listing.profiles?.username ??
+                                      'StarClub 玩家'}
+                                </span>
 
-                            <UserVerificationBadges
-                              rsiVerified={
-                                listing.profiles
-                                  ?.rsi_verified === true
-                              }
-                              handle={
-                                listing.profiles
-                                  ?.rsi_handle
-                              }
-                              size="sm"
-                            />
-
-                            {listing.seller_rating_count > 0 &&
-                              listing.seller_rating_average !== null && (
-                                <div className="ml-auto flex shrink-0 items-center gap-1">
-                                  <span className="text-[11px] leading-none text-amber-500">
-                                    ★
-                                  </span>
-
-                                  <span className="text-[10px] font-semibold tabular-nums text-foreground/80">
-                                    {listing.seller_rating_average.toFixed(
-                                      1,
-                                    )}
-                                  </span>
-
-                                  <span className="text-[9px] tabular-nums text-muted-foreground/60">
-                                    ({listing.seller_rating_count})
-                                  </span>
+                                <div className="flex shrink-0 items-center justify-center">
+                                  <UserVerificationBadges
+                                    rsiVerified={
+                                      listing.profiles
+                                        ?.rsi_verified === true
+                                    }
+                                    handle={
+                                      listing.profiles
+                                        ?.rsi_handle
+                                    }
+                                    size="sm"
+                                  />
                                 </div>
-                              )}
+
+                                  {listing.seller_rating_count > 0 &&
+                                    listing.seller_rating_average !== null && (
+                                      <div className="ml-auto flex h-5 shrink-0 items-center gap-1 leading-none">
+                                        <span className="flex h-4 items-center text-[11px] leading-none text-amber-500">
+                                          ★
+                                        </span>
+
+                                        <span className="flex h-4 items-center text-[10px] font-semibold tabular-nums leading-none text-foreground/80">
+                                          {listing.seller_rating_average.toFixed(
+                                            1,
+                                          )}
+                                        </span>
+
+                                        <span className="flex h-4 items-center text-[9px] tabular-nums leading-none text-muted-foreground/60">
+                                          ({listing.seller_rating_count})
+                                        </span>
+                                      </div>
+                                    )}
 
                           </div>
                         </div>
