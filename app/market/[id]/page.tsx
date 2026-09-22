@@ -3,17 +3,20 @@
 import Link from 'next/link'
 import {
   ArrowLeft,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Flag,
+  Layers3,
   Loader2,
   MapPin,
   MessageCircle,
   Package,
   RefreshCw,
   Send,
+  Sparkles,
   User,
   X,
-  Flag,
 } from 'lucide-react'
 import {
   use,
@@ -1203,58 +1206,82 @@ async function submitReport() {
                 </div>
               )}
 
-              <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-5 border-y border-border py-6">
-                <div>
-                  <div className="text-xs text-muted-foreground">
-                    数量
+                <div className="mt-8 grid grid-cols-2 gap-3 border-y border-border/70 py-5">
+                  {/* 数量 */}
+                  <div className="flex items-center gap-3 rounded-xl bg-muted/25 px-3.5 py-3">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm ring-1 ring-border/60">
+                      <Layers3 className="size-3.5" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-medium text-muted-foreground">
+                        数量
+                      </div>
+
+                      <div className="mt-0.5 text-sm font-semibold tabular-nums">
+                        ×{listing.quantity}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="mt-1 text-sm font-medium">
-                    ×
-                    {
-                      listing.quantity
-                    }
+                  {/* 品质 */}
+                  <div className="flex items-center gap-3 rounded-xl bg-muted/25 px-3.5 py-3">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm ring-1 ring-border/60">
+                      <Sparkles className="size-3.5" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-medium text-muted-foreground">
+                        品质
+                      </div>
+
+                      <div className="mt-0.5 text-sm font-semibold">
+                        {listing.quality !== null
+                          ? listing.quality
+                          : '未注明'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 交易地点 */}
+                  <div className="flex items-center gap-3 rounded-xl bg-muted/25 px-3.5 py-3">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm ring-1 ring-border/60">
+                      <MapPin className="size-3.5" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-medium text-muted-foreground">
+                        交易地点
+                      </div>
+
+                      <div
+                        title={listing.location || '双方协商'}
+                        className="mt-0.5 truncate text-sm font-semibold"
+                      >
+                        {listing.location || '双方协商'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 发布时间 */}
+                  <div className="flex items-center gap-3 rounded-xl bg-muted/25 px-3.5 py-3">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm ring-1 ring-border/60">
+                      <CalendarDays className="size-3.5" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-medium text-muted-foreground">
+                        发布时间
+                      </div>
+
+                      <div className="mt-0.5 truncate text-sm font-semibold">
+                        {formatDate(
+                          listing.created_at,
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                <div>
-                  <div className="text-xs text-muted-foreground">
-                    品质
-                  </div>
-
-                  <div className="mt-1 text-sm font-medium">
-                      {listing.quality !==
-                      null
-                        ? listing.quality
-                        : '未注明'}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-xs text-muted-foreground">
-                    交易地点
-                  </div>
-
-                  <div className="mt-1 flex items-center gap-1.5 text-sm font-medium">
-                    <MapPin className="size-3.5 text-muted-foreground" />
-
-                    {listing.location ||
-                      '双方协商'}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-xs text-muted-foreground">
-                    发布时间
-                  </div>
-
-                  <div className="mt-1 text-sm font-medium">
-                    {formatDate(
-                      listing.created_at,
-                    )}
-                  </div>
-                </div>
-              </div>
 
               <div className="mt-8">
                 <h2 className="text-sm font-semibold">
