@@ -1346,8 +1346,8 @@ export default function MarketPage() {
                                 size="sm"
                               />
                             </div>
-                            {/* Seller rating */}
-                            <div className="ml-2 flex h-6 shrink-0 items-center justify-end leading-none">
+                              {/* Seller rating */}
+                              <div className="ml-2 flex h-6 w-12 shrink-0 items-center justify-end leading-none">
                               {listing.seller_rating_count > 0 &&
                               listing.seller_rating_average !== null ? (
                                 <div className="flex items-center gap-1">
@@ -1366,7 +1366,7 @@ export default function MarketPage() {
                                   </span>
                                 </div>
                               ) : (
-                                <span className="whitespace-nowrap text-[9px] font-medium leading-none text-muted-foreground/50">
+                                  <span className="whitespace-nowrap text-[9px] font-normal leading-none text-muted-foreground/40">
                                   暂无评分
                                 </span>
                               )}
