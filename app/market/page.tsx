@@ -1216,7 +1216,7 @@ export default function MarketPage() {
                             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/18 via-black/5 to-transparent opacity-80" />
                         </div>
 
-                        <div className="flex min-h-49 flex-1 flex-col p-4">
+                        <div className="flex min-h-42 flex-1 flex-col p-4">
                           <div className="flex items-center justify-between gap-2">
                             <span
                               className={`inline-flex h-6 items-center rounded-full border px-2.5 text-[9px] font-semibold tracking-[0.045em] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-sm ${
@@ -1236,7 +1236,7 @@ export default function MarketPage() {
                               {listing.title}
                             </h2>
 
-                              <div className="mt-2.5">
+                              <div className="mt-1.5">
                                 {listing.listing_type ===
                                 'wtt' ? (
                                   <span className="text-[14px] font-semibold tracking-[-0.02em] text-[#9a671f] dark:text-[#e3ad5c]">
@@ -1259,7 +1259,7 @@ export default function MarketPage() {
                                 )}
                               </div>
 
-                            <div className="mt-3 min-h-5">
+                            <div className="mt-2 min-h-4">
                               {(listing.location ||
                                 listing.quality !== null) && (
                                 <div className="flex min-w-0 items-center text-[9px] font-medium text-muted-foreground/65">
@@ -1296,7 +1296,7 @@ export default function MarketPage() {
                             </div>
                           </div>
 
-                          <div className="-mx-4 -mb-4 mt-4 flex h-12 items-center border-t border-border/25 bg-muted/[0.14] px-4 transition-colors group-hover:bg-muted/25">
+                          <div className="-mx-4 -mb-4 mt-4 flex h-10 items-center border-t border-border/25 bg-muted/[0.14] px-4 transition-colors group-hover:bg-muted/25">
                             {/* Seller avatar */}
                             {listing.profiles?.avatar_url ? (
                               <img
