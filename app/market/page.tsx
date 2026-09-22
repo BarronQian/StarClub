@@ -1251,38 +1251,36 @@ export default function MarketPage() {
                                     <span className="text-[17px] font-bold tabular-nums tracking-tight text-[#ad6b0b] dark:text-[#e3ad5c]">
                                       {listing.price_uec.toLocaleString()}
                                     </span>
-
-                                    <span className="text-[9px] font-semibold uppercase tracking-widest text-[#ad6b0b]/55 dark:text-[#e3ad5c]/65">
-                                      aUEC
-                                    </span>
+                                      <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#ad6b0b]/70 dark:text-[#e3ad5c]/75">
+                                        aUEC
+                                      </span>
                                   </div>
                                 )}
                               </div>
 
                             <div className="mt-3 min-h-5">
                               {(listing.location ||
-                                listing.quality !==
-                                  null) && (
-                                <div className="flex flex-wrap items-center gap-x-2 text-[10px] text-muted-foreground/80">
+                                listing.quality !== null) && (
+                                <div className="flex min-w-0 items-center text-[9px] font-medium text-muted-foreground/65">
                                   {listing.location && (
-                                    <span className="max-w-31.25 truncate">
+                                    <span
+                                      title={listing.location}
+                                      className="min-w-0 truncate"
+                                    >
                                       {listing.location}
                                     </span>
                                   )}
 
                                   {listing.location &&
-                                    listing.quality !==
-                                      null && (
-                                      <span className="opacity-35">
-                                        ·
+                                    listing.quality !== null && (
+                                      <span className="mx-2 shrink-0 text-muted-foreground/25">
+                                        •
                                       </span>
                                     )}
 
-                                  {listing.quality !==
-                                    null && (
-                                    <span>
-                                      品质{' '}
-                                      {listing.quality}
+                                  {listing.quality !== null && (
+                                    <span className="shrink-0 whitespace-nowrap">
+                                      品质 {listing.quality}
                                     </span>
                                   )}
                                 </div>
@@ -1290,7 +1288,7 @@ export default function MarketPage() {
                             </div>
                           </div>
 
-                          <div className="-mx-4 -mb-4 mt-4 flex h-12 items-center border-t border-border/40 bg-muted/[0.14] px-4 transition-colors group-hover:bg-muted/25">
+                          <div className="-mx-4 -mb-4 mt-4 flex h-12 items-center border-t border-border/25 bg-muted/[0.14] px-4 transition-colors group-hover:bg-muted/25">
                             {/* Seller avatar */}
                             {listing.profiles?.avatar_url ? (
                               <img
