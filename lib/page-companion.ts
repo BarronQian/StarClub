@@ -721,6 +721,116 @@ combostar: {
   doubleClose: false,
 },
 
+ttv550: {
+  name: 'TTV550 · 黄金矿工',
+  image: '/images/characters/ttv550.png',
+  alt: 'TTV550 黄金矿工',
+
+  side: 'left',
+  height: 430,
+  offsetX: 24,
+
+  bubbleOffsetX: 58,
+  bubbleOffsetY: 90,
+  bubbleWidth: 340,
+  bubbleTailOffset: 40,
+
+  title: '黄金矿工の采矿提示',
+
+  messages: [
+    '绝世好服是第一生产力。',
+    '自己找矿挖矿并不一定是获取高品矿物的唯一途径。或许你花十个小时赚到的游戏币，能够在玩家市场上买到你花二十个小时也不见得能找到的高品矿物。。',
+    '谨慎考虑你挖矿的最终目的。用花了数十上百小时挖出的高品矿物制造出的超高品质道具，很可能在一次版本平衡性调整中被一脚踢入下水道。',
+    '能开采更大矿石的矿船就是更好的矿船。在猎户座和阿拉斯塔实装可飞之前，鼹鼠就是最好的矿船。',
+    '对于一个矿工来说，最好的挖矿组件是另一个矿工，其次才是那些大功率、大绿区的采矿激光头。',
+    '鼹鼠的改装？我认为通用性最强的方案是：螺旋II加三个里格III，霍夫斯塔德II加两个聚焦III，刀轴II加两个聚焦III。',
+    '充分的准备工作是成功挖矿的开始。建议出发前在自己的背包里或矿船库存里带足吃喝、消耗型模组以及合适的采矿贴片。',
+    '寻找高品矿物的过程是漫长而艰辛的，因此一定要调整心态。记住：找不到才是常态，找到了是意外。',
+    '今天不找到高品质矿不下机。',
+  ],
+
+  exitTitle: 'TTV550',
+  exitMessage: '矿还没挖完，我先回去继续干活了。',
+  exitMark: '⛏️',
+  exitMarkX: 43,
+  exitMarkY: 8,
+  exitMarkSize: 42,
+},
+
+vt7prototype: {
+  name: 'VT7Prototype',
+  image: '/images/characters/vt7prototype.png',
+  alt: 'VT7Prototype',
+
+  side: 'left',
+  height: 430,
+  offsetX: 24,
+
+  bubbleOffsetX: 38,
+  bubbleOffsetY: 105,
+  bubbleWidth: 340,
+  bubbleTailOffset: 40,
+
+  title: 'VT7Prototypeの活动提示',
+
+  messages: [
+    '参加大型活动之前先看一遍公告，集合地点和时间搞错一个都能让你跑半个星系。',
+    '活动开始前提前上线检查装备，比集合以后才发现东西没带轻松多了。',
+    '多人行动的时候尽量跟着队伍走，一个人跑太快最后通常还是得回来找大部队。',
+    '活动需要特定装备的话最好提前准备，现场几十个人一起找装备会拖很久。',
+    '复活点能提前绑就提前绑，真正出事以后你会感谢之前的自己。',
+    '大型活动掉线了先在语音里说一声，至少大家知道你不是突然失踪了。',
+    '准备合影的时候先别乱动，几十个人重新排一次队真的很久。',
+    '需要帮忙直接喊，活动人多的时候最不缺的就是人手。',
+    '活动流程可能会临时调整，待在语音里会比一直问“现在去哪”方便很多。',
+    '人齐了？那就出发。',
+  ],
+
+  exitTitle: 'VT7Prototype',
+  exitMessage: '行，我先撤了，下次活动再见。',
+  exitMark: '👋',
+  exitMarkX: 43,
+  exitMarkY: 8,
+  exitMarkSize: 42,
+},
+
+raineyday: {
+  name: 'Raineyday · 焰联行政王',
+  image: '/images/characters/raineyday.png',
+  alt: 'Raineyday 焰联行政王',
+
+  side: 'right',
+  height: 430,
+  offsetX: 24,
+
+  bubbleOffsetX: 58,
+  bubbleOffsetY: 90,
+  bubbleWidth: 340,
+  bubbleTailOffset: 40,
+
+  title: '焰联行政王の行政机库提示',
+
+  messages: [
+    '行政机库绿灯亮了以后别急着走，先确认这一轮流程真的完成了。',
+    '进争夺区之前把医疗、弹药和装备准备好，里面可不是进去以后再慢慢整理背包的地方。',
+    '行政机库最需要的不是着急，是把每一步都稳定做完。',
+    '进争夺区以后记一下路线，打着打着找不到出口比遇到敌人还麻烦。',
+    '听到枪声先判断方向，别一听见动静就带着整队人往枪口上跑。',
+    '高价值东西拿到手以后第一件事不是继续搜，是先想怎么安全带出去。',
+    '开行政机库之前把人员和装备确认好，临时缺一个人往往比缺一把枪更麻烦。',
+    '绿灯还没齐？那就继续。',
+    '争夺区这种地方，活着把东西带出来才算真正拿到了。',
+    '又要开行政机库？走。',
+  ],
+
+  exitTitle: 'Raineyday',
+  exitMessage: '我先去看看下一轮行政机库。',
+  exitMark: '👋',
+  exitMarkX: 43,
+  exitMarkY: 8,
+  exitMarkSize: 42,
+},
+
 } satisfies Record<string, PageCompanionConfig>
 
 export type PageCompanionId = keyof typeof PAGE_COMPANIONS

@@ -174,13 +174,14 @@ export async function GET(
       .from(
         'market_trade_reviews',
       )
-      .select(`
-        id,
-        rating,
-        reviewer_id,
-        reviewee_id,
-        created_at
-      `)
+        .select(`
+          id,
+          rating,
+          comment,
+          reviewer_id,
+          reviewee_id,
+          created_at
+        `)
       .eq(
         'trade_request_id',
         id,
@@ -278,6 +279,12 @@ export async function POST(
       body.rating,
     )
 
+    const comment =
+  typeof body.comment ===
+  'string'
+    ? body.comment.trim()
+    : ''
+
   if (
     !Number.isInteger(
       rating,
@@ -295,7 +302,19 @@ export async function POST(
       },
     )
   }
-
+    if (
+      comment.length > 100
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            '评价内容不能超过 100 个字符',
+        },
+        {
+          status: 400,
+        },
+      )
+    }
     const supabase =
       getAdminSupabase()
 
@@ -467,7 +486,7 @@ export async function POST(
         'market_trade_reviews',
       )
       .select(
-        'id, rating',
+        'id, rating, comment',
       )
       .eq(
         'trade_request_id',
@@ -529,6 +548,8 @@ export async function POST(
         reviewee_id:
           revieweeId,
         rating,
+        comment:
+          comment || null,
       })
       .select(`
         id,
@@ -536,6 +557,7 @@ export async function POST(
         reviewer_id,
         reviewee_id,
         rating,
+        comment,
         created_at
       `)
       .single()

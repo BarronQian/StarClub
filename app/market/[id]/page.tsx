@@ -85,8 +85,93 @@ type SellerMarketStats = {
   wts: number
   wtb: number
   wtt: number
+  sellerRatingAverage: number | null
+  sellerRatingCount: number
+}
+
+type MarketReviewProfile = {
+  id: string
+  username: string | null
+  display_name: string | null
+  avatar_url: string | null
+  rsi_handle: string | null
+  rsi_verified: boolean | null
+  member_number: number | null
+  profile_slug: string | null
+}
+
+type MarketReviewListing = {
+  id: string
+  title: string
+  listing_type: ListingType
+  image_urls: string[] | null
+}
+
+type MarketReview = {
+  id: string
+  rating: number
+  comment: string | null
+  createdAt: string
+  completedAt: string | null
+  quantity: number
+  reviewer: MarketReviewProfile | null
+  listing: MarketReviewListing | null
+}
+
+type SellerReviewsData = {
+  profile: MarketReviewProfile
+  role: 'seller'
   ratingAverage: number | null
   ratingCount: number
+  reviews: MarketReview[]
+}
+
+type SellerMarketListing = {
+  id: string
+  listing_type: ListingType
+  category: string | null
+  title: string
+  price_uec: number | null
+  quantity: number
+  quality: number | null
+  location: string | null
+  negotiable: boolean | null
+  offered_item: string | null
+  wanted_item: string | null
+  image_urls: string[] | null
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+type SellerMarketHistoryItem = {
+  id: string
+  listingId: string | null
+  role: 'seller' | 'buyer'
+  listingType: ListingType | null
+  title: string
+  imageUrls: string[] | null
+  quantity: number
+  priceUec: number | null
+  completedAt: string | null
+  createdAt: string
+}
+
+type SellerMarketData = {
+  profile: MarketReviewProfile
+
+  stats: {
+    completed: number
+    wts: number
+    wtb: number
+    wtt: number
+    sellerRatingAverage: number | null
+    sellerRatingCount: number
+    activeListings: number
+  }
+
+  activeListings: SellerMarketListing[]
+  history: SellerMarketHistoryItem[]
 }
 
 const TYPE_LABELS: Record<
@@ -267,6 +352,59 @@ export default function MarketListingPage({
     setSellerStatsLoading,
   ] =
     useState(false)
+
+  const [
+    sellerReviewsOpen,
+    setSellerReviewsOpen,
+  ] = useState(false)
+
+  const [
+    sellerReviewsLoading,
+    setSellerReviewsLoading,
+  ] = useState(false)
+
+  const [
+    sellerReviewsError,
+    setSellerReviewsError,
+  ] = useState('')
+
+  const [
+    sellerReviewsData,
+    setSellerReviewsData,
+  ] =
+    useState<SellerReviewsData | null>(
+      null,
+    )
+  
+  const [
+    sellerMarketOpen,
+    setSellerMarketOpen,
+  ] = useState(false)
+
+  const [
+    sellerMarketLoading,
+    setSellerMarketLoading,
+  ] = useState(false)
+
+  const [
+    sellerMarketError,
+    setSellerMarketError,
+  ] = useState('')
+
+  const [
+    sellerMarketData,
+    setSellerMarketData,
+  ] =
+    useState<SellerMarketData | null>(
+      null,
+    )
+
+  const [
+    sellerMarketTab,
+    setSellerMarketTab,
+  ] = useState<
+    'listings' | 'history'
+  >('listings')
 
     const [
       reportDialogOpen,
@@ -531,30 +669,35 @@ export default function MarketListingPage({
                   Number(
                     statsData.completed,
                   ) || 0,
+
                 wts:
                   Number(
                     statsData.wts,
                   ) || 0,
+
                 wtb:
                   Number(
                     statsData.wtb,
                   ) || 0,
+
                 wtt:
                   Number(
                     statsData.wtt,
                   ) || 0,
-                ratingAverage:
-                  statsData.ratingAverage ===
+
+                sellerRatingAverage:
+                  statsData.sellerRatingAverage ===
                     null ||
-                  statsData.ratingAverage ===
+                  statsData.sellerRatingAverage ===
                     undefined
                     ? null
                     : Number(
-                        statsData.ratingAverage,
+                        statsData.sellerRatingAverage,
                       ),
-                ratingCount:
+
+                sellerRatingCount:
                   Number(
-                    statsData.ratingCount,
+                    statsData.sellerRatingCount,
                   ) || 0,
               })
             } else {
@@ -691,6 +834,130 @@ const quantityLabels =
       ?.profile_slug
       ? `/profile/${listing.profiles.profile_slug}`
       : null
+  
+    async function openSellerReviews() {
+      const sellerId =
+        listing?.profiles?.id
+
+    if (
+      !sellerId ||
+      sellerReviewsLoading
+    ) {
+      return
+    }
+
+    setSellerReviewsOpen(true)
+    setSellerReviewsError('')
+
+    /*
+    * 已经加载过就直接使用，
+    * 避免同一次页面访问重复请求。
+    */
+    if (sellerReviewsData) {
+      return
+    }
+
+    setSellerReviewsLoading(true)
+
+    try {
+      const response =
+        await fetch(
+          `/api/market/profiles/${sellerId}/reviews?role=seller`,
+          {
+            cache: 'no-store',
+          },
+        )
+
+      const data =
+        await readJsonSafely(
+          response,
+        )
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ??
+            '读取卖家评价失败',
+        )
+      }
+
+      setSellerReviewsData(
+        data as SellerReviewsData,
+      )
+    } catch (err) {
+      setSellerReviewsError(
+        err instanceof Error
+          ? err.message
+          : '读取卖家评价失败',
+      )
+    } finally {
+      setSellerReviewsLoading(
+        false,
+      )
+    }
+  }
+
+  async function openSellerMarket() {
+  const sellerId =
+    listing?.profiles?.id
+
+  if (
+    !sellerId ||
+    sellerMarketLoading
+  ) {
+    return
+  }
+
+  setSellerMarketOpen(true)
+  setSellerMarketError('')
+  setSellerMarketTab('listings')
+
+  // 当前页面已经加载过这个卖家的市场数据，
+  // 再次打开时直接使用缓存。
+  if (
+    sellerMarketData?.profile.id ===
+    sellerId
+  ) {
+    return
+  }
+
+  setSellerMarketLoading(true)
+
+  try {
+    const response =
+      await fetch(
+        `/api/market/profiles/${sellerId}/market`,
+        {
+          cache: 'no-store',
+        },
+      )
+
+    const data =
+      await readJsonSafely(
+        response,
+      )
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ??
+          '读取卖家市场信息失败',
+      )
+    }
+
+    setSellerMarketData(
+      data as SellerMarketData,
+    )
+  } catch (err) {
+    setSellerMarketError(
+      err instanceof Error
+        ? err.message
+        : '读取卖家市场信息失败',
+    )
+  } finally {
+    setSellerMarketLoading(
+      false,
+    )
+  }
+}
 
   function previousImage() {
     if (
@@ -1540,82 +1807,76 @@ async function submitReport() {
                   SELLER
                 </div>
 
-                {sellerProfileHref ? (
-                  <Link
-                    href={
-                      sellerProfileHref
-                    }
-                    className="group flex items-center gap-4 rounded-xl transition-opacity hover:opacity-75"
-                  >
-                    {listing
-                      .profiles
-                      ?.avatar_url ? (
-                      <img
-                        src={
-                          listing
-                            .profiles
-                            .avatar_url
-                        }
-                        alt={
-                          sellerName
-                        }
-                        className="size-10 shrink-0 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
-                        <User className="size-5 text-muted-foreground" />
-                      </div>
-                    )}
+                  {sellerProfileHref ? (
+                    <div className="flex items-center gap-4">
+                      <Link
+                        href={sellerProfileHref}
+                        className="group/profile flex min-w-0 flex-1 items-center gap-4 rounded-xl transition-opacity hover:opacity-75"
+                        title="查看卖家个人主页"
+                      >
+                        {listing.profiles?.avatar_url ? (
+                          <img
+                            src={listing.profiles.avatar_url}
+                            alt={sellerName}
+                            className="size-10 shrink-0 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                            <User className="size-5 text-muted-foreground" />
+                          </div>
+                        )}
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="truncate font-medium group-hover:underline">
-                          {
-                            sellerName
-                          }
+                        <div className="min-w-0 flex-1">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <div className="truncate font-medium group-hover/profile:underline">
+                              {sellerName}
+                            </div>
+
+                            <div className="shrink-0">
+                              <UserVerificationBadges
+                                rsiVerified={
+                                  listing.profiles?.rsi_verified === true
+                                }
+                                handle={
+                                  listing.profiles?.rsi_handle
+                                }
+                                size="sm"
+                              />
+                            </div>
+                          </div>
+
+                          {sellerDiscordName && (
+                            <div className="mt-1 truncate text-xs text-muted-foreground">
+                              Discord @{sellerDiscordName}
+                            </div>
+                          )}
+
+                          {listing.profiles?.member_number !== null &&
+                            listing.profiles?.member_number !== undefined && (
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                StarClub #{listing.profiles.member_number}
+                              </div>
+                            )}
                         </div>
+                      </Link>
 
-                        <UserVerificationBadges
-                          rsiVerified={
-                            listing.profiles
-                              ?.rsi_verified === true
-                          }
-                          handle={
-                            listing.profiles
-                              ?.rsi_handle
-                          }
-                          size="sm"
-                        />
-                      </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void openSellerMarket()
+                            }}
+                            className="group/market flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            title="查看卖家市场详细信息"
+                          >
+                        <span className="hidden sm:inline">
+                          查看卖家市场详细信息
+                        </span>
 
-                        {sellerDiscordName && (
-                          <div className="mt-1 truncate text-xs text-muted-foreground">
-                            Discord @{sellerDiscordName}
-                          </div>
-                        )}
-
-                      {listing
-                        .profiles
-                        ?.member_number !==
-                          null &&
-                        listing
-                          .profiles
-                          ?.member_number !==
-                          undefined && (
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            StarClub #
-                            {
-                              listing
-                                .profiles
-                                .member_number
-                            }
-                          </div>
-                        )}
+                        <ChevronRight className="size-4 transition-transform group-hover/market:translate-x-0.5" />
+                      </button>
                     </div>
+                  ) : (
 
-                    <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-                  </Link>
-                ) : (
                   <div className="flex items-center gap-4">
                     {listing
                       .profiles
@@ -1697,34 +1958,43 @@ async function submitReport() {
         交易评分
       </div>
 
-      {sellerStats.ratingCount > 0 &&
-      sellerStats.ratingAverage !== null ? (
-        <div className="flex items-center gap-1.5">
-          <span className="text-amber-500">
-            ★
-          </span>
+        {sellerStats.sellerRatingCount > 0 &&
+        sellerStats.sellerRatingAverage !== null ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void openSellerReviews()
+                  }}
+                  className="group flex items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-muted"
+                  title="查看卖家评价"
+                >
+                  <span className="text-amber-500">
+                    ★
+                  </span>
 
-          <span className="text-sm font-semibold">
-            {
-              sellerStats.ratingAverage.toFixed(
-                1,
-              )
-            }
-          </span>
+                  <span className="text-sm font-semibold">
+                    {
+                      sellerStats.sellerRatingAverage.toFixed(
+                        1,
+                      )
+                    }
+                  </span>
 
+                  <span className="text-xs text-muted-foreground">
+                    （
+                    {
+                      sellerStats.sellerRatingCount
+                    }
+                    ）
+                  </span>
+
+                  <ChevronRight className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                </button>
+        ) : (
           <span className="text-xs text-muted-foreground">
-            （
-            {
-              sellerStats.ratingCount
-            }
-            ）
+            暂无评价
           </span>
-        </div>
-      ) : (
-        <span className="text-xs text-muted-foreground">
-          暂无评价
-        </span>
-      )}
+        )}
     </div>
 
     <div className="grid grid-cols-4 divide-x divide-border">
@@ -2514,6 +2784,833 @@ async function submitReport() {
           </div>
         </div>
       )}
+
+          {sellerMarketOpen && (
+  <div
+    className="fixed inset-0 z-140 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+    role="dialog"
+    aria-modal="true"
+    aria-label="卖家市场详细信息"
+    onMouseDown={(event) => {
+      if (
+        event.target ===
+        event.currentTarget
+      ) {
+        setSellerMarketOpen(false)
+      }
+    }}
+  >
+    <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl dark:border-white/10 dark:bg-[#37332f] dark:shadow-none">
+      {/* Header */}
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-5 dark:border-white/8">
+        <div>
+          <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            SELLER MARKET
+          </div>
+
+          <h2 className="mt-1 text-xl font-semibold">
+            卖家市场详细信息
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            setSellerMarketOpen(false)
+          }
+          aria-label="关闭卖家市场信息"
+          className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:hover:bg-white/5"
+        >
+          <X className="size-5" />
+        </button>
+      </div>
+
+      {/* Loading */}
+      {sellerMarketLoading ? (
+        <div className="flex min-h-96 flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin" />
+
+          <div className="text-sm">
+            正在读取卖家市场信息...
+          </div>
+        </div>
+      ) : sellerMarketError ? (
+        /* Error */
+        <div className="p-6">
+          <div className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-500">
+            {sellerMarketError}
+          </div>
+        </div>
+      ) : sellerMarketData ? (
+        <>
+          {/* Seller */}
+          <div className="shrink-0 border-b border-border/70 px-6 py-5 dark:border-white/8">
+            <div className="flex items-center gap-4">
+              {sellerMarketData.profile
+                .avatar_url ? (
+                <img
+                  src={
+                    sellerMarketData.profile
+                      .avatar_url
+                  }
+                  alt={
+                    sellerMarketData.profile
+                      .rsi_handle ??
+                    'StarClub 玩家'
+                  }
+                  className="size-12 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted dark:bg-white/10">
+                  <User className="size-5 text-muted-foreground" />
+                </div>
+              )}
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate font-semibold">
+                    {sellerMarketData.profile
+                      .rsi_handle ??
+                      sellerMarketData.profile
+                        .display_name ??
+                      sellerMarketData.profile
+                        .username ??
+                      'StarClub 玩家'}
+                  </span>
+
+                  <UserVerificationBadges
+                    rsiVerified={
+                      sellerMarketData.profile
+                        .rsi_verified === true
+                    }
+                    handle={
+                      sellerMarketData.profile
+                        .rsi_handle
+                    }
+                    size="sm"
+                  />
+                </div>
+
+                {sellerMarketData.profile
+                  .member_number !== null && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    StarClub #
+                    {
+                      sellerMarketData.profile
+                        .member_number
+                    }
+                  </div>
+                )}
+              </div>
+
+              {/* Rating */}
+              <button
+                type="button"
+                disabled={
+                  sellerMarketData.stats
+                    .sellerRatingCount === 0
+                }
+                onClick={() => {
+                  if (
+                    sellerMarketData.stats
+                      .sellerRatingCount === 0
+                  ) {
+                    return
+                  }
+
+                  setSellerMarketOpen(false)
+                  void openSellerReviews()
+                }}
+                className="shrink-0 text-right disabled:cursor-default"
+              >
+                <div className="flex items-center justify-end gap-1">
+                  <span className="text-lg text-amber-500">
+                    ★
+                  </span>
+
+                  <span className="text-lg font-semibold tabular-nums">
+                    {sellerMarketData.stats
+                      .sellerRatingAverage !==
+                    null
+                      ? sellerMarketData.stats.sellerRatingAverage.toFixed(
+                          1,
+                        )
+                      : '—'}
+                  </span>
+
+                  {sellerMarketData.stats
+                    .sellerRatingCount >
+                    0 && (
+                    <ChevronRight className="size-4 text-muted-foreground" />
+                  )}
+                </div>
+
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  {sellerMarketData.stats
+                    .sellerRatingCount}{' '}
+                  条卖家评价
+                </div>
+              </button>
+            </div>
+
+            {/* Stats */}
+            <div className="mt-5 grid grid-cols-5 divide-x divide-border/70 rounded-xl border border-border/70 bg-muted/20 py-3 dark:divide-white/8 dark:border-white/8 dark:bg-white/2.5">
+              <div className="text-center">
+                <div className="text-base font-semibold tabular-nums">
+                  {
+                    sellerMarketData.stats
+                      .activeListings
+                  }
+                </div>
+
+                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  当前商单
+                </div>
+              </div>
+
+              <div className="text-center">
+                <div className="text-base font-semibold tabular-nums">
+                  {
+                    sellerMarketData.stats
+                      .completed
+                  }
+                </div>
+
+                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  历史成交
+                </div>
+              </div>
+
+              <div className="text-center">
+                <div className="text-base font-semibold tabular-nums">
+                  {
+                    sellerMarketData.stats
+                      .wts
+                  }
+                </div>
+
+                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  出售
+                </div>
+              </div>
+
+              <div className="text-center">
+                <div className="text-base font-semibold tabular-nums">
+                  {
+                    sellerMarketData.stats
+                      .wtb
+                  }
+                </div>
+
+                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  求购
+                </div>
+              </div>
+
+              <div className="text-center">
+                <div className="text-base font-semibold tabular-nums">
+                  {
+                    sellerMarketData.stats
+                      .wtt
+                  }
+                </div>
+
+                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  交换
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex shrink-0 gap-1 border-b border-border px-6 py-3 dark:border-white/8">
+            <button
+              type="button"
+              onClick={() =>
+                setSellerMarketTab(
+                  'listings',
+                )
+              }
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                sellerMarketTab ===
+                'listings'
+                  ? 'bg-foreground text-background'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-white/5'
+              }`}
+            >
+              当前商单
+              <span className="ml-1.5 opacity-60">
+                {
+                  sellerMarketData
+                    .activeListings.length
+                }
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setSellerMarketTab(
+                  'history',
+                )
+              }
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                sellerMarketTab ===
+                'history'
+                  ? 'bg-foreground text-background'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-white/5'
+              }`}
+            >
+              历史成交
+              <span className="ml-1.5 opacity-60">
+                {
+                  sellerMarketData.history
+                    .length
+                }
+              </span>
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="min-h-0 flex-1 overflow-y-auto p-6">
+            {sellerMarketTab ===
+            'listings' ? (
+              sellerMarketData
+                .activeListings.length >
+              0 ? (
+                <div className="space-y-2">
+                  {sellerMarketData.activeListings.map(
+                    (
+                      marketListing,
+                    ) => {
+                      const typeLabel =
+                        marketListing.listing_type ===
+                        'wtb'
+                          ? '求购 WTB'
+                          : marketListing.listing_type ===
+                              'wtt'
+                            ? '交换 WTT'
+                            : '出售 WTS'
+
+                      return (
+                        <Link
+                          key={
+                            marketListing.id
+                          }
+                          href={`/market/${marketListing.id}`}
+                          onClick={() =>
+                            setSellerMarketOpen(
+                              false,
+                            )
+                          }
+                          className="group flex items-center gap-3 rounded-xl border border-border/70 p-3 transition-colors hover:bg-muted/50 dark:border-white/8 dark:hover:bg-white/4"
+                        >
+                          {marketListing
+                            .image_urls?.[0] ? (
+                            <img
+                              src={getMarketThumbnailUrl(
+                                marketListing
+                                  .image_urls[0],
+                              )}
+                              alt={
+                                marketListing.title
+                              }
+                              className="size-14 shrink-0 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted dark:bg-white/5">
+                              <Package className="size-5 text-muted-foreground" />
+                            </div>
+                          )}
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[9px] font-semibold text-muted-foreground dark:border-white/10">
+                                {typeLabel}
+                              </span>
+
+                              <div className="truncate text-sm font-medium">
+                                {
+                                  marketListing.title
+                                }
+                              </div>
+                            </div>
+
+                            <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
+                              <span>
+                                数量{' '}
+                                {
+                                  marketListing.quantity
+                                }
+                              </span>
+
+                              {marketListing.location && (
+                                <span className="truncate">
+                                  {
+                                    marketListing.location
+                                  }
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            <div className="text-sm font-semibold tabular-nums text-[#ad6b0b] dark:text-[#e3ad5c]">
+                              {marketListing.listing_type ===
+                              'wtt'
+                                ? marketListing
+                                    .wanted_item ??
+                                  '交换'
+                                : marketListing.price_uec !==
+                                    null
+                                  ? `${Number(
+                                      marketListing.price_uec,
+                                    ).toLocaleString()} aUEC`
+                                  : '面议'}
+                            </div>
+
+                            <ChevronRight className="ml-auto mt-1 size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                          </div>
+                        </Link>
+                      )
+                    },
+                  )}
+                </div>
+              ) : (
+                <div className="py-16 text-center">
+                  <Package className="mx-auto size-6 text-muted-foreground/50" />
+
+                  <div className="mt-3 text-sm text-muted-foreground">
+                    该卖家目前没有进行中的商单
+                  </div>
+                </div>
+              )
+            ) : sellerMarketData
+                .history.length >
+              0 ? (
+              <div className="space-y-2">
+                {sellerMarketData.history.map(
+                  (trade) => {
+                    const historyLabel =
+                      trade.listingType ===
+                      'wtb'
+                        ? '求购'
+                        : trade.listingType ===
+                            'wtt'
+                          ? '交换'
+                          : '出售'
+
+                    return (
+                      <div
+                        key={trade.id}
+                        className="flex items-center gap-3 rounded-xl border border-border/70 p-3 dark:border-white/8"
+                      >
+                        {trade.imageUrls?.[0] ? (
+                          <img
+                            src={getMarketThumbnailUrl(
+                              trade.imageUrls[0],
+                            )}
+                            alt={trade.title}
+                            className="size-12 shrink-0 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-muted dark:bg-white/5">
+                            <Package className="size-4 text-muted-foreground" />
+                          </div>
+                        )}
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
+                              {historyLabel}
+                            </span>
+
+                            <div className="truncate text-sm font-medium">
+                              {trade.title}
+                            </div>
+                          </div>
+
+                          <div className="mt-1 text-[11px] text-muted-foreground">
+                            {trade.role ===
+                            'seller'
+                              ? '作为卖家'
+                              : '作为买家'}
+                            {' · '}
+                            ×{trade.quantity}
+                            {' · '}
+                            {formatDate(
+                              trade.completedAt ??
+                                trade.createdAt,
+                            )}
+                          </div>
+                        </div>
+
+                        {trade.priceUec !==
+                          null && (
+                          <div className="shrink-0 text-xs font-medium tabular-nums">
+                            {Number(
+                              trade.priceUec,
+                            ).toLocaleString()}{' '}
+                            aUEC
+                          </div>
+                        )}
+                      </div>
+                    )
+                  },
+                )}
+              </div>
+            ) : (
+              <div className="py-16 text-center text-sm text-muted-foreground">
+                暂无历史成交记录
+              </div>
+            )}
+          </div>
+        </>
+      ) : null}
+    </div>
+  </div>
+)}
+
+          {sellerReviewsOpen && (
+            <div
+              className="fixed inset-0 z-140 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+              role="dialog"
+              aria-modal="true"
+              aria-label="卖家评价"
+              onMouseDown={(event) => {
+                if (
+                  event.target ===
+                  event.currentTarget
+                ) {
+                  setSellerReviewsOpen(
+                    false,
+                  )
+                }
+              }}
+            >
+              <div className="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl dark:shadow-none">
+                {/* Header */}
+                <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-5">
+                  <div>
+                    <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                      SELLER REVIEWS
+                    </div>
+
+                    <h2 className="mt-1 text-xl font-semibold">
+                      卖家评价
+                    </h2>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSellerReviewsOpen(
+                        false,
+                      )
+                    }
+                    aria-label="关闭卖家评价"
+                    className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    <X className="size-5" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  {sellerReviewsLoading ? (
+                    <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
+                      <Loader2 className="size-5 animate-spin" />
+
+                      <div className="text-sm">
+                        正在读取卖家评价...
+                      </div>
+                    </div>
+                  ) : sellerReviewsError ? (
+                    <div className="p-6">
+                      <div className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-500">
+                        {sellerReviewsError}
+                      </div>
+                    </div>
+                  ) : sellerReviewsData ? (
+                    <>
+                      {/* Seller summary */}
+                      <div className="border-b border-border/70 px-6 py-5">
+                        <div className="flex items-center gap-4">
+                          {sellerReviewsData
+                            .profile
+                            .avatar_url ? (
+                            <img
+                              src={
+                                sellerReviewsData
+                                  .profile
+                                  .avatar_url
+                              }
+                              alt={sellerName}
+                              className="size-12 shrink-0 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
+                              <User className="size-5 text-muted-foreground" />
+                            </div>
+                          )}
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="truncate font-semibold">
+                                {
+                                  sellerReviewsData
+                                    .profile
+                                    .rsi_handle ??
+                                  sellerReviewsData
+                                    .profile
+                                    .display_name ??
+                                  sellerReviewsData
+                                    .profile
+                                    .username ??
+                                  'StarClub 玩家'
+                                }
+                              </div>
+
+                              <UserVerificationBadges
+                                rsiVerified={
+                                  sellerReviewsData
+                                    .profile
+                                    .rsi_verified ===
+                                  true
+                                }
+                                handle={
+                                  sellerReviewsData
+                                    .profile
+                                    .rsi_handle
+                                }
+                                size="sm"
+                              />
+                            </div>
+
+                            {sellerReviewsData
+                              .profile
+                              .member_number !==
+                              null &&
+                              sellerReviewsData
+                                .profile
+                                .member_number !==
+                                undefined && (
+                                <div className="mt-1 text-xs text-muted-foreground">
+                                  StarClub #
+                                  {
+                                    sellerReviewsData
+                                      .profile
+                                      .member_number
+                                  }
+                                </div>
+                              )}
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <span className="text-lg text-amber-500">
+                                ★
+                              </span>
+
+                              <span className="text-lg font-semibold tabular-nums">
+                                {sellerReviewsData.ratingAverage !==
+                                null
+                                  ? sellerReviewsData.ratingAverage.toFixed(
+                                      1,
+                                    )
+                                  : '—'}
+                              </span>
+                            </div>
+
+                            <div className="mt-0.5 text-xs text-muted-foreground">
+                              {
+                                sellerReviewsData.ratingCount
+                              }{' '}
+                              条卖家评价
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Reviews */}
+                      {sellerReviewsData
+                        .reviews.length >
+                      0 ? (
+                        <div className="divide-y divide-border/70">
+                          {sellerReviewsData.reviews.map(
+                            (review) => {
+                              const reviewerName =
+                                review.reviewer
+                                  ?.rsi_handle ??
+                                review.reviewer
+                                  ?.display_name ??
+                                review.reviewer
+                                  ?.username ??
+                                'StarClub 玩家'
+
+                              return (
+                                <div
+                                  key={
+                                    review.id
+                                  }
+                                  className="px-6 py-5"
+                                >
+                                  <div className="flex items-start gap-3">
+                                    {review
+                                      .reviewer
+                                      ?.avatar_url ? (
+                                      <img
+                                        src={
+                                          review
+                                            .reviewer
+                                            .avatar_url
+                                        }
+                                        alt={
+                                          reviewerName
+                                        }
+                                        className="size-9 shrink-0 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+                                        <User className="size-4 text-muted-foreground" />
+                                      </div>
+                                    )}
+
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="truncate text-sm font-medium">
+                                              {
+                                                reviewerName
+                                              }
+                                            </span>
+
+                                            {review
+                                              .reviewer
+                                              ?.rsi_verified ===
+                                              true && (
+                                              <UserVerificationBadges
+                                                rsiVerified={
+                                                  true
+                                                }
+                                                handle={
+                                                  review
+                                                    .reviewer
+                                                    ?.rsi_handle
+                                                }
+                                                size="sm"
+                                              />
+                                            )}
+                                          </div>
+
+                                          {review
+                                            .reviewer
+                                            ?.member_number !==
+                                            null &&
+                                            review
+                                              .reviewer
+                                              ?.member_number !==
+                                              undefined && (
+                                              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                                                StarClub #
+                                                {
+                                                  review
+                                                    .reviewer
+                                                    .member_number
+                                                }
+                                              </div>
+                                            )}
+                                        </div>
+
+                                        <div
+                                          className="shrink-0 text-sm tracking-[0.08em] text-amber-500"
+                                          title={`${review.rating} / 5`}
+                                        >
+                                          {'★'.repeat(
+                                            Math.max(
+                                              0,
+                                              Math.min(
+                                                5,
+                                                review.rating,
+                                              ),
+                                            ),
+                                          )}
+                                          <span className="text-muted-foreground/25">
+                                            {'★'.repeat(
+                                              Math.max(
+                                                0,
+                                                5 -
+                                                  Math.min(
+                                                    5,
+                                                    review.rating,
+                                                  ),
+                                              ),
+                                            )}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {review.comment && (
+                                        <p className="mt-3 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-foreground/85">
+                                          {
+                                            review.comment
+                                          }
+                                        </p>
+                                      )}
+
+                                      <div className="mt-4 rounded-xl border border-border/70 bg-muted/20 px-3.5 py-3">
+                                        <div className="flex items-center justify-between gap-4">
+                                          <div className="min-w-0">
+                                            <div className="text-[10px] text-muted-foreground">
+                                              成交商品
+                                            </div>
+
+                                            <div className="mt-0.5 truncate text-xs font-medium">
+                                              {review
+                                                .listing
+                                                ?.title ??
+                                                '历史交易商品'}
+                                            </div>
+                                          </div>
+
+                                          <div className="shrink-0 text-xs font-semibold tabular-nums">
+                                            ×
+                                            {
+                                              review.quantity
+                                            }
+                                          </div>
+                                        </div>
+
+                                        <div className="mt-2 text-[11px] text-muted-foreground">
+                                          成交于{' '}
+                                          {review.completedAt
+                                            ? formatDate(
+                                                review.completedAt,
+                                              )
+                                            : formatDate(
+                                                review.createdAt,
+                                              )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            },
+                          )}
+                        </div>
+                      ) : (
+                        <div className="px-6 py-16 text-center text-sm text-muted-foreground">
+                          暂无卖家评价
+                        </div>
+                      )}
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
 
             <MarketRsiRequiredDialog
         open={rsiRequiredOpen}

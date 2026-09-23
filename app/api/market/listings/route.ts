@@ -440,120 +440,227 @@ export async function GET(
       ),
     )
 
-  const sellerRatingMap =
-    new Map<
-      string,
-      {
-        ratingAverage:
-          | number
-          | null
-        ratingCount: number
-      }
-    >()
+    const sellerRatingMap =
+      new Map<
+        string,
+        {
+          ratingAverage:
+            | number
+            | null
+          ratingCount: number
+        }
+      >()
 
-  if (sellerIds.length > 0) {
-    const {
-      data: reviews,
-      error: reviewsError,
-    } =
-      await supabase
-        .from(
-          'market_trade_reviews',
-        )
-        .select(`
-          reviewee_id,
-          rating
-        `)
-        .in(
-          'reviewee_id',
-          sellerIds,
-        )
-
-    if (reviewsError) {
-      console.error(
-        'Failed to load market seller ratings:',
-        reviewsError,
-      )
-    } else {
-      const ratingBuckets =
-        new Map<
-          string,
-          number[]
-        >()
-
-      for (
-        const review of
-          reviews ?? []
-      ) {
-        const sellerId =
-          review.reviewee_id
-
-        const rating =
-          Number(
-            review.rating,
+    if (sellerIds.length > 0) {
+      /*
+      * 先读取这些卖家收到的所有评价。
+      *
+      * 不能只根据 reviewee_id 直接计算，
+      * 因为同一个玩家也可能作为买家收到卖家的评价。
+      *
+      * 首页商品卡片只允许显示：
+      * 买家 -> 当前商单卖家的评价。
+      */
+      const {
+        data: receivedReviews,
+        error: reviewsError,
+      } =
+        await supabase
+          .from(
+            'market_trade_reviews',
           )
+          .select(`
+            reviewee_id,
+            reviewer_id,
+            trade_request_id,
+            rating
+          `)
+          .in(
+            'reviewee_id',
+            sellerIds,
+          )
+
+      if (reviewsError) {
+        console.error(
+          'Failed to load market seller ratings:',
+          reviewsError,
+        )
+      } else {
+        const reviewTradeIds =
+          Array.from(
+            new Set(
+              (
+                receivedReviews ??
+                []
+              )
+                .map(
+                  (review) =>
+                    review.trade_request_id,
+                )
+                .filter(Boolean),
+            ),
+          )
+
+        const reviewTradeById =
+          new Map<
+            string,
+            {
+              buyer_id: string
+              seller_id: string
+            }
+          >()
 
         if (
-          !sellerId ||
-          !Number.isFinite(
-            rating,
-          )
+          reviewTradeIds.length >
+          0
         ) {
-          continue
+          const {
+            data: reviewTrades,
+            error:
+              reviewTradesError,
+          } =
+            await supabase
+              .from(
+                'market_trade_requests',
+              )
+              .select(`
+                id,
+                buyer_id,
+                seller_id
+              `)
+              .in(
+                'id',
+                reviewTradeIds,
+              )
+
+          if (
+            reviewTradesError
+          ) {
+            console.error(
+              'Failed to load trades for market seller ratings:',
+              reviewTradesError,
+            )
+          } else {
+            for (
+              const trade of
+                reviewTrades ?? []
+            ) {
+              reviewTradeById.set(
+                trade.id,
+                {
+                  buyer_id:
+                    trade.buyer_id,
+                  seller_id:
+                    trade.seller_id,
+                },
+              )
+            }
+          }
         }
 
-        const ratings =
-          ratingBuckets.get(
+        const ratingBuckets =
+          new Map<
+            string,
+            number[]
+          >()
+
+        for (
+          const review of
+            receivedReviews ?? []
+        ) {
+          const sellerId =
+            review.reviewee_id
+
+          const trade =
+            reviewTradeById.get(
+              review.trade_request_id,
+            )
+
+          const rating =
+            Number(
+              review.rating,
+            )
+
+          if (
+            !sellerId ||
+            !trade ||
+            !Number.isFinite(
+              rating,
+            )
+          ) {
+            continue
+          }
+
+          /*
+          * 只有：
+          *
+          * reviewee = 这笔交易的卖家
+          * reviewer = 这笔交易的买家
+          *
+          * 才属于卖家评分。
+          */
+          const isSellerReview =
+            trade.seller_id ===
+              sellerId &&
+            trade.buyer_id ===
+              review.reviewer_id
+
+          if (!isSellerReview) {
+            continue
+          }
+
+          const ratings =
+            ratingBuckets.get(
+              sellerId,
+            ) ?? []
+
+          ratings.push(
+            rating,
+          )
+
+          ratingBuckets.set(
             sellerId,
-          ) ?? []
+            ratings,
+          )
+        }
 
-        ratings.push(
-          rating,
-        )
+        for (
+          const sellerId of
+            sellerIds
+        ) {
+          const ratings =
+            ratingBuckets.get(
+              sellerId,
+            ) ?? []
 
-        ratingBuckets.set(
-          sellerId,
-          ratings,
-        )
-      }
-
-      for (
-        const sellerId of
-          sellerIds
-      ) {
-        const ratings =
-          ratingBuckets.get(
+          sellerRatingMap.set(
             sellerId,
-          ) ?? []
+            {
+              ratingAverage:
+                ratings.length > 0
+                  ? Number(
+                      (
+                        ratings.reduce(
+                          (
+                            total,
+                            rating,
+                          ) =>
+                            total +
+                            rating,
+                          0,
+                        ) /
+                        ratings.length
+                      ).toFixed(1),
+                    )
+                  : null,
 
-        sellerRatingMap.set(
-          sellerId,
-          {
-            ratingAverage:
-              ratings.length > 0
-                ? Number(
-                    (
-                      ratings.reduce(
-                        (
-                          total,
-                          rating,
-                        ) =>
-                          total +
-                          rating,
-                        0,
-                      ) /
-                      ratings.length
-                    ).toFixed(1),
-                  )
-                : null,
-
-            ratingCount:
-              ratings.length,
-          },
-        )
+              ratingCount:
+                ratings.length,
+            },
+          )
+        }
       }
     }
-  }
 
   if (listingIds.length > 0) {
   const {

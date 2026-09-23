@@ -1432,16 +1432,16 @@ export default function MarketPage() {
                         </div>
 
                         <div className="flex min-h-42 flex-1 flex-col p-4">
-                          <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center justify-between gap-1.5">
                             <span
-                              className={`inline-flex h-6 items-center rounded-full border px-2.5 text-[9px] font-semibold tracking-[0.045em] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-sm ${
+                              className={`inline-flex h-6 shrink-0 items-center whitespace-nowrap rounded-full border px-2 text-[9px] font-semibold tracking-wide shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-sm ${
                                 typeUI.className
                               }`}
                             >
                               {typeUI.label}
                             </span>
 
-                              <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[10px] font-medium tabular-nums">
+                              <div className="flex min-w-0 items-center gap-1 whitespace-nowrap text-[9px] font-medium tabular-nums">
                                 <span className="text-muted-foreground/60">
                                   {quantityLabels.completed}
                                 </span>
@@ -1529,7 +1529,7 @@ export default function MarketPage() {
                             </div>
                           </div>
 
-                          <div className="-mx-4 -mb-4 mt-4 flex h-10 items-center border-t border-border/25 bg-muted/[0.14] px-4 transition-colors group-hover:bg-muted/25">
+                          <div className="-mx-4 -mb-4 mt-4 flex h-10 items-center border-t border-border/25 bg-muted/[0.14] px-2.5 transition-colors group-hover:bg-muted/25">
                             {/* Seller avatar */}
                             {listing.profiles?.avatar_url ? (
                               <img
@@ -1546,47 +1546,48 @@ export default function MarketPage() {
                               </div>
                             )}
 
-                            {/* Seller name */}
-                            <span
-                              title={
-                                listing.profiles
-                                  ?.rsi_handle
-                                  ? `@${listing.profiles.rsi_handle}`
-                                  : listing.profiles
-                                        ?.display_name ??
-                                    listing.profiles
-                                      ?.username ??
-                                    'StarClub 玩家'
-                              }
-                              className="ml-2 min-w-0 flex-1 truncate pb-px text-[10px] font-medium leading-[1.3] text-muted-foreground"
-                            >
-                              {listing.profiles
-                                ?.rsi_handle
-                                ? `@${listing.profiles.rsi_handle}`
-                                : listing.profiles
-                                      ?.display_name ??
-                                  listing.profiles
-                                    ?.username ??
-                                  'StarClub 玩家'}
-                            </span>
+                                {/* Seller name + verification */}
+                                <div className="ml-1.5 flex min-w-0 flex-1 items-center">
+                                  <span
+                                    title={
+                                      listing.profiles
+                                        ?.rsi_handle
+                                        ? `@${listing.profiles.rsi_handle}`
+                                        : listing.profiles
+                                            ?.display_name ??
+                                          listing.profiles
+                                            ?.username ??
+                                          'StarClub 玩家'
+                                    }
+                                    className="min-w-0 truncate pb-px text-[10px] font-medium leading-[1.3] text-muted-foreground"
+                                  >
+                                    {listing.profiles
+                                      ?.rsi_handle
+                                      ? `@${listing.profiles.rsi_handle}`
+                                      : listing.profiles
+                                          ?.display_name ??
+                                        listing.profiles
+                                          ?.username ??
+                                        'StarClub 玩家'}
+                                  </span>
 
-                            {/* Verification */}
-                            <div className="ml-1.5 flex h-6 shrink-0 items-center justify-center">
-                              <UserVerificationBadges
-                                rsiVerified={
-                                  listing.profiles
-                                    ?.rsi_verified ===
-                                  true
-                                }
-                                handle={
-                                  listing.profiles
-                                    ?.rsi_handle
-                                }
-                                size="sm"
-                              />
-                            </div>
+                                  <div className="ml-1 flex h-6 shrink-0 items-center justify-center">
+                                    <UserVerificationBadges
+                                      rsiVerified={
+                                        listing.profiles
+                                          ?.rsi_verified ===
+                                        true
+                                      }
+                                      handle={
+                                        listing.profiles
+                                          ?.rsi_handle
+                                      }
+                                      size="sm"
+                                    />
+                                  </div>
+                                </div>
                               {/* Seller rating */}
-                              <div className="ml-2 flex h-6 w-12 shrink-0 items-center justify-end leading-none">
+                              <div className="ml-1.5 flex h-6 min-w-0 shrink-0 items-center justify-end whitespace-nowrap leading-none">
                               {listing.seller_rating_count > 0 &&
                               listing.seller_rating_average !== null ? (
                                 <div className="flex items-center gap-1">
