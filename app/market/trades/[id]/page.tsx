@@ -63,6 +63,7 @@ type TradeRequestStatus =
 type TradeReview = {
   id: string
   rating: number
+  comment: string | null
   reviewer_id: string
   reviewee_id: string
   created_at: string
@@ -264,6 +265,11 @@ export default function TradeConversationPage({
     selectedRating,
     setSelectedRating,
   ] = useState(0)
+
+  const [
+    reviewComment,
+    setReviewComment,
+  ] = useState('')
 
   const [
     reviewLoading,
@@ -635,9 +641,10 @@ export default function TradeConversationPage({
           tradeRequest?.status !==
           'completed'
         ) {
-          setReview(null)
-          setSelectedRating(0)
-          setReviewError('')
+            setReview(null)
+            setSelectedRating(0)
+            setReviewComment('')
+            setReviewError('')
           return
         }
 
@@ -705,6 +712,10 @@ export default function TradeConversationPage({
             nextReview?.rating ??
               0,
           )
+          setReviewComment(
+            nextReview?.comment ??
+              '',
+          )
         } catch (err) {
           setReviewError(
             err instanceof Error
@@ -728,9 +739,10 @@ export default function TradeConversationPage({
     ) {
       void loadReview()
     } else {
-      setReview(null)
-      setSelectedRating(0)
-      setReviewError('')
+        setReview(null)
+        setSelectedRating(0)
+        setReviewComment('')
+        setReviewError('')
     }
   }, [
     tradeRequest?.status,
@@ -751,6 +763,18 @@ export default function TradeConversationPage({
     ) {
       setReviewError(
         '请先选择 1–5 星评分',
+      )
+      return
+    }
+
+    const trimmedComment =
+      reviewComment.trim()
+
+    if (
+      trimmedComment.length > 100
+    ) {
+      setReviewError(
+        '简短评价最多 100 个字符',
       )
       return
     }
@@ -796,11 +820,13 @@ export default function TradeConversationPage({
                 `Bearer ${session.access_token}`,
             },
 
-            body:
-              JSON.stringify({
-                rating:
-                  selectedRating,
-              }),
+          body:
+            JSON.stringify({
+              rating:
+                selectedRating,
+              comment:
+                trimmedComment,
+            }),
           },
         )
 
@@ -824,6 +850,10 @@ export default function TradeConversationPage({
         setSelectedRating(
           data.review.rating ??
             selectedRating,
+        )
+        setReviewComment(
+          data.review.comment ??
+            trimmedComment,
         )
       } else {
         await loadReview()
@@ -1662,21 +1692,27 @@ export default function TradeConversationPage({
                         )}
                       </div>
 
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        已提交 {review.rating} 星评价，感谢你的反馈。
-                      </div>
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          已提交 {review.rating} 星评价
+                        </div>
+
+                        {review.comment && (
+                          <div className="mt-3 rounded-lg border border-border/70 bg-background/60 px-3 py-2.5 text-xs leading-5 text-foreground">
+                            {review.comment}
+                          </div>
+                        )}
                     </div>
                   ) : (
                     <div>
                       <div className="text-xs font-medium text-foreground">
-                        为本次交易体验评分
+                        评价交易对方 @{counterpartName}
                       </div>
 
                       <div className="mt-1 text-xs text-muted-foreground">
-                        评分提交后暂不支持修改。
+                        请选择 1–5 星评分，也可以留下简短评价。提交后暂不支持修改。
                       </div>
 
-                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                     <div className="mt-3 flex flex-col items-start gap-3">
                         <div className="flex items-center gap-1">
                           {[1, 2, 3, 4, 5].map(
                             (value) => (
@@ -1711,6 +1747,29 @@ export default function TradeConversationPage({
                             ),
                           )}
                         </div>
+
+                            <div className="w-full">
+                                <textarea
+                                  value={reviewComment}
+                                  onChange={(event) => {
+                                    setReviewComment(
+                                      event.target.value,
+                                    )
+                                    setReviewError('')
+                                  }}
+                                  disabled={
+                                    reviewSubmitting
+                                  }
+                                  maxLength={100}
+                                  rows={2}
+                                  placeholder="写一句对本次交易的评价（选填）"
+                                  className="mt-1 w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-xs leading-5 outline-none transition-colors focus:border-foreground/40 disabled:opacity-60"
+                                />
+
+                                <div className="mt-1 text-right text-[10px] text-muted-foreground">
+                                  {reviewComment.length}/100
+                                </div>
+                              </div>
 
                         <button
                           type="button"
