@@ -20,6 +20,9 @@ const companions: PageCompanionId[] = [
   'asrcwww',
   'meteorowo',
   'arx93',
+  'ttv550',
+  'furysoulfy',
+  'raineyday',
 ]
 
 export function GuidesCompanion() {

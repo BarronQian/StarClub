@@ -13,6 +13,7 @@ useEffect(() => {
     'furinlada',
     'reyindehlort',
     'lucio',
+    'vt7prototype',    
     '500ping',
   ]
 
