@@ -85,8 +85,45 @@ type SellerMarketStats = {
   wts: number
   wtb: number
   wtt: number
+  sellerRatingAverage: number | null
+  sellerRatingCount: number
+}
+
+type MarketReviewProfile = {
+  id: string
+  username: string | null
+  display_name: string | null
+  avatar_url: string | null
+  rsi_handle: string | null
+  rsi_verified: boolean | null
+  member_number: number | null
+  profile_slug: string | null
+}
+
+type MarketReviewListing = {
+  id: string
+  title: string
+  listing_type: ListingType
+  image_urls: string[] | null
+}
+
+type MarketReview = {
+  id: string
+  rating: number
+  comment: string | null
+  createdAt: string
+  completedAt: string | null
+  quantity: number
+  reviewer: MarketReviewProfile | null
+  listing: MarketReviewListing | null
+}
+
+type SellerReviewsData = {
+  profile: MarketReviewProfile
+  role: 'seller'
   ratingAverage: number | null
   ratingCount: number
+  reviews: MarketReview[]
 }
 
 const TYPE_LABELS: Record<
@@ -267,6 +304,29 @@ export default function MarketListingPage({
     setSellerStatsLoading,
   ] =
     useState(false)
+
+  const [
+    sellerReviewsOpen,
+    setSellerReviewsOpen,
+  ] = useState(false)
+
+  const [
+    sellerReviewsLoading,
+    setSellerReviewsLoading,
+  ] = useState(false)
+
+  const [
+    sellerReviewsError,
+    setSellerReviewsError,
+  ] = useState('')
+
+  const [
+    sellerReviewsData,
+    setSellerReviewsData,
+  ] =
+    useState<SellerReviewsData | null>(
+      null,
+    )
 
     const [
       reportDialogOpen,
@@ -531,30 +591,35 @@ export default function MarketListingPage({
                   Number(
                     statsData.completed,
                   ) || 0,
+
                 wts:
                   Number(
                     statsData.wts,
                   ) || 0,
+
                 wtb:
                   Number(
                     statsData.wtb,
                   ) || 0,
+
                 wtt:
                   Number(
                     statsData.wtt,
                   ) || 0,
-                ratingAverage:
-                  statsData.ratingAverage ===
+
+                sellerRatingAverage:
+                  statsData.sellerRatingAverage ===
                     null ||
-                  statsData.ratingAverage ===
+                  statsData.sellerRatingAverage ===
                     undefined
                     ? null
                     : Number(
-                        statsData.ratingAverage,
+                        statsData.sellerRatingAverage,
                       ),
-                ratingCount:
+
+                sellerRatingCount:
                   Number(
-                    statsData.ratingCount,
+                    statsData.sellerRatingCount,
                   ) || 0,
               })
             } else {
@@ -691,6 +756,67 @@ const quantityLabels =
       ?.profile_slug
       ? `/profile/${listing.profiles.profile_slug}`
       : null
+  
+    async function openSellerReviews() {
+      const sellerId =
+        listing?.profiles?.id
+
+    if (
+      !sellerId ||
+      sellerReviewsLoading
+    ) {
+      return
+    }
+
+    setSellerReviewsOpen(true)
+    setSellerReviewsError('')
+
+    /*
+    * 已经加载过就直接使用，
+    * 避免同一次页面访问重复请求。
+    */
+    if (sellerReviewsData) {
+      return
+    }
+
+    setSellerReviewsLoading(true)
+
+    try {
+      const response =
+        await fetch(
+          `/api/market/profiles/${sellerId}/reviews?role=seller`,
+          {
+            cache: 'no-store',
+          },
+        )
+
+      const data =
+        await readJsonSafely(
+          response,
+        )
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ??
+            '读取卖家评价失败',
+        )
+      }
+
+      setSellerReviewsData(
+        data as SellerReviewsData,
+      )
+    } catch (err) {
+      setSellerReviewsError(
+        err instanceof Error
+          ? err.message
+          : '读取卖家评价失败',
+      )
+    } finally {
+      setSellerReviewsLoading(
+        false,
+      )
+    }
+  }
 
   function previousImage() {
     if (
@@ -1697,34 +1823,43 @@ async function submitReport() {
         交易评分
       </div>
 
-      {sellerStats.ratingCount > 0 &&
-      sellerStats.ratingAverage !== null ? (
-        <div className="flex items-center gap-1.5">
-          <span className="text-amber-500">
-            ★
-          </span>
+        {sellerStats.sellerRatingCount > 0 &&
+        sellerStats.sellerRatingAverage !== null ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void openSellerReviews()
+                  }}
+                  className="group flex items-center gap-1.5 rounded-lg px-2 py-1 transition-colors hover:bg-muted"
+                  title="查看卖家评价"
+                >
+                  <span className="text-amber-500">
+                    ★
+                  </span>
 
-          <span className="text-sm font-semibold">
-            {
-              sellerStats.ratingAverage.toFixed(
-                1,
-              )
-            }
-          </span>
+                  <span className="text-sm font-semibold">
+                    {
+                      sellerStats.sellerRatingAverage.toFixed(
+                        1,
+                      )
+                    }
+                  </span>
 
+                  <span className="text-xs text-muted-foreground">
+                    （
+                    {
+                      sellerStats.sellerRatingCount
+                    }
+                    ）
+                  </span>
+
+                  <ChevronRight className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                </button>
+        ) : (
           <span className="text-xs text-muted-foreground">
-            （
-            {
-              sellerStats.ratingCount
-            }
-            ）
+            暂无评价
           </span>
-        </div>
-      ) : (
-        <span className="text-xs text-muted-foreground">
-          暂无评价
-        </span>
-      )}
+        )}
     </div>
 
     <div className="grid grid-cols-4 divide-x divide-border">
@@ -2514,6 +2649,347 @@ async function submitReport() {
           </div>
         </div>
       )}
+
+          {sellerReviewsOpen && (
+            <div
+              className="fixed inset-0 z-140 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+              role="dialog"
+              aria-modal="true"
+              aria-label="卖家评价"
+              onMouseDown={(event) => {
+                if (
+                  event.target ===
+                  event.currentTarget
+                ) {
+                  setSellerReviewsOpen(
+                    false,
+                  )
+                }
+              }}
+            >
+              <div className="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl dark:shadow-none">
+                {/* Header */}
+                <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-5">
+                  <div>
+                    <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                      SELLER REVIEWS
+                    </div>
+
+                    <h2 className="mt-1 text-xl font-semibold">
+                      卖家评价
+                    </h2>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSellerReviewsOpen(
+                        false,
+                      )
+                    }
+                    aria-label="关闭卖家评价"
+                    className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    <X className="size-5" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  {sellerReviewsLoading ? (
+                    <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
+                      <Loader2 className="size-5 animate-spin" />
+
+                      <div className="text-sm">
+                        正在读取卖家评价...
+                      </div>
+                    </div>
+                  ) : sellerReviewsError ? (
+                    <div className="p-6">
+                      <div className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-500">
+                        {sellerReviewsError}
+                      </div>
+                    </div>
+                  ) : sellerReviewsData ? (
+                    <>
+                      {/* Seller summary */}
+                      <div className="border-b border-border/70 px-6 py-5">
+                        <div className="flex items-center gap-4">
+                          {sellerReviewsData
+                            .profile
+                            .avatar_url ? (
+                            <img
+                              src={
+                                sellerReviewsData
+                                  .profile
+                                  .avatar_url
+                              }
+                              alt={sellerName}
+                              className="size-12 shrink-0 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
+                              <User className="size-5 text-muted-foreground" />
+                            </div>
+                          )}
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="truncate font-semibold">
+                                {
+                                  sellerReviewsData
+                                    .profile
+                                    .rsi_handle ??
+                                  sellerReviewsData
+                                    .profile
+                                    .display_name ??
+                                  sellerReviewsData
+                                    .profile
+                                    .username ??
+                                  'StarClub 玩家'
+                                }
+                              </div>
+
+                              <UserVerificationBadges
+                                rsiVerified={
+                                  sellerReviewsData
+                                    .profile
+                                    .rsi_verified ===
+                                  true
+                                }
+                                handle={
+                                  sellerReviewsData
+                                    .profile
+                                    .rsi_handle
+                                }
+                                size="sm"
+                              />
+                            </div>
+
+                            {sellerReviewsData
+                              .profile
+                              .member_number !==
+                              null &&
+                              sellerReviewsData
+                                .profile
+                                .member_number !==
+                                undefined && (
+                                <div className="mt-1 text-xs text-muted-foreground">
+                                  StarClub #
+                                  {
+                                    sellerReviewsData
+                                      .profile
+                                      .member_number
+                                  }
+                                </div>
+                              )}
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <span className="text-lg text-amber-500">
+                                ★
+                              </span>
+
+                              <span className="text-lg font-semibold tabular-nums">
+                                {sellerReviewsData.ratingAverage !==
+                                null
+                                  ? sellerReviewsData.ratingAverage.toFixed(
+                                      1,
+                                    )
+                                  : '—'}
+                              </span>
+                            </div>
+
+                            <div className="mt-0.5 text-xs text-muted-foreground">
+                              {
+                                sellerReviewsData.ratingCount
+                              }{' '}
+                              条卖家评价
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Reviews */}
+                      {sellerReviewsData
+                        .reviews.length >
+                      0 ? (
+                        <div className="divide-y divide-border/70">
+                          {sellerReviewsData.reviews.map(
+                            (review) => {
+                              const reviewerName =
+                                review.reviewer
+                                  ?.rsi_handle ??
+                                review.reviewer
+                                  ?.display_name ??
+                                review.reviewer
+                                  ?.username ??
+                                'StarClub 玩家'
+
+                              return (
+                                <div
+                                  key={
+                                    review.id
+                                  }
+                                  className="px-6 py-5"
+                                >
+                                  <div className="flex items-start gap-3">
+                                    {review
+                                      .reviewer
+                                      ?.avatar_url ? (
+                                      <img
+                                        src={
+                                          review
+                                            .reviewer
+                                            .avatar_url
+                                        }
+                                        alt={
+                                          reviewerName
+                                        }
+                                        className="size-9 shrink-0 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+                                        <User className="size-4 text-muted-foreground" />
+                                      </div>
+                                    )}
+
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="truncate text-sm font-medium">
+                                              {
+                                                reviewerName
+                                              }
+                                            </span>
+
+                                            {review
+                                              .reviewer
+                                              ?.rsi_verified ===
+                                              true && (
+                                              <UserVerificationBadges
+                                                rsiVerified={
+                                                  true
+                                                }
+                                                handle={
+                                                  review
+                                                    .reviewer
+                                                    ?.rsi_handle
+                                                }
+                                                size="sm"
+                                              />
+                                            )}
+                                          </div>
+
+                                          {review
+                                            .reviewer
+                                            ?.member_number !==
+                                            null &&
+                                            review
+                                              .reviewer
+                                              ?.member_number !==
+                                              undefined && (
+                                              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                                                StarClub #
+                                                {
+                                                  review
+                                                    .reviewer
+                                                    .member_number
+                                                }
+                                              </div>
+                                            )}
+                                        </div>
+
+                                        <div
+                                          className="shrink-0 text-sm tracking-[0.08em] text-amber-500"
+                                          title={`${review.rating} / 5`}
+                                        >
+                                          {'★'.repeat(
+                                            Math.max(
+                                              0,
+                                              Math.min(
+                                                5,
+                                                review.rating,
+                                              ),
+                                            ),
+                                          )}
+                                          <span className="text-muted-foreground/25">
+                                            {'★'.repeat(
+                                              Math.max(
+                                                0,
+                                                5 -
+                                                  Math.min(
+                                                    5,
+                                                    review.rating,
+                                                  ),
+                                              ),
+                                            )}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {review.comment && (
+                                        <p className="mt-3 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-foreground/85">
+                                          {
+                                            review.comment
+                                          }
+                                        </p>
+                                      )}
+
+                                      <div className="mt-4 rounded-xl border border-border/70 bg-muted/20 px-3.5 py-3">
+                                        <div className="flex items-center justify-between gap-4">
+                                          <div className="min-w-0">
+                                            <div className="text-[10px] text-muted-foreground">
+                                              成交商品
+                                            </div>
+
+                                            <div className="mt-0.5 truncate text-xs font-medium">
+                                              {review
+                                                .listing
+                                                ?.title ??
+                                                '历史交易商品'}
+                                            </div>
+                                          </div>
+
+                                          <div className="shrink-0 text-xs font-semibold tabular-nums">
+                                            ×
+                                            {
+                                              review.quantity
+                                            }
+                                          </div>
+                                        </div>
+
+                                        <div className="mt-2 text-[11px] text-muted-foreground">
+                                          成交于{' '}
+                                          {review.completedAt
+                                            ? formatDate(
+                                                review.completedAt,
+                                              )
+                                            : formatDate(
+                                                review.createdAt,
+                                              )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            },
+                          )}
+                        </div>
+                      ) : (
+                        <div className="px-6 py-16 text-center text-sm text-muted-foreground">
+                          暂无卖家评价
+                        </div>
+                      )}
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
 
             <MarketRsiRequiredDialog
         open={rsiRequiredOpen}
