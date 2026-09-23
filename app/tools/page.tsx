@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: 'Star Citizen 实用工具',
   description:
     '星际酒馆 StarClub 的 Star Citizen（星际公民）玩家实用工具集，包括行政机库计时器、Discord 时间戳生成器、维尔斯本地时间与货运利润计算器等社区自制在线工具。',
+  alternates: {
+    canonical: '/tools',
+  },
 }
 
 const TOOLS = [

@@ -70,11 +70,6 @@ export const metadata: Metadata = {
     'Star Citizen 中文攻略',
   ],
 
-  alternates: {
-    canonical:
-      'https://www.starclubsc.com',
-  },
-
   openGraph: {
     title:
       '星际酒馆 StarClub | 全球华人 Star Citizen 玩家社区',

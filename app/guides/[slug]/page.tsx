@@ -274,6 +274,10 @@ export async function generateMetadata({
     title,
     description,
 
+    alternates: {
+      canonical: `/guides/${encodeURIComponent(guide.slug)}`,
+    },
+
     openGraph: {
       title,
       description,

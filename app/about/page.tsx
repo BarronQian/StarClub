@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: '关于星际酒馆',
   description:
     '了解星际酒馆 StarClub。我们是面向全球华人《Star Citizen / 星际公民》玩家的独立社区，为玩家提供交流组队、社区活动、中文攻略、新人帮助与玩家创作分享。',
+  alternates: {
+    canonical: '/about',
+  },
 }
 
 const aboutPageJsonLd = {

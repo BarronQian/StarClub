@@ -16,10 +16,20 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { category: slug } = await params
   const category = getCategory(slug)
-  if (!category) return { title: '未找到 · 星际酒馆 StarClub' }
+
+  if (!category) {
+    return {
+      title: '未找到',
+    }
+  }
+
   return {
-    title: `${category.title} · 星际酒馆 StarClub`,
+    title: category.title,
     description: category.summary,
+
+    alternates: {
+      canonical: `/archive/${encodeURIComponent(slug)}`,
+    },
   }
 }
 

@@ -56,17 +56,19 @@ export async function generateMetadata({
 
   if (!event) {
     return {
-      title:
-        '未找到活动 | 星际酒馆 StarClub',
+      title: '未找到活动',
     }
   }
 
   return {
-    title:
-      `${event.title} | 星际酒馆 StarClub`,
+    title: event.title,
 
     description:
       event.description,
+
+    alternates: {
+      canonical: `/events/${encodeURIComponent(slug)}`,
+    },
   }
 }
 

@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   title: '社区影廊',
   description:
     '星际酒馆 StarClub 的 Star Citizen（星际公民）社区影廊，展示全球华人玩家拍摄的游戏摄影、宇宙风景、舰船截图、社区活动影像与玩家作品。',
+  alternates: {
+    canonical: '/gallery',
+  },
 }
 
 export default async function GalleryPage() {

@@ -44,6 +44,9 @@ type GalleryLikeChangedDetail = {
 const GALLERY_LIKE_CHANGED_EVENT =
   'gallery-like-changed'
 
+const INITIAL_VISIBLE_COUNT = 30
+const LOAD_MORE_COUNT = 24
+
 function TimelineRail({
   groups,
   activeKey,
@@ -169,6 +172,19 @@ export function GalleryPageGrid({
     useState<
       string | null
     >(null)
+
+  const [
+    visibleCount,
+    setVisibleCount,
+  ] =
+    useState(
+      INITIAL_VISIBLE_COUNT,
+    )
+
+  const loadMoreRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    )
 
   const sectionRefs =
     useRef<
@@ -317,16 +333,88 @@ export function GalleryPageGrid({
       sort,
     ])
 
+  const visibleShots =
+  useMemo(
+    () =>
+      filtered.slice(
+        0,
+        visibleCount,
+      ),
+    [
+      filtered,
+      visibleCount,
+    ],
+  )
+
   const groups =
     useMemo(
       () =>
         groupGalleryByMonth(
-          filtered,
+          visibleShots,
         ),
       [
-        filtered,
+        visibleShots,
       ],
     )
+  
+  useEffect(() => {
+  setVisibleCount(
+    INITIAL_VISIBLE_COUNT,
+  )
+}, [
+  filter,
+  sort,
+])
+
+  useEffect(() => {
+  const node =
+    loadMoreRef.current
+
+  if (
+    !node ||
+    visibleCount >=
+      filtered.length
+  ) {
+    return
+  }
+
+  const observer =
+    new IntersectionObserver(
+      (entries) => {
+        const entry =
+          entries[0]
+
+        if (
+          !entry?.isIntersecting
+        ) {
+          return
+        }
+
+        setVisibleCount(
+          (current) =>
+            Math.min(
+              current +
+                LOAD_MORE_COUNT,
+              filtered.length,
+            ),
+        )
+      },
+      {
+        rootMargin:
+          '0px 0px 100px 0px',
+        threshold: 0.1,
+      },
+    )
+
+  observer.observe(node)
+
+  return () => {
+    observer.disconnect()
+  }
+}, [
+  filtered.length,
+  visibleCount,
+])
 
   useEffect(() => {
     if (
@@ -622,6 +710,15 @@ export function GalleryPageGrid({
                 </div>
               ),
             )}
+
+            {visibleCount <
+            filtered.length ? (
+              <div
+                ref={loadMoreRef}
+                aria-hidden="true"
+                className="h-px w-full"
+              />
+            ) : null}
           </div>
         </div>
       ) : (

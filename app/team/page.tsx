@@ -4,9 +4,12 @@ import { Reveal } from '@/components/reveal'
 import Image from 'next/image'
 
 export const metadata: Metadata = {
-  title: '管理组 | 星际酒馆 StarClub',
+  title: '管理组',
   description:
     '认识星际酒馆 StarClub 管理团队，以及负责社区运营、活动组织、版务与新人支持的成员。',
+  alternates: {
+    canonical: '/team',
+  },
 }
 
 const TEAM_MEMBERS = [
@@ -160,7 +163,7 @@ export default function TeamPage() {
       </span>
 
       <h2 className="mt-3 font-display text-2xl tracking-tight sm:text-3xl">
-        StarClub 星际酒馆用爱发电管理组
+        星际酒馆 StarClub 用爱发电管理组
       </h2>
     </div>
 

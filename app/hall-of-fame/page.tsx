@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   title: '名人堂',
   description:
     '星际酒馆 StarClub 的 Star Citizen（星际公民）社区名人堂，记录社区赛事冠军、竞技荣誉、获奖玩家与属于酒馆的历史时刻。',
+  alternates: {
+    canonical: '/hall-of-fame',
+  },
 }
 
 const STAT_ORDER = ['gun', 'ace', 'racing'] as const
