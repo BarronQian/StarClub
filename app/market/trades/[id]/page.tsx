@@ -69,6 +69,63 @@ type TradeReview = {
   created_at: string
 }
 
+type CounterpartMarketStats = {
+  sellerRatingAverage:
+    | number
+    | null
+  sellerRatingCount: number
+
+  buyerRatingAverage:
+    | number
+    | null
+  buyerRatingCount: number
+}
+
+type CounterpartReviewItem = {
+  id: string
+  rating: number
+  comment: string | null
+  createdAt: string
+  completedAt: string | null
+  quantity: number
+
+  reviewer: {
+    id: string
+    username: string | null
+    display_name: string | null
+    avatar_url: string | null
+    rsi_handle: string | null
+    rsi_verified: boolean | null
+    member_number: number | null
+    profile_slug: string | null
+  } | null
+
+  listing: {
+    id: string
+    title: string
+    listing_type: string
+    image_urls: string[] | null
+  } | null
+}
+
+type CounterpartReviewsData = {
+  profile: {
+    id: string
+    username: string | null
+    display_name: string | null
+    avatar_url: string | null
+    rsi_handle: string | null
+    rsi_verified: boolean | null
+    member_number: number | null
+    profile_slug: string | null
+  }
+
+  role: 'seller' | 'buyer'
+  ratingAverage: number | null
+  ratingCount: number
+  reviews: CounterpartReviewItem[]
+}
+
 type TradeRequest = {
   id: string
   listing_id: string
@@ -285,6 +342,42 @@ export default function TradeConversationPage({
     reviewError,
     setReviewError,
   ] = useState('')
+
+  const [
+    counterpartStats,
+    setCounterpartStats,
+  ] =
+    useState<CounterpartMarketStats | null>(
+      null,
+    )
+
+  const [
+    counterpartStatsLoading,
+    setCounterpartStatsLoading,
+  ] = useState(false)
+
+  const [
+    counterpartReviewsOpen,
+    setCounterpartReviewsOpen,
+  ] = useState(false)
+
+  const [
+    counterpartReviewsLoading,
+    setCounterpartReviewsLoading,
+  ] = useState(false)
+
+  const [
+    counterpartReviewsError,
+    setCounterpartReviewsError,
+  ] = useState('')
+
+  const [
+    counterpartReviewsData,
+    setCounterpartReviewsData,
+  ] =
+    useState<CounterpartReviewsData | null>(
+      null,
+    )
 
   const bottomRef =
     useRef<HTMLDivElement | null>(
@@ -748,6 +841,168 @@ export default function TradeConversationPage({
     tradeRequest?.status,
     loadReview,
   ])
+
+useEffect(() => {
+  const counterpartId =
+    tradeRequest
+      ? tradeRequest.buyer_id ===
+        currentUserId
+        ? tradeRequest.seller?.id
+        : tradeRequest.buyer?.id
+      : null
+
+  if (!counterpartId) {
+    setCounterpartStats(null)
+    return
+  }
+
+  let cancelled = false
+
+  async function loadCounterpartStats() {
+    setCounterpartStatsLoading(
+      true,
+    )
+
+    try {
+      const response =
+        await fetch(
+          `/api/market/profiles/${counterpartId}/stats`,
+          {
+            cache: 'no-store',
+          },
+        )
+
+      const data =
+        await readJsonSafely(
+          response,
+        )
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ??
+            '读取交易信誉失败',
+        )
+      }
+
+      if (cancelled) {
+        return
+      }
+
+      setCounterpartStats({
+        sellerRatingAverage:
+          data.sellerRatingAverage ??
+          null,
+
+        sellerRatingCount:
+          Number(
+            data.sellerRatingCount ??
+              0,
+          ),
+
+        buyerRatingAverage:
+          data.buyerRatingAverage ??
+          null,
+
+        buyerRatingCount:
+          Number(
+            data.buyerRatingCount ??
+              0,
+          ),
+      })
+    } catch (err) {
+      console.error(
+        'Load counterpart market stats failed:',
+        err,
+      )
+
+      if (!cancelled) {
+        setCounterpartStats(null)
+      }
+    } finally {
+      if (!cancelled) {
+        setCounterpartStatsLoading(
+          false,
+        )
+      }
+    }
+  }
+
+  void loadCounterpartStats()
+
+  return () => {
+    cancelled = true
+  }
+}, [
+  tradeRequest?.buyer_id,
+  tradeRequest?.seller_id,
+  tradeRequest?.buyer?.id,
+  tradeRequest?.seller?.id,
+  currentUserId,
+])
+
+  async function openCounterpartReviews() {
+  const counterpartId =
+    tradeRequest
+      ? tradeRequest.buyer_id ===
+        currentUserId
+        ? tradeRequest.seller?.id
+        : tradeRequest.buyer?.id
+      : null
+
+  if (
+    !counterpartId ||
+    counterpartReviewsLoading
+  ) {
+    return
+  }
+
+  const role:
+    | 'seller'
+    | 'buyer' =
+    isSeller
+      ? 'buyer'
+      : 'seller'
+
+  setCounterpartReviewsOpen(true)
+  setCounterpartReviewsLoading(true)
+  setCounterpartReviewsError('')
+
+  try {
+    const response =
+      await fetch(
+        `/api/market/profiles/${counterpartId}/reviews?role=${role}`,
+        {
+          cache: 'no-store',
+        },
+      )
+
+    const data =
+      await readJsonSafely(
+        response,
+      )
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ??
+          '读取历史评价失败',
+      )
+    }
+
+    setCounterpartReviewsData(
+      data as CounterpartReviewsData,
+    )
+  } catch (err) {
+    setCounterpartReviewsError(
+      err instanceof Error
+        ? err.message
+        : '读取历史评价失败',
+    )
+  } finally {
+    setCounterpartReviewsLoading(
+      false,
+    )
+  }
+}
 
   async function submitReview() {
     if (
@@ -1232,6 +1487,25 @@ export default function TradeConversationPage({
     counterpart?.profile_slug
       ? `/profile/${counterpart.profile_slug}`
       : null
+  
+  const counterpartRatingLabel =
+  isSeller
+    ? '买家信誉'
+    : '卖家信誉'
+
+  const counterpartRatingAverage =
+    isSeller
+      ? counterpartStats?.buyerRatingAverage ??
+        null
+      : counterpartStats?.sellerRatingAverage ??
+        null
+
+  const counterpartRatingCount =
+    isSeller
+      ? counterpartStats?.buyerRatingCount ??
+        0
+      : counterpartStats?.sellerRatingCount ??
+        0
 
   const listing =
     tradeRequest
@@ -1454,6 +1728,47 @@ export default function TradeConversationPage({
                       </span>
                     )}
                   </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <span>
+                          {counterpartRatingLabel}：
+                        </span>
+
+                        {counterpartStatsLoading ? (
+                          <Loader2 className="size-3 animate-spin" />
+                        ) : counterpartRatingCount > 0 &&
+                          counterpartRatingAverage !==
+                            null ? (
+                          <button
+                            type="button"
+                              onClick={() => {
+                                void openCounterpartReviews()
+                              }}
+                            className="inline-flex items-center gap-1 font-medium text-foreground transition-opacity hover:opacity-70"
+                            title={`查看${counterpartRatingLabel}`}
+                          >
+                            <Star className="size-3.5 fill-amber-400 text-amber-400" />
+
+                            <span className="tabular-nums">
+                              {counterpartRatingAverage.toFixed(
+                                1,
+                              )}
+                            </span>
+
+                            <span className="text-muted-foreground">
+                              （{counterpartRatingCount}）
+                            </span>
+
+                            <span className="text-[10px] text-muted-foreground">
+                              ›
+                            </span>
+                          </button>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            暂无评价
+                          </span>
+                        )}
+                      </div>
 
                   <div>
                     数量：
@@ -2015,6 +2330,252 @@ export default function TradeConversationPage({
           </div>
         </div>
       </main>
+        
+        {counterpartReviewsOpen && (
+  <div
+    className="fixed inset-0 z-130 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+    role="dialog"
+    aria-modal="true"
+    aria-label={counterpartRatingLabel}
+    onMouseDown={(event) => {
+      if (
+        event.target ===
+        event.currentTarget
+      ) {
+        setCounterpartReviewsOpen(
+          false,
+        )
+      }
+    }}
+  >
+    <div className="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl dark:shadow-none">
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-5">
+        <div>
+          <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            {isSeller
+              ? 'BUYER REVIEWS'
+              : 'SELLER REVIEWS'}
+          </div>
+
+          <h2 className="mt-1 text-xl font-semibold">
+            {counterpartRatingLabel}
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            setCounterpartReviewsOpen(
+              false,
+            )
+          }
+          className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          aria-label="关闭评价"
+        >
+          <X className="size-5" />
+        </button>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {counterpartReviewsLoading ? (
+          <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
+            <Loader2 className="size-5 animate-spin" />
+            <div className="text-sm">
+              正在读取历史评价...
+            </div>
+          </div>
+        ) : counterpartReviewsError ? (
+          <div className="p-6">
+            <div className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-500">
+              {counterpartReviewsError}
+            </div>
+          </div>
+        ) : counterpartReviewsData ? (
+          <>
+            {/* 用户信誉总览 */}
+            <div className="border-b border-border/70 px-6 py-5">
+              <div className="flex items-center gap-4">
+                {counterpartReviewsData
+                  .profile.avatar_url ? (
+                  <img
+                    src={
+                      counterpartReviewsData
+                        .profile.avatar_url
+                    }
+                    alt={counterpartName}
+                    className="size-12 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <span className="text-sm font-semibold text-muted-foreground">
+                      {counterpartName
+                        .slice(0, 1)
+                        .toUpperCase()}
+                    </span>
+                  </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate font-semibold">
+                      @
+                      {counterpartReviewsData
+                        .profile.rsi_handle ??
+                        counterpartReviewsData
+                          .profile
+                          .display_name ??
+                        counterpartReviewsData
+                          .profile
+                          .username ??
+                        'StarClub 玩家'}
+                    </span>
+
+                    {counterpartReviewsData
+                      .profile
+                      .rsi_verified && (
+                      <BadgeCheck className="size-4 shrink-0 text-blue-500" />
+                    )}
+                  </div>
+
+                  {counterpartReviewsData
+                    .profile
+                    .member_number !==
+                    null && (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      StarClub #
+                      {
+                        counterpartReviewsData
+                          .profile
+                          .member_number
+                      }
+                    </div>
+                  )}
+                </div>
+
+                <div className="shrink-0 text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Star className="size-5 fill-amber-400 text-amber-400" />
+
+                    <span className="text-lg font-semibold tabular-nums">
+                      {counterpartReviewsData.ratingAverage !==
+                      null
+                        ? counterpartReviewsData.ratingAverage.toFixed(
+                            1,
+                          )
+                        : '—'}
+                    </span>
+                  </div>
+
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    {
+                      counterpartReviewsData.ratingCount
+                    }{' '}
+                    条评价
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 历史评价 */}
+            {counterpartReviewsData
+              .reviews.length > 0 ? (
+              <div className="divide-y divide-border/70">
+                {counterpartReviewsData.reviews.map(
+                  (item) => {
+                    const reviewerName =
+                      item.reviewer
+                        ?.rsi_handle ??
+                      item.reviewer
+                        ?.display_name ??
+                      item.reviewer
+                        ?.username ??
+                      'StarClub 玩家'
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="px-6 py-5"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="truncate text-sm font-medium">
+                                @{reviewerName}
+                              </span>
+
+                              {item.reviewer
+                                ?.rsi_verified && (
+                                <BadgeCheck className="size-3.5 shrink-0 text-blue-500" />
+                              )}
+                            </div>
+
+                            {item.comment && (
+                              <p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-foreground/85">
+                                {item.comment}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map(
+                              (value) => (
+                                <Star
+                                  key={value}
+                                  className={`size-3.5 ${
+                                    value <=
+                                    item.rating
+                                      ? 'fill-amber-400 text-amber-400'
+                                      : 'text-muted-foreground/25'
+                                  }`}
+                                />
+                              ),
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 rounded-xl border border-border/70 bg-muted/20 px-3.5 py-3">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="min-w-0">
+                              <div className="text-[10px] text-muted-foreground">
+                                成交商品
+                              </div>
+
+                              <div className="mt-0.5 truncate text-xs font-medium">
+                                {item.listing
+                                  ?.title ??
+                                  '历史交易商品'}
+                              </div>
+                            </div>
+
+                            <div className="shrink-0 text-xs font-semibold tabular-nums">
+                              ×{item.quantity}
+                            </div>
+                          </div>
+
+                          <div className="mt-2 text-[11px] text-muted-foreground">
+                            成交于{' '}
+                            {formatTime(
+                              item.completedAt ??
+                                item.createdAt,
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  },
+                )}
+              </div>
+            ) : (
+              <div className="px-6 py-16 text-center text-sm text-muted-foreground">
+                暂无历史评价
+              </div>
+            )}
+          </>
+        ) : null}
+      </div>
+    </div>
+  </div>
+)}
 
       {cancelDialogOpen && (
         <div className="fixed inset-0 z-120 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
