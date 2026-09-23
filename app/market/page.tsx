@@ -136,6 +136,46 @@ const LISTING_TYPE_UI: Record<
   },
 }
 
+function formatCompactNumber(
+  value: number,
+) {
+  const number = Math.max(
+    0,
+    Number(value) || 0,
+  )
+
+  const formatUnit = (
+    divisor: number,
+    suffix: string,
+  ) => {
+    const result =
+      number / divisor
+
+    const decimals =
+      result < 10 ? 1 : 0
+
+    return `${Number(
+      result.toFixed(decimals),
+    )}${suffix}`
+  }
+
+  if (number >= 100000000) {
+    return formatUnit(
+      100000000,
+      '亿',
+    )
+  }
+
+  if (number >= 10000) {
+    return formatUnit(
+      10000,
+      '万',
+    )
+  }
+
+  return number.toLocaleString()
+}
+
 async function readJsonSafely(
   response: Response,
 ) {
@@ -1446,9 +1486,14 @@ export default function MarketPage() {
                                   {quantityLabels.completed}
                                 </span>
 
-                                <span className="font-semibold text-foreground/80">
-                                  {completedQuantity}
-                                </span>
+                                  <span
+                                    title={completedQuantity.toLocaleString()}
+                                    className="font-semibold text-foreground/80"
+                                  >
+                                    {formatCompactNumber(
+                                      completedQuantity,
+                                    )}
+                                  </span>
 
                                 <span className="text-muted-foreground/30">
                                   ·
@@ -1458,9 +1503,14 @@ export default function MarketPage() {
                                   {quantityLabels.remaining}
                                 </span>
 
-                                <span className="font-semibold text-foreground/80">
-                                  {listing.quantity}
-                                </span>
+                                  <span
+                                    title={listing.quantity.toLocaleString()}
+                                    className="font-semibold text-foreground/80"
+                                  >
+                                    {formatCompactNumber(
+                                      listing.quantity,
+                                    )}
+                                  </span>
                               </div>
                           </div>
 
@@ -1482,9 +1532,14 @@ export default function MarketPage() {
                                   </span>
                                 ) : (
                                   <div className="flex items-baseline gap-1.5">
-                                    <span className="text-[17px] font-bold tabular-nums tracking-tight text-[#ad6b0b] dark:text-[#e3ad5c]">
-                                      {listing.price_uec.toLocaleString()}
-                                    </span>
+                                        <span
+                                          title={`${listing.price_uec.toLocaleString()} aUEC`}
+                                          className="text-[17px] font-bold tabular-nums tracking-tight text-[#ad6b0b] dark:text-[#e3ad5c]"
+                                        >
+                                          {formatCompactNumber(
+                                            listing.price_uec,
+                                          )}
+                                        </span>
                                       <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#ad6b0b]/70 dark:text-[#e3ad5c]/75">
                                         aUEC
                                       </span>
