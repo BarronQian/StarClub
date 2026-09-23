@@ -6,9 +6,9 @@ import { getEventsFromDb } from '@/lib/events-db'
 import { EventsCompanion } from '@/components/events-companion'
 
 export const metadata: Metadata = {
-  title: '社区活动 | 星际酒馆 StarClub',
+  title: '社区活动',
   description:
-    '星际酒馆 StarClub 社区活动中心：从竞技赛事到大型集体行动，记录 Star Citizen 华人玩家社区正在发生与即将发生的一切。',
+    '星际酒馆 StarClub 的 Star Citizen（星际公民）社区活动中心，记录大型集体活动、竞技赛事、挑战赛、社区合影、教学活动与玩家活动。',
 }
 
 export default async function EventsPage() {

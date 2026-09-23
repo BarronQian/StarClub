@@ -13,9 +13,9 @@ import {
 } from '@/lib/hall-of-fame'
 
 export const metadata: Metadata = {
-  title: '名人堂 | 星际酒馆 StarClub',
+  title: '名人堂',
   description:
-    '星际酒馆 StarClub 名人堂：记录 Star Citizen 全球华人玩家社区的赛事冠军、竞技荣誉与历史时刻。',
+    '星际酒馆 StarClub 的 Star Citizen（星际公民）社区名人堂，记录社区赛事冠军、竞技荣誉、获奖玩家与属于酒馆的历史时刻。',
 }
 
 const STAT_ORDER = ['gun', 'ace', 'racing'] as const

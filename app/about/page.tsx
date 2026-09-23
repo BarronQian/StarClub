@@ -1,8 +1,38 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: '关于星际酒馆',
+  description:
+    '了解星际酒馆 StarClub。我们是面向全球华人《Star Citizen / 星际公民》玩家的独立社区，为玩家提供交流组队、社区活动、中文攻略、新人帮助与玩家创作分享。',
+}
+
+const aboutPageJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  '@id': 'https://www.starclubsc.com/about#webpage',
+  url: 'https://www.starclubsc.com/about',
+  name: '关于星际酒馆 StarClub',
+  description:
+    '了解星际酒馆 StarClub。星际酒馆是面向全球华人《Star Citizen / 星际公民》玩家的独立社区。',
+  inLanguage: 'zh-CN',
+  isPartOf: {
+    '@id': 'https://www.starclubsc.com/#website',
+  },
+  about: {
+    '@id': 'https://www.starclubsc.com/#organization',
+  },
+}
 
 export default function AboutPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
+          <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(aboutPageJsonLd),
+      }}
+    />
       <section className="border-b border-border">
         <div className="site-container py-20 lg:py-28">
           <p className="mb-4 font-display text-[0.7rem] tracking-[0.3em] text-primary">
