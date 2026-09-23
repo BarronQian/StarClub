@@ -10,9 +10,9 @@ import { PageCompanion } from '@/components/page-companion'
 export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: '社区影廊 | 星际酒馆 StarClub',
+  title: '社区影廊',
   description:
-    '星际酒馆 StarClub 社区影廊：来自全球华人 Star Citizen 玩家社区飞行员镜头下的宇宙摄影作品。',
+    '星际酒馆 StarClub 的 Star Citizen（星际公民）社区影廊，展示全球华人玩家拍摄的游戏摄影、宇宙风景、舰船截图、社区活动影像与玩家作品。',
 }
 
 export default async function GalleryPage() {

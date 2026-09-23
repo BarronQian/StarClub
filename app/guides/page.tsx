@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 
 import {
   GuidesPageContent,
@@ -7,6 +8,12 @@ import {
 } from '@/components/guides-page-content'
 
 import type { GuideCategory } from '@/lib/guides'
+
+export const metadata: Metadata = {
+  title: 'Star Citizen 中文攻略',
+  description:
+    '星际酒馆 StarClub 的 Star Citizen（星际公民）中文攻略中心，收录新手指南、游戏机制、舰船资料、装备信息、玩法教学与社区原创攻略。',
+}
 
 export const dynamic = 'force-dynamic'
 
