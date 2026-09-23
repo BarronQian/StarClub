@@ -44,8 +44,8 @@ type GalleryLikeChangedDetail = {
 const GALLERY_LIKE_CHANGED_EVENT =
   'gallery-like-changed'
 
-const INITIAL_VISIBLE_COUNT = 36
-const LOAD_MORE_COUNT = 36
+const INITIAL_VISIBLE_COUNT = 30
+const LOAD_MORE_COUNT = 24
 
 function TimelineRail({
   groups,
@@ -401,7 +401,8 @@ export function GalleryPageGrid({
       },
       {
         rootMargin:
-          '600px 0px',
+          '0px 0px 100px 0px',
+        threshold: 0.1,
       },
     )
 
