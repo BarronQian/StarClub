@@ -400,7 +400,7 @@ export const getGalleryFromDb =
   )
 
 export async function getFeaturedGalleryFromDb(
-  limit = 8,
+   limit = 5,
 ): Promise<
   GalleryDbShot[]
 > {
