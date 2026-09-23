@@ -49,6 +49,8 @@ import { GalleryEditDialog } from '@/components/admin/gallery-edit-dialog'
 import { GALLERY_CATEGORY_LABEL } from '@/lib/gallery'
 import type { AdminGalleryShot } from '@/lib/gallery-db'
 import { readJsonResponse } from '@/lib/read-json-response'
+import { createGalleryImageVariants } from '@/lib/gallery-image'
+import { createClient } from '@supabase/supabase-js'
 
 type GalleryProfileOption = {
   id: string
@@ -155,6 +157,35 @@ export function GalleryAdmin({
     setTogglingHeroIds,
   ] = useState<Set<number>>(
     new Set(),
+  )
+
+  const [
+    optimizingLegacy,
+    setOptimizingLegacy,
+  ] = useState(false)
+
+  const [
+    optimizeProgress,
+    setOptimizeProgress,
+  ] = useState({
+    current: 0,
+    total: 0,
+    failed: 0,
+  })
+
+  const legacyShots =
+  useMemo(
+    () =>
+      shots.filter(
+        (shot) =>
+          !shot.thumbnailSrc?.includes(
+            '/thumbnail/',
+          ) ||
+          !shot.displaySrc?.includes(
+            '/display/',
+          ),
+      ),
+    [shots],
   )
 
   const sortedShots = useMemo(
@@ -641,6 +672,386 @@ export function GalleryAdmin({
       }
     }
 
+    async function optimizeLegacyImages() {
+  if (
+    optimizingLegacy ||
+    legacyShots.length === 0
+  ) {
+    return
+  }
+
+  const confirmed =
+    window.confirm(
+      `准备优化 ${legacyShots.length} 张历史作品。\n\n处理过程中请保持此页面开启。\n\n是否开始？`,
+    )
+
+  if (!confirmed) {
+    return
+  }
+
+  setOptimizingLegacy(true)
+
+  setOptimizeProgress({
+    current: 0,
+    total: legacyShots.length,
+    failed: 0,
+  })
+
+  let failed = 0
+
+  try {
+    const supabaseUrl =
+      process.env
+        .NEXT_PUBLIC_SUPABASE_URL
+
+    const anonKey =
+      process.env
+        .NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (
+      !supabaseUrl ||
+      !anonKey
+    ) {
+      throw new Error(
+        'Supabase 浏览器配置缺失',
+      )
+    }
+
+    const supabase =
+      createClient(
+        supabaseUrl,
+        anonKey,
+      )
+
+    const {
+      data: sessionData,
+    } =
+      await supabase.auth.getSession()
+
+    const accessToken =
+      sessionData.session
+        ?.access_token
+
+    if (!accessToken) {
+      throw new Error(
+        '登录状态已失效，请重新登录',
+      )
+    }
+
+    for (
+      let index = 0;
+      index < legacyShots.length;
+      index += 1
+    ) {
+      const shot =
+        legacyShots[index]
+
+      try {
+        /*
+         * 老作品当前 src 就是原始图片。
+         */
+        const originalUrl =
+          shot.originalSrc ||
+          shot.src
+
+        if (!originalUrl) {
+          throw new Error(
+            '缺少原图地址',
+          )
+        }
+
+        /*
+         * 下载老原图。
+         */
+        const sourceResponse =
+          await fetch(
+            originalUrl,
+            {
+              cache: 'no-store',
+            },
+          )
+
+        if (!sourceResponse.ok) {
+          throw new Error(
+            `原图下载失败 (${sourceResponse.status})`,
+          )
+        }
+
+        const sourceBlob =
+          await sourceResponse.blob()
+
+        const contentType =
+          sourceBlob.type ||
+          'image/jpeg'
+
+        let extension =
+          contentType
+            .split('/')[1]
+            ?.toLowerCase() ||
+          'jpg'
+
+        if (
+          extension ===
+          'jpeg'
+        ) {
+          extension = 'jpg'
+        }
+
+        const sourceFile =
+          new File(
+            [
+              sourceBlob,
+            ],
+            `gallery-${shot.id}.${extension}`,
+            {
+              type:
+                contentType,
+            },
+          )
+
+        /*
+         * 使用与新上传作品完全相同的压缩规则：
+         *
+         * Display:
+         * 2200px / WebP 0.82
+         *
+         * Thumbnail:
+         * 800px / WebP 0.76
+         */
+        const variants =
+          await createGalleryImageVariants(
+            sourceFile,
+          )
+
+        async function uploadVariant(
+          variant:
+            | 'display'
+            | 'thumbnail',
+          blob: Blob,
+        ) {
+          const signedResponse =
+            await fetch(
+              '/api/admin/gallery/upload-url',
+              {
+                method:
+                  'POST',
+
+                headers: {
+                  'Content-Type':
+                    'application/json',
+
+                  Authorization:
+                    `Bearer ${accessToken}`,
+                },
+
+                body:
+                  JSON.stringify({
+                    name:
+                      `${variant}-${shot.id}.webp`,
+
+                    type:
+                      'image/webp',
+
+                    variant,
+                  }),
+              },
+            )
+
+          const signedResult =
+            await readJsonResponse(
+              signedResponse,
+            )
+
+          if (!signedResult.ok) {
+            throw new Error(
+              signedResult.message ||
+                `${variant} 上传地址创建失败`,
+            )
+          }
+
+          const uploadData =
+            signedResult.data as {
+              bucket: string
+              path: string
+              token: string
+              url: string
+            }
+
+          const {
+            error:
+              uploadError,
+          } =
+            await supabase.storage
+              .from(
+                uploadData.bucket,
+              )
+              .uploadToSignedUrl(
+                uploadData.path,
+                uploadData.token,
+                blob,
+                {
+                  contentType:
+                    'image/webp',
+                },
+              )
+
+          if (uploadError) {
+            throw uploadError
+          }
+
+          return uploadData.url
+        }
+
+        /*
+         * 一张一张处理，
+         * 避免瞬间占用过多浏览器内存和带宽。
+         */
+        const displayUrl =
+          await uploadVariant(
+            'display',
+            variants.display.blob,
+          )
+
+        const thumbnailUrl =
+          await uploadVariant(
+            'thumbnail',
+            variants.thumbnail.blob,
+          )
+
+        /*
+         * Storage 上传成功以后，
+         * 再修改数据库。
+         */
+        const saveResponse =
+          await fetch(
+            '/api/admin/gallery/optimize-legacy',
+            {
+              method:
+                'POST',
+
+              headers: {
+                'Content-Type':
+                  'application/json',
+
+                Authorization:
+                  `Bearer ${accessToken}`,
+              },
+
+              body:
+                JSON.stringify({
+                  id:
+                    shot.id,
+
+                  original_url:
+                    originalUrl,
+
+                  display_url:
+                    displayUrl,
+
+                  thumbnail_url:
+                    thumbnailUrl,
+                }),
+            },
+          )
+
+        const saveResult =
+          await readJsonResponse(
+            saveResponse,
+          )
+
+        if (!saveResult.ok) {
+          throw new Error(
+            saveResult.message ||
+              '数据库更新失败',
+          )
+        }
+
+        /*
+         * 本地立即更新。
+         * 这样处理完成的作品会从
+         * legacyShots 中消失。
+         */
+        setShots(
+          (previous) =>
+            previous.map(
+              (item) =>
+                item.id ===
+                shot.id
+                  ? {
+                      ...item,
+
+                      src:
+                        displayUrl,
+
+                      originalSrc:
+                        originalUrl,
+
+                      displaySrc:
+                        displayUrl,
+
+                      thumbnailSrc:
+                        thumbnailUrl,
+                    }
+                  : item,
+            ),
+        )
+      } catch (error) {
+        failed += 1
+
+        console.error(
+          `[Gallery legacy optimize] ${shot.id} failed:`,
+          error,
+        )
+      }
+
+      setOptimizeProgress({
+        current:
+          index + 1,
+
+        total:
+          legacyShots.length,
+
+        failed,
+      })
+
+      /*
+       * 给浏览器一点喘息时间，
+       * 避免连续处理上百张图片时 UI 卡死。
+       */
+      await new Promise(
+        (resolve) =>
+          window.setTimeout(
+            resolve,
+            150,
+          ),
+      )
+    }
+
+    if (failed === 0) {
+      toast.success(
+        `历史图片优化完成，共 ${legacyShots.length} 张`,
+      )
+    } else {
+      toast.warning(
+        `优化完成：成功 ${legacyShots.length - failed} 张，失败 ${failed} 张`,
+      )
+    }
+  } catch (error) {
+    console.error(
+      '[Gallery legacy optimize] Fatal error:',
+      error,
+    )
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : '历史图片优化失败',
+    )
+  } finally {
+    setOptimizingLegacy(false)
+  }
+}
+
   return (
     <div className="min-h-svh bg-background">
       <main className="mx-auto flex max-w-6xl flex-col gap-10 px-6 pb-10 pt-20">
@@ -673,19 +1084,79 @@ export function GalleryAdmin({
               ）
             </h2>
 
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Star className="size-3.5 fill-primary text-primary" />
-              Hero 精选：
-              <span className="font-medium text-foreground">
-                {
-                  heroFeaturedCount
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Star className="size-3.5 fill-primary text-primary" />
+
+                Hero 精选：
+
+                <span className="font-medium text-foreground">
+                  {heroFeaturedCount}
+                </span>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={
+                  optimizingLegacy ||
+                  legacyShots.length === 0
                 }
-              </span>
+                onClick={
+                  optimizeLegacyImages
+                }
+              >
+                {optimizingLegacy
+                  ? `优化中 ${optimizeProgress.current} / ${optimizeProgress.total}`
+                  : legacyShots.length > 0
+                    ? `优化历史图片（${legacyShots.length}）`
+                    : '历史图片已全部优化'}
+              </Button>
             </div>
+      </div>
+
+      {optimizingLegacy ? (
+        <div className="mb-4 rounded-md border border-border bg-muted/30 px-4 py-3">
+          <div className="flex items-center justify-between gap-4 text-xs">
+            <span className="text-foreground">
+              正在优化历史图片
+            </span>
+
+            <span className="text-muted-foreground">
+              {optimizeProgress.current}
+              {' / '}
+              {optimizeProgress.total}
+
+              {optimizeProgress.failed > 0
+                ? ` · 失败 ${optimizeProgress.failed}`
+                : ''}
+            </span>
           </div>
 
-          <div className="corner-cut border border-border bg-card">
-            <Table>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full bg-primary transition-[width] duration-300"
+              style={{
+                width:
+                  optimizeProgress.total > 0
+                    ? `${(
+                        optimizeProgress.current /
+                        optimizeProgress.total
+                      ) * 100}%`
+                    : '0%',
+              }}
+            />
+          </div>
+
+          <p className="mt-2 text-[0.68rem] text-muted-foreground">
+            请保持此页面开启。单张失败不会中断其他作品，刷新页面后可继续处理剩余作品。
+          </p>
+        </div>
+      ) : null}
+
+      <div className="corner-cut border border-border bg-card">
+        <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-20">
