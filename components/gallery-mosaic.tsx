@@ -433,84 +433,143 @@ async function loadLikeStates() {
   }
 
   /*
-   * 未登录用户直接使用服务端已经传下来的点赞数。
-   * 不再为每张作品单独请求点赞状态。
+   * 未登录用户直接使用
+   * Gallery 服务端已经传下来的点赞数。
    */
   if (!accessToken) {
     return
   }
 
-  await Promise.all(
-    shots.map(
-      async (
-        shot,
-      ) => {
-        if (
-          shot.id ===
-          undefined
-        ) {
-          return
-        }
+  /*
+   * 一次收集当前 Mosaic
+   * 所有有效作品 ID。
+   */
+  const galleryIds =
+    shots
+      .map(
+        (shot) =>
+          shot.id,
+      )
+      .filter(
+        (
+          id,
+        ): id is number =>
+          id !==
+          undefined,
+      )
 
-        try {
-          const response =
-            await fetch(
-              `/api/gallery/${shot.id}/like`,
-              {
-                method:
-                  'GET',
+  if (
+    galleryIds.length ===
+    0
+  ) {
+    return
+  }
 
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                },
+  try {
+    /*
+     * 一次请求读取当前用户
+     * 对所有作品的点赞状态。
+     */
+    const response =
+      await fetch(
+        '/api/gallery/likes',
+        {
+          method:
+            'POST',
 
-                cache:
-                  'no-store',
-              },
-            )
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type':
+              'application/json',
+          },
 
-          if (
-            !response.ok
-          ) {
-            return
-          }
-
-          const data =
-            await response.json()
-
-          if (
-            cancelled
-          ) {
-            return
-          }
-
-          setLikeStates(
-            (
-              previous,
-            ) => ({
-              ...previous,
-
-              [shot.id!]:
-                {
-                  liked:
-                    Boolean(
-                      data.liked,
-                    ),
-
-                  likeCount:
-                    Number(
-                      data.likeCount ??
-                        0,
-                    ),
-                },
+          body:
+            JSON.stringify({
+              galleryIds,
             }),
-          )
-        } catch {
-          // 保留服务端传下来的初始点赞数
+
+          cache:
+            'no-store',
+        },
+      )
+
+    if (
+      !response.ok
+    ) {
+      return
+    }
+
+    const data =
+      await response.json()
+
+    if (cancelled) {
+      return
+    }
+
+    const likedIds =
+      new Set<number>(
+        Array.isArray(
+          data.likedIds,
+        )
+          ? data.likedIds.map(
+              (
+                id: unknown,
+              ) =>
+                Number(id),
+            )
+          : [],
+      )
+
+    /*
+     * 一次性更新所有作品状态。
+     *
+     * 点赞总数继续使用
+     * Gallery 数据里的 shot.likes，
+     * 这里只更新当前用户是否点赞。
+     */
+    setLikeStates(
+      (previous) => {
+        const next = {
+          ...previous,
         }
+
+        for (
+          const shot of shots
+        ) {
+          if (
+            shot.id ===
+            undefined
+          ) {
+            continue
+          }
+
+          next[shot.id] = {
+            liked:
+              likedIds.has(
+                shot.id,
+              ),
+
+            likeCount:
+              previous[
+                shot.id
+              ]?.likeCount ??
+              shot.likes ??
+              0,
+
+            loading:
+              false,
+          }
+        }
+
+        return next
       },
-    ),
-  )
+    )
+  } catch {
+    /*
+     * 请求失败时保留
+     * 服务端传下来的初始点赞数。
+     */
+  }
 }
 
     void loadLikeStates()

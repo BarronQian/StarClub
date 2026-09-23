@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { unstable_cache } from 'next/cache'
 
 export type SponsorRow = {
   id: string
@@ -39,7 +40,7 @@ function getSupabase() {
   )
 }
 
-export async function getSponsorsFromDb() {
+async function getSponsorsFromDbUncached() {
   const supabase =
     getSupabase()
 
@@ -101,3 +102,12 @@ export async function getSponsorsFromDb() {
     }),
   )
 }
+
+export const getSponsorsFromDb =
+  unstable_cache(
+    getSponsorsFromDbUncached,
+    ['public-sponsors'],
+    {
+      revalidate: 60,
+    },
+  )

@@ -399,25 +399,200 @@ export const getGalleryFromDb =
     },
   )
 
+async function getFeaturedGalleryFromDbUncached(
+  limit: number,
+): Promise<GalleryDbShot[]> {
+  const supabase =
+    getSupabase()
+
+  if (!supabase) {
+    return getFallbackGallery()
+      .sort(
+        (a, b) =>
+          new Date(
+            b.publishedAt,
+          ).getTime() -
+          new Date(
+            a.publishedAt,
+          ).getTime(),
+      )
+      .slice(0, limit)
+  }
+
+  const {
+    data: galleryData,
+    error: galleryError,
+  } = await supabase
+    .from('gallery')
+    .select(`
+      id,
+      src,
+      original_url,
+      display_url,
+      thumbnail_url,
+      alt,
+      caption,
+      author,
+      author_url,
+      profile_id,
+      category,
+      width,
+      height,
+      aspect_ratio,
+      published_at,
+      wide,
+      hero_featured
+    `)
+    .order(
+      'published_at',
+      {
+        ascending: false,
+      },
+    )
+    .limit(limit)
+
+  if (
+    galleryError ||
+    !galleryData?.length
+  ) {
+    if (galleryError) {
+      console.error(
+        'Failed to load featured gallery:',
+        galleryError,
+      )
+    }
+
+    return getFallbackGallery()
+      .sort(
+        (a, b) =>
+          new Date(
+            b.publishedAt,
+          ).getTime() -
+          new Date(
+            a.publishedAt,
+          ).getTime(),
+      )
+      .slice(0, limit)
+  }
+
+  const rows =
+    galleryData as GalleryRow[]
+
+  const profileIds = [
+    ...new Set(
+      rows
+        .map(
+          (row) =>
+            row.profile_id,
+        )
+        .filter(
+          (
+            profileId,
+          ): profileId is string =>
+            Boolean(
+              profileId,
+            ),
+        ),
+    ),
+  ]
+
+  const galleryIds =
+    rows.map(
+      (row) => row.id,
+    )
+
+  const [
+    profileById,
+    likesResult,
+  ] =
+    await Promise.all([
+      loadProfilesByIds(
+        supabase,
+        profileIds,
+      ),
+
+      supabase
+        .from('gallery_likes')
+        .select('gallery_id')
+        .in(
+          'gallery_id',
+          galleryIds,
+        ),
+    ])
+
+  const likeCounts =
+    new Map<number, number>()
+
+  if (likesResult.error) {
+    console.error(
+      'Failed to load featured gallery like counts:',
+      likesResult.error,
+    )
+  } else {
+    for (
+      const like of
+        likesResult.data ?? []
+    ) {
+      const galleryId =
+        Number(
+          like.gallery_id,
+        )
+
+      likeCounts.set(
+        galleryId,
+        (
+          likeCounts.get(
+            galleryId,
+          ) ?? 0
+        ) + 1,
+      )
+    }
+  }
+
+  return rows.map(
+    (row) => {
+      const profile =
+        row.profile_id
+          ? profileById.get(
+              row.profile_id,
+            ) ?? null
+          : null
+
+      return rowToGalleryShot(
+        row,
+        profile,
+        likeCounts.get(
+          row.id,
+        ) ?? 0,
+      )
+    },
+  )
+}
+
+const getCachedFeaturedGallery =
+  unstable_cache(
+    async () =>
+      getFeaturedGalleryFromDbUncached(
+        5,
+      ),
+    ['featured-gallery'],
+    {
+      revalidate: 60,
+    },
+  )
+
 export async function getFeaturedGalleryFromDb(
-  limit = 8,
+  limit = 5,
 ): Promise<
   GalleryDbShot[]
 > {
-  const gallery =
-    await getGalleryFromDb()
+  if (limit === 5) {
+    return getCachedFeaturedGallery()
+  }
 
-  return [...gallery]
-    .sort(
-      (a, b) =>
-        new Date(
-          b.publishedAt,
-        ).getTime() -
-        new Date(
-          a.publishedAt,
-        ).getTime(),
-    )
-    .slice(0, limit)
+  return getFeaturedGalleryFromDbUncached(
+    limit,
+  )
 }
 
 export type AdminGalleryShot =

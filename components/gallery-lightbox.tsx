@@ -294,145 +294,151 @@ export function GalleryLightbox({
     shot?.id,
   ])
 
-  /*
-   * 每次切换作品时，
-   * 从服务器读取真实点赞状态。
-   */
-  useEffect(() => {
-    if (
-      !shot ||
-      shot.id === undefined
-    ) {
-      setLikeState({
-        liked: false,
-        likeCount: 0,
-        loading: false,
-      })
-
-      return
-    }
-
-    const galleryId =
-      shot.id
-
-    let cancelled =
-      false
-
-    /*
-     * 切换图片时先使用服务端传来的
-     * 已知点赞数，避免短暂显示 0。
-     */
+/*
+ * 每次切换作品时，
+ * 批量接口只读取当前用户
+ * 是否点赞过当前作品。
+ *
+ * 点赞总数直接使用
+ * Gallery 已经传下来的 shot.likes。
+ */
+useEffect(() => {
+  if (
+    !shot ||
+    shot.id === undefined
+  ) {
     setLikeState({
       liked: false,
-      likeCount:
-        shot.likes ?? 0,
+      likeCount: 0,
       loading: false,
     })
 
-    async function loadLikeState() {
-      try {
-        const supabase =
-          getBrowserSupabase()
+    return
+  }
 
-        let accessToken:
-          | string
-          | undefined
+  const galleryId =
+    shot.id
 
-        if (supabase) {
-          const {
-            data,
-          } =
-            await supabase.auth.getSession()
+  let cancelled =
+    false
 
-          accessToken =
-            data.session
-              ?.access_token
-        }
+  /*
+   * 先立即显示 Gallery
+   * 已经提供的点赞总数。
+   */
+  setLikeState({
+    liked: false,
+    likeCount:
+      shot.likes ?? 0,
+    loading: false,
+  })
 
-        const response =
-          await fetch(
-            `/api/gallery/${galleryId}/like`,
-            {
-              method:
-                'GET',
+  async function loadLikeState() {
+    try {
+      const supabase =
+        getBrowserSupabase()
 
-              headers:
-                accessToken
-                  ? {
-                      Authorization: `Bearer ${accessToken}`,
-                    }
-                  : undefined,
-
-              cache:
-                'no-store',
-            },
-          )
-
-        if (
-          !response.ok
-        ) {
-          return
-        }
-
-        const data =
-          await response.json()
-
-        if (cancelled) {
-          return
-        }
-
-        const nextState = {
-          liked:
-            Boolean(
-              data.liked,
-            ),
-
-          likeCount:
-            Number(
-              data.likeCount ??
-                0,
-            ),
-
-          loading:
-            false,
-        }
-
-        setLikeState(
-          nextState,
-        )
-
-        /*
-         * 服务器读取到最新状态后
-         * 同样广播出去。
-         */
-        broadcastLikeChange({
-          galleryId,
-
-          liked:
-            nextState.liked,
-
-          likeCount:
-            nextState.likeCount,
-        })
-      } catch (
-        error
-      ) {
-        console.error(
-          'Failed to load gallery like state:',
-          error,
-        )
+      if (!supabase) {
+        return
       }
-    }
 
-    void loadLikeState()
+      const {
+        data,
+      } =
+        await supabase.auth.getSession()
 
-    return () => {
-      cancelled =
-        true
+      const accessToken =
+        data.session
+          ?.access_token
+
+      /*
+       * 未登录用户不需要额外请求。
+       */
+      if (!accessToken) {
+        return
+      }
+
+      const response =
+        await fetch(
+          '/api/gallery/likes',
+          {
+            method:
+              'POST',
+
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type':
+                'application/json',
+            },
+
+            body:
+              JSON.stringify({
+                galleryIds: [
+                  galleryId,
+                ],
+              }),
+
+            cache:
+              'no-store',
+          },
+        )
+
+      if (
+        !response.ok
+      ) {
+        return
+      }
+
+      const result =
+        await response.json()
+
+      if (cancelled) {
+        return
+      }
+
+      const likedIds =
+        Array.isArray(
+          result.likedIds,
+        )
+          ? result.likedIds.map(
+              (
+                id: unknown,
+              ) =>
+                Number(id),
+            )
+          : []
+
+      setLikeState({
+        liked:
+          likedIds.includes(
+            galleryId,
+          ),
+
+        likeCount:
+          shot.likes ?? 0,
+
+        loading:
+          false,
+      })
+    } catch (
+      error
+    ) {
+      console.error(
+        'Failed to load gallery like state:',
+        error,
+      )
     }
-  }, [
-    shot?.id,
-  ])
+  }
+
+  void loadLikeState()
+
+  return () => {
+    cancelled = true
+  }
+}, [
+  shot?.id,
+  shot?.likes,
+])
 
   async function toggleLike() {
     if (

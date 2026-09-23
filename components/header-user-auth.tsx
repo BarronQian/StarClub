@@ -15,19 +15,66 @@ import type { User } from '@supabase/supabase-js'
 import { AuthLoginButton } from '@/components/auth-login-button'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
+const DISCORD_PROFILE_SYNC_INTERVAL =
+  24 * 60 * 60 * 1000
+
+function getDiscordProfileSyncKey(
+  userId: string,
+) {
+  return `starclub-discord-profile-sync:${userId}`
+}
+
 async function syncDiscordProfile(
   user: User,
+  force = false,
 ) {
   const supabase =
     getSupabaseBrowser()
 
   try {
+    const storageKey =
+      getDiscordProfileSyncKey(
+        user.id,
+      )
+
+    /*
+     * 正常页面加载时，
+     * 同一个用户 24 小时内
+     * 最多自动同步一次。
+     */
+    if (!force) {
+      const lastSyncRaw =
+        window.localStorage.getItem(
+          storageKey,
+        )
+
+      const lastSync =
+        Number(
+          lastSyncRaw,
+        )
+
+      if (
+        Number.isFinite(
+          lastSync,
+        ) &&
+        Date.now() -
+          lastSync <
+          DISCORD_PROFILE_SYNC_INTERVAL
+      ) {
+        return
+      }
+    }
+
     const {
-      data: { session },
+      data: {
+        session,
+      },
     } =
       await supabase.auth.getSession()
 
-    if (!session?.access_token) {
+    if (
+      !session?.access_token
+    ) {
       return
     }
 
@@ -35,12 +82,16 @@ async function syncDiscordProfile(
       await fetch(
         '/api/profile/sync-discord',
         {
-          method: 'POST',
+          method:
+            'POST',
+
           headers: {
             Authorization:
               `Bearer ${session.access_token}`,
           },
-          cache: 'no-store',
+
+          cache:
+            'no-store',
         },
       )
 
@@ -52,10 +103,25 @@ async function syncDiscordProfile(
         'Failed to sync Discord profile:',
         data,
       )
+
       return
     }
 
-    if (data.updated === true) {
+    /*
+     * 只有服务器同步成功以后
+     * 才记录时间。
+     * 请求失败不会进入 24h 冷却。
+     */
+    window.localStorage.setItem(
+      storageKey,
+      String(
+        Date.now(),
+      ),
+    )
+
+    if (
+      data.updated === true
+    ) {
       console.log(
         'Discord profile synced:',
         data,
@@ -135,17 +201,6 @@ export function HeaderUserAuth() {
       setUser(currentUser)
       
       if (currentUser) {
-  console.log(
-    'Discord Supabase User:',
-    currentUser
-  )
-
-  console.log(
-    'Discord User Metadata:',
-    currentUser.user_metadata
-  )
-}
-      if (currentUser) {
         void syncDiscordProfile(
           currentUser,
         )
@@ -159,7 +214,7 @@ export function HeaderUserAuth() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         const currentUser =
           session?.user ?? null
 
@@ -168,6 +223,8 @@ export function HeaderUserAuth() {
         if (currentUser) {
           void syncDiscordProfile(
             currentUser,
+            event ===
+              'SIGNED_IN',
           )
         }
 

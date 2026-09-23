@@ -646,12 +646,21 @@ export default function MarketPage() {
     }
   }, [])
 
-  useEffect(() => {
+useEffect(() => {
   let cancelled = false
 
   async function loadTradeNotifications() {
-    try {
+    /*
+     * 页面处于后台时不请求。
+     */
+    if (
+      document.visibilityState !==
+      'visible'
+    ) {
+      return
+    }
 
+    try {
       const supabase =
         getSupabaseBrowser()
 
@@ -678,6 +687,7 @@ export default function MarketPage() {
               Authorization:
                 `Bearer ${session.access_token}`,
             },
+
             cache:
               'no-store',
           },
@@ -710,17 +720,48 @@ export default function MarketPage() {
     }
   }
 
+  /*
+   * 首次进入页面立即读取。
+   */
   void loadTradeNotifications()
 
+  /*
+   * 从后台重新切回网页时，
+   * 立即刷新一次。
+   */
+  function handleVisibilityChange() {
+    if (
+      document.visibilityState ===
+      'visible'
+    ) {
+      void loadTradeNotifications()
+    }
+  }
+
+  document.addEventListener(
+    'visibilitychange',
+    handleVisibilityChange,
+  )
+
+  /*
+   * 原来每 30 秒请求一次。
+   * 调整为每 5 分钟一次。
+   */
   const interval =
     window.setInterval(() => {
       void loadTradeNotifications()
-    }, 30000)
+    }, 5 * 60 * 1000)
 
   return () => {
     cancelled = true
+
     window.clearInterval(
       interval,
+    )
+
+    document.removeEventListener(
+      'visibilitychange',
+      handleVisibilityChange,
     )
   }
 }, [])
