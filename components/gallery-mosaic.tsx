@@ -261,13 +261,15 @@ function MosaicItem({
         />
 
         <Image
-          src={shot.src}
+          src={
+            shot.thumbnailSrc ??
+            shot.src
+          }
           alt={shot.alt}
           fill
-          unoptimized
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 32vw"
-          quality={62}
           className="object-cover"
+          unoptimized
         />
 
         <div

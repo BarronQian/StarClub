@@ -762,11 +762,12 @@ export function GalleryAdmin({
                         <TableCell>
                           <div className="relative h-12 w-16 overflow-hidden rounded-sm bg-muted">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={
-                                shot.src ||
-                                '/placeholder.svg'
-                              }
+                              <img
+                                src={
+                                  shot.thumbnailSrc ??
+                                  shot.src ??
+                                  '/placeholder.svg'
+                                }
                               alt={
                                 shot.alt
                               }

@@ -34,6 +34,9 @@ function getSupabase() {
 type GalleryRow = {
   id: number
   src: string
+  original_url: string | null
+  display_url: string | null
+  thumbnail_url: string | null
   alt: string | null
   caption: string
   author: string | null
@@ -90,10 +93,31 @@ function rowToGalleryShot(
   const height =
     row.height ?? 1
 
+  const originalSrc =
+    row.original_url ||
+    row.src
+
+  const displaySrc =
+    row.display_url ||
+    row.src
+
+  const thumbnailSrc =
+    row.thumbnail_url ||
+    displaySrc ||
+    row.src
+
   return {
     id: row.id,
 
-    src: row.src,
+    // src 继续作为兼容字段，
+    // 默认指向适合正常展示的 display 图。
+    src: displaySrc,
+
+    originalSrc,
+
+    displaySrc,
+
+    thumbnailSrc,
 
     alt:
       row.alt ??
@@ -269,6 +293,9 @@ async function getGalleryFromDbUncached(): Promise<
     .select(`
       id,
       src,
+      original_url,
+      display_url,
+      thumbnail_url,
       alt,
       caption,
       author,
@@ -420,6 +447,9 @@ export async function getAdminGalleryFromDb(): Promise<
     .select(`
       id,
       src,
+      original_url,
+      display_url,
+      thumbnail_url,
       alt,
       caption,
       author,

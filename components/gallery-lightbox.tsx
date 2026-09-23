@@ -635,7 +635,8 @@ export function GalleryLightbox({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={
-            shot.src ||
+            shot.displaySrc ??
+            shot.src ??
             '/placeholder.svg'
           }
           alt={

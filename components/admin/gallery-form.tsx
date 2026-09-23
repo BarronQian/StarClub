@@ -34,6 +34,9 @@ import {
 
 import type { AdminGalleryShot } from '@/lib/gallery-db'
 import { readJsonResponse } from '@/lib/read-json-response'
+import {
+  createGalleryImageVariants,
+} from '@/lib/gallery-image'
 import { GalleryPreviewCard } from '@/components/admin/gallery-preview'
 
 const CATEGORY_OPTIONS =
@@ -358,95 +361,161 @@ export function GalleryForm({
         return
       }
 
-      setIsSubmitting(
-        true,
-      )
+      setIsSubmitting(true)
 
       try {
         /*
-         * 1. 获取短期 Storage
-         * signed upload token。
+         * 1. 浏览器生成三层图片：
+         *
+         * original:
+         *   原始上传文件
+         *
+         * display:
+         *   最长边 2200px WebP
+         *
+         * thumbnail:
+         *   最长边 800px WebP
          */
-        const urlRes =
-          await fetch(
-            '/api/admin/gallery/upload-url',
-            {
-              method:
-                'POST',
-
-              headers: {
-                'Content-Type':
-                  'application/json',
-              },
-
-              body:
-                JSON.stringify({
-                  name:
-                    file.name,
-                  type:
-                    file.type,
-                }),
-            },
+        const variants =
+          await createGalleryImageVariants(
+            file,
           )
 
-        const signed =
-          await readJsonResponse(
-            urlRes,
-          )
+        type UploadVariant =
+          | 'original'
+          | 'display'
+          | 'thumbnail'
 
-        if (!signed.ok) {
-          throw new Error(
-            signed.message ||
-              '获取上传授权失败',
-          )
-        }
+        /*
+         * 获取 signed upload token，
+         * 然后浏览器直接上传到 Supabase。
+         */
+        const uploadVariant =
+          async (
+            variant: UploadVariant,
+            uploadFile:
+              | File
+              | Blob,
+            name: string,
+            contentType: string,
+          ) => {
+            const urlRes =
+              await fetch(
+                '/api/admin/gallery/upload-url',
+                {
+                  method:
+                    'POST',
 
-        const {
-          bucket,
-          path,
-          token,
-          url,
-        } =
-          signed.data as {
-            bucket: string
-            path: string
-            token: string
-            url: string
+                  headers: {
+                    'Content-Type':
+                      'application/json',
+                  },
+
+                  body:
+                    JSON.stringify({
+                      name,
+                      type:
+                        contentType,
+                      variant,
+                    }),
+                },
+              )
+
+            const signed =
+              await readJsonResponse(
+                urlRes,
+              )
+
+            if (!signed.ok) {
+              throw new Error(
+                signed.message ||
+                  `获取 ${variant} 上传授权失败`,
+              )
+            }
+
+            const {
+              bucket,
+              path,
+              token,
+              url,
+            } =
+              signed.data as {
+                bucket: string
+                path: string
+                token: string
+                url: string
+              }
+
+            const {
+              error:
+                uploadError,
+            } =
+              await getBrowserSupabase()
+                .storage.from(
+                  bucket,
+                )
+                .uploadToSignedUrl(
+                  path,
+                  token,
+                  uploadFile,
+                  {
+                    contentType,
+                  },
+                )
+
+            if (uploadError) {
+              console.error(
+                `[v0] Gallery ${variant} upload error:`,
+                uploadError,
+              )
+
+              throw new Error(
+                `${variant} 图片上传失败，请重试`,
+              )
+            }
+
+            return url
           }
 
         /*
-         * 2. 浏览器直接上传原图
-         * 到 Supabase Storage。
+         * 2. 上传原始高清文件。
          */
-        const {
-          error:
-            uploadError,
-        } =
-          await getBrowserSupabase()
-            .storage.from(
-              bucket,
-            )
-            .uploadToSignedUrl(
-              path,
-              token,
-              file,
-              {
-                contentType:
-                  file.type,
-              },
-            )
-
-        if (
-          uploadError
-        ) {
-          throw new Error(
-            '图片上传失败，请重试',
+        const originalUrl =
+          await uploadVariant(
+            'original',
+            variants.original,
+            file.name,
+            file.type,
           )
-        }
 
         /*
-         * 3. 创建 gallery 记录。
-         * 不再提交 likes。
+         * 3. 上传 2200px Display。
+         */
+        const displayUrl =
+          await uploadVariant(
+            'display',
+            variants.display.blob,
+            'display.webp',
+            'image/webp',
+          )
+
+        /*
+         * 4. 上传 800px Thumbnail。
+         */
+        const thumbnailUrl =
+          await uploadVariant(
+            'thumbnail',
+            variants.thumbnail.blob,
+            'thumbnail.webp',
+            'image/webp',
+          )
+
+        /*
+         * 5. 创建 Gallery 数据库记录。
+         *
+         * src 暂时继续保留，
+         * 并指向 display 图，
+         * 兼容网站现有代码。
          */
         const createRes =
           await fetch(
@@ -462,13 +531,23 @@ export function GalleryForm({
 
               body:
                 JSON.stringify({
-                  src: url,
+                  src:
+                    displayUrl,
+
+                  original_url:
+                    originalUrl,
+
+                  display_url:
+                    displayUrl,
+
+                  thumbnail_url:
+                    thumbnailUrl,
 
                   width:
-                    dimensions.width,
+                    variants.originalWidth,
 
                   height:
-                    dimensions.height,
+                    variants.originalHeight,
 
                   caption:
                     caption.trim(),
