@@ -21,60 +21,140 @@ const notoSansSC = Noto_Sans_SC({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.starclubsc.com'),
-  title: 'StarClub 星际酒馆 | 全球华人 Star Citizen 玩家社区',
+  metadataBase: new URL(
+    'https://www.starclubsc.com',
+  ),
+
+  title: {
+    default:
+      '星际酒馆 StarClub | 全球华人 Star Citizen 玩家社区',
+    template:
+      '%s | 星际酒馆 StarClub',
+  },
+
   description:
-    'StarClub 星际酒馆 是面向全球华人的 Star Citizen 玩家社区，提供舰队行动、赛事活动、中文攻略与新人引导，欢迎加入我们的 Discord 与官方 ORG。',
-  generator: 'v0.app',
+    '星际酒馆 StarClub 是面向全球华人的 Star Citizen（星际公民）玩家社区，提供社区活动、赛事、中文攻略、玩家市场、社区影廊、实用工具与新人帮助，并运营 Star Citizen 官方 ORG STARCLUBCN。',
+
+  applicationName:
+    '星际酒馆 StarClub',
+
+  authors: [
+    {
+      name: '星际酒馆 StarClub',
+      url: 'https://www.starclubsc.com',
+    },
+  ],
+
+  creator:
+    '星际酒馆 StarClub',
+
+  publisher:
+    '星际酒馆 StarClub',
+
   keywords: [
+    '星际酒馆',
+    '星际酒馆 StarClub',
+    '星际酒馆StarClub',
+    'StarClub',
     'Star Citizen',
     '星际公民',
-    '星际酒馆',
-    'StarClub',
-    '华人社区',
-    'ORG',
-    '中文攻略',
+    'Star Citizen 中文社区',
+    '星际公民中文社区',
+    'Star Citizen 华人社区',
+    'Star Citizen 海外华人社区',
+    'Star Citizen 全球华人社区',
+    '星际公民华人社区',
+    'STARCLUBCN',
+    'Star Citizen ORG',
+    '星际公民攻略',
+    'Star Citizen 中文攻略',
   ],
-    openGraph: {
-      title: 'StarClub 星际酒馆 | 全球华人 Star Citizen 玩家社区',
-      description:
-        '自由交流 · 社区活动 · 中文攻略 · 玩家影廊 · 实用工具',
-      url: 'https://www.starclubsc.com',
-      siteName: 'StarClub 星际酒馆',
-      type: 'website',
-      locale: 'zh_CN',
-      images: [
-        {
-          url: '/images/og/starclub-og.jpg',
-          width: 1200,
-          height: 630,
-          alt: 'StarClub 星际酒馆 | 全球华人 Star Citizen 玩家社区',
-        },
-      ],
+
+  alternates: {
+    canonical:
+      'https://www.starclubsc.com',
+  },
+
+  openGraph: {
+    title:
+      '星际酒馆 StarClub | 全球华人 Star Citizen 玩家社区',
+
+    description:
+      '全球华人 Star Citizen 玩家社区：社区活动、中文攻略、玩家市场、社区影廊、实用工具与新人帮助。',
+
+    url:
+      'https://www.starclubsc.com',
+
+    siteName:
+      '星际酒馆 StarClub',
+
+    type: 'website',
+
+    locale: 'zh_CN',
+
+    images: [
+      {
+        url:
+          '/images/og/starclub-og.jpg',
+        width: 1200,
+        height: 630,
+        alt:
+          '星际酒馆 StarClub | 全球华人 Star Citizen 玩家社区',
+      },
+    ],
+  },
+
+  twitter: {
+    card:
+      'summary_large_image',
+
+    title:
+      '星际酒馆 StarClub | 全球华人 Star Citizen 玩家社区',
+
+    description:
+      '全球华人 Star Citizen 玩家社区：社区活动、中文攻略、玩家市场、社区影廊与实用工具。',
+
+    images: [
+      '/images/og/starclub-og.jpg',
+    ],
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview':
+        'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
     },
-    twitter: {
-  card: 'summary_large_image',
-  title: 'StarClub 星际酒馆 | 全球华人 Star Citizen 玩家社区',
-  description:
-    '自由交流 · 社区活动 · 中文攻略 · 玩家影廊 · 实用工具',
-  images: ['/images/og/starclub-og.jpg'],
-},
+  },
+
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
+        url:
+          '/icon-light-32x32.png',
+        media:
+          '(prefers-color-scheme: light)',
       },
       {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
+        url:
+          '/icon-dark-32x32.png',
+        media:
+          '(prefers-color-scheme: dark)',
       },
       {
         url: '/icon.svg',
         type: 'image/svg+xml',
       },
     ],
-    apple: '/apple-icon.png',
+
+    apple:
+      '/apple-icon.png',
   },
 }
 
@@ -118,6 +198,63 @@ const themeScript = `
   })()
 `
 
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id':
+    'https://www.starclubsc.com/#organization',
+
+  name: '星际酒馆 StarClub',
+
+  alternateName: [
+    '星际酒馆',
+    'StarClub',
+    'STARCLUBCN',
+  ],
+
+  url:
+    'https://www.starclubsc.com',
+
+  logo: {
+    '@type': 'ImageObject',
+    url:
+      'https://www.starclubsc.com/apple-icon.png',
+  },
+
+  description:
+    '星际酒馆 StarClub 是面向全球华人的 Star Citizen（星际公民）玩家社区，提供社区活动、赛事、中文攻略、玩家市场、社区影廊、实用工具与新人帮助。',
+
+  sameAs: [
+    'https://robertsspaceindustries.com/en/orgs/STARCLUBCN',
+  ],
+}
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id':
+    'https://www.starclubsc.com/#website',
+
+  url:
+    'https://www.starclubsc.com',
+
+  name:
+    '星际酒馆 StarClub',
+
+  alternateName: [
+    '星际酒馆',
+    'StarClub',
+  ],
+
+  publisher: {
+    '@id':
+      'https://www.starclubsc.com/#organization',
+  },
+
+  inLanguage:
+    'zh-CN',
+}
+
 export default function RootLayout({
     children,
   }: Readonly<{
@@ -131,14 +268,32 @@ export default function RootLayout({
           data-scroll-behavior="smooth"
           className={`bg-background ${orbitron.variable} ${notoSansSC.variable}`}
         >
-      <head>
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{
-            __html: themeScript,
-          }}
-        />
-      </head>
+        <head>
+          <script
+            suppressHydrationWarning
+            dangerouslySetInnerHTML={{
+              __html: themeScript,
+            }}
+          />
+
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(
+                organizationJsonLd,
+              ),
+            }}
+          />
+
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(
+                websiteJsonLd,
+              ),
+            }}
+          />
+        </head>
 
       <body className="font-sans antialiased">
         <SiteHeader />
