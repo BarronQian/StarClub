@@ -76,7 +76,7 @@ export function HeroCarousel() {
       onBlurCapture={() => setPaused(false)}
     >
       <div
-        className="corner-cut group relative aspect-[21/9] w-full overflow-hidden border border-border bg-card sm:aspect-[3/1]"
+        className="corner-cut group relative aspect-21/9 w-full overflow-hidden border border-border bg-card sm:aspect-3/1"
         role="region"
         aria-roledescription="carousel"
         aria-label="星际酒馆百人合影"
@@ -84,7 +84,7 @@ export function HeroCarousel() {
         {SLIDES.map((slide, i) => (
           <div
             key={slide.src}
-            className="absolute inset-0 transition-opacity duration-[1100ms] ease-out"
+            className="absolute inset-0 transition-opacity duration-1100 ease-out"
             style={{ opacity: i === index ? 1 : 0 }}
             aria-hidden={i !== index}
           >
@@ -96,12 +96,13 @@ export function HeroCarousel() {
               sizes="100vw"
               className="object-cover"
               style={{ objectPosition: slide.position ?? 'center' }}
+              unoptimized
             />
           </div>
         ))}
 
         {/* place label */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 bg-gradient-to-t from-foreground/55 to-transparent p-5 lg:p-7">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 bg-linear-to-t from-foreground/55 to-transparent p-5 lg:p-7">
           <span className="font-display text-[0.6rem] tracking-[0.28em] text-background/90 lg:text-[0.68rem]">
             {SLIDES[index].place}
           </span>

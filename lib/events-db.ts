@@ -2,6 +2,10 @@ import {
   createClient,
 } from '@supabase/supabase-js'
 
+import {
+  unstable_cache,
+} from 'next/cache'
+
 import type {
   EventItem,
 } from '@/lib/events'
@@ -282,7 +286,7 @@ export async function getEventFromDb(
   )
 }
 
-export async function getHomeFeaturedEventsFromDb(): Promise<
+async function getHomeFeaturedEventsFromDbUncached(): Promise<
   EventItem[]
 > {
   const supabase =
@@ -324,6 +328,7 @@ export async function getHomeFeaturedEventsFromDb(): Promise<
         ascending: false,
       },
     )
+    .limit(3)
 
   if (
     error ||
@@ -343,3 +348,12 @@ export async function getHomeFeaturedEventsFromDb(): Promise<
     rowToEventItem,
   )
 }
+
+export const getHomeFeaturedEventsFromDb =
+  unstable_cache(
+    getHomeFeaturedEventsFromDbUncached,
+    ['home-featured-events'],
+    {
+      revalidate: 60,
+    },
+  )

@@ -47,11 +47,12 @@ export async function Gallery() {
                 style={{ aspectRatio: getCardAspectRatio(shot) }}
               >
                 <Image
-                  src={shot.src}
+                  src={shot.thumbnailSrc ?? shot.src}
                   alt={shot.alt}
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 45vw"
                   className="object-cover transition-transform duration-1400 group-hover:scale-[1.04]"
+                  unoptimized
                 />
               </Link>
               <figcaption className="mt-4 flex items-baseline justify-between gap-3">
