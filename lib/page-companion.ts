@@ -762,12 +762,12 @@ vt7prototype: {
   image: '/images/characters/vt7prototype.png',
   alt: 'VT7Prototype',
 
-  side: 'right',
+  side: 'left',
   height: 430,
   offsetX: 24,
 
-  bubbleOffsetX: 58,
-  bubbleOffsetY: 90,
+  bubbleOffsetX: 38,
+  bubbleOffsetY: 105,
   bubbleWidth: 340,
   bubbleTailOffset: 40,
 
