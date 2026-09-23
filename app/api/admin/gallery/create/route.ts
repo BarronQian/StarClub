@@ -58,6 +58,27 @@ export async function POST(
       ? body.src.trim()
       : ''
 
+    const originalUrl =
+    typeof body.original_url ===
+      'string' &&
+    body.original_url.trim()
+      ? body.original_url.trim()
+      : src
+
+  const displayUrl =
+    typeof body.display_url ===
+      'string' &&
+    body.display_url.trim()
+      ? body.display_url.trim()
+      : src
+
+  const thumbnailUrl =
+    typeof body.thumbnail_url ===
+      'string' &&
+    body.thumbnail_url.trim()
+      ? body.thumbnail_url.trim()
+      : displayUrl
+
   const caption =
     typeof body.caption ===
     'string'
@@ -184,6 +205,16 @@ export async function POST(
     .from('gallery')
     .insert({
       src,
+
+      original_url:
+        originalUrl,
+
+      display_url:
+        displayUrl,
+
+      thumbnail_url:
+        thumbnailUrl,
+
       alt,
       caption,
 
@@ -216,6 +247,9 @@ export async function POST(
       `
         id,
         src,
+        original_url,
+        display_url,
+        thumbnail_url,
         alt,
         caption,
         author,
@@ -255,14 +289,28 @@ revalidatePath('/gallery')
 revalidatePath('/')
 
 return NextResponse.json({
-    shot: {
-      id:
-        data.id,
+      shot: {
+        id:
+          data.id,
 
-      src:
-        data.src,
+        src:
+          data.display_url ??
+          data.src,
 
-      alt:
+        originalSrc:
+          data.original_url ??
+          data.src,
+
+        displaySrc:
+          data.display_url ??
+          data.src,
+
+        thumbnailSrc:
+          data.thumbnail_url ??
+          data.display_url ??
+          data.src,
+
+        alt:
         data.alt ??
         data.caption,
 

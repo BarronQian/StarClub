@@ -18,7 +18,30 @@ export type GallerySort = 'latest' | 'popular'
 
 export type GalleryShot = {
   id?: number
+
+  /**
+   * 兼容旧 Gallery 数据。
+   * 新数据仍保留 src，默认指向 display 图。
+   */
   src: string
+
+  /**
+   * 上传时保留的原始高清图片。
+   */
+  originalSrc?: string
+
+  /**
+   * Lightbox / 大图浏览使用的展示版本。
+   * 默认最长边 2200px。
+   */
+  displaySrc?: string
+
+  /**
+   * Gallery 瀑布流 / Mosaic 使用的缩略图。
+   * 默认最长边 800px。
+   */
+  thumbnailSrc?: string
+
   alt: string
   caption: string
   author: string
@@ -29,17 +52,18 @@ export type GalleryShot = {
   profileMatch?: 'manual' | 'automatic'
 
   category: GalleryCategory
-  /** Intrinsic pixel width of the source file — used to reserve layout space. */
+
+  /** 原始图片尺寸，用于计算布局比例。 */
   width: number
-  /** Intrinsic pixel height of the source file — used to reserve layout space. */
+
+  /** 原始图片尺寸，用于计算布局比例。 */
   height: number
-  /** width / height, precomputed for convenience. */
+
+  /** width / height */
   aspectRatio: number
-  /** ISO date the shot was published to the gallery. */
+
   publishedAt: string
-  /** Local-only like count seed; the site does not track real global likes. */
   likes: number
-  /** Panoramic shots span a wider grid cell on the homepage teaser. */
   wide?: boolean
 }
 
