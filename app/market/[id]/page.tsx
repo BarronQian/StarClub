@@ -2878,10 +2878,17 @@ async function submitReport() {
                       'StarClub 玩家'}
                   </span>
 
-                  {sellerMarketData.profile
-                    .rsi_verified && (
-                    <BadgeCheck className="size-4 shrink-0 text-blue-500" />
-                  )}
+                  <UserVerificationBadges
+                    rsiVerified={
+                      sellerMarketData.profile
+                        .rsi_verified === true
+                    }
+                    handle={
+                      sellerMarketData.profile
+                        .rsi_handle
+                    }
+                    size="sm"
+                  />
                 </div>
 
                 {sellerMarketData.profile
@@ -2947,7 +2954,7 @@ async function submitReport() {
             </div>
 
             {/* Stats */}
-            <div className="mt-5 grid grid-cols-5 divide-x divide-border/70 rounded-xl border border-border/70 bg-muted/20 py-3 dark:divide-white/8 dark:border-white/8 dark:bg-white/[0.025]">
+            <div className="mt-5 grid grid-cols-5 divide-x divide-border/70 rounded-xl border border-border/70 bg-muted/20 py-3 dark:divide-white/8 dark:border-white/8 dark:bg-white/2.5">
               <div className="text-center">
                 <div className="text-base font-semibold tabular-nums">
                   {
@@ -3096,7 +3103,7 @@ async function submitReport() {
                               false,
                             )
                           }
-                          className="group flex items-center gap-3 rounded-xl border border-border/70 p-3 transition-colors hover:bg-muted/50 dark:border-white/8 dark:hover:bg-white/[0.04]"
+                          className="group flex items-center gap-3 rounded-xl border border-border/70 p-3 transition-colors hover:bg-muted/50 dark:border-white/8 dark:hover:bg-white/4"
                         >
                           {marketListing
                             .image_urls?.[0] ? (
