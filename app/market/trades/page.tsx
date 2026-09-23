@@ -44,6 +44,55 @@ type TradeProfile = {
   profile_slug: string | null
 }
 
+type MarketProfileStats = {
+  sellerRatingAverage:
+    | number
+    | null
+  sellerRatingCount: number
+
+  buyerRatingAverage:
+    | number
+    | null
+  buyerRatingCount: number
+}
+
+type MarketReviewProfile = {
+  id: string
+  username: string | null
+  display_name: string | null
+  avatar_url: string | null
+  rsi_handle: string | null
+  rsi_verified: boolean | null
+  member_number: number | null
+  profile_slug: string | null
+}
+
+type MarketReviewItem = {
+  id: string
+  rating: number
+  comment: string | null
+  createdAt: string
+  completedAt: string | null
+  quantity: number
+
+  reviewer: MarketReviewProfile | null
+
+  listing: {
+    id: string
+    title: string
+    listing_type: string
+    image_urls: string[] | null
+  } | null
+}
+
+type MarketReviewsData = {
+  profile: MarketReviewProfile
+  role: 'seller' | 'buyer'
+  ratingAverage: number | null
+  ratingCount: number
+  reviews: MarketReviewItem[]
+}
+
 type TradeListing = {
   id: string
   listing_type: string
@@ -296,6 +345,48 @@ export default function MarketTradesPage() {
     setSavingListingId,
   ] = useState<string | null>(null)
 
+  const [
+    profileStats,
+    setProfileStats,
+  ] = useState<
+    Record<string, MarketProfileStats>
+  >({})
+
+  const [
+    profileStatsLoading,
+    setProfileStatsLoading,
+  ] = useState(false)
+
+  const [
+    reviewsOpen,
+    setReviewsOpen,
+  ] = useState(false)
+
+  const [
+    reviewsLoading,
+    setReviewsLoading,
+  ] = useState(false)
+
+  const [
+    reviewsError,
+    setReviewsError,
+  ] = useState('')
+
+  const [
+    reviewsData,
+    setReviewsData,
+  ] =
+    useState<MarketReviewsData | null>(
+      null,
+    )
+
+  const [
+    reviewsLabel,
+    setReviewsLabel,
+  ] = useState<
+    '买家信誉' | '卖家信誉'
+  >('买家信誉')
+
   const loadRequests =
     useCallback(
       async () => {
@@ -450,6 +541,132 @@ export default function MarketTradesPage() {
   }, [loadRequests])
 
   useEffect(() => {
+  const profileIds =
+    Array.from(
+      new Set(
+        [
+          ...received,
+          ...sent,
+        ]
+          .flatMap((request) => [
+            request.buyer?.id,
+            request.seller?.id,
+          ])
+          .filter(
+            (
+              id,
+            ): id is string =>
+              Boolean(id) &&
+              id !== currentUserId,
+          ),
+      ),
+    )
+
+  if (profileIds.length === 0) {
+    setProfileStats({})
+    return
+  }
+
+  let cancelled = false
+
+  async function loadProfileStats() {
+    setProfileStatsLoading(true)
+
+    try {
+      const results =
+        await Promise.all(
+          profileIds.map(
+            async (profileId) => {
+              try {
+                const response =
+                  await fetch(
+                    `/api/market/profiles/${profileId}/stats`,
+                    {
+                      cache:
+                        'no-store',
+                    },
+                  )
+
+                const data =
+                  await readJsonSafely(
+                    response,
+                  )
+
+                if (!response.ok) {
+                  return null
+                }
+
+                return {
+                  profileId,
+
+                  stats: {
+                    sellerRatingAverage:
+                      data.sellerRatingAverage ??
+                      null,
+
+                    sellerRatingCount:
+                      Number(
+                        data.sellerRatingCount ??
+                          0,
+                      ),
+
+                    buyerRatingAverage:
+                      data.buyerRatingAverage ??
+                      null,
+
+                    buyerRatingCount:
+                      Number(
+                        data.buyerRatingCount ??
+                          0,
+                      ),
+                  } satisfies MarketProfileStats,
+                }
+              } catch {
+                return null
+              }
+            },
+          ),
+        )
+
+      if (cancelled) {
+        return
+      }
+
+      const nextStats: Record<
+        string,
+        MarketProfileStats
+      > = {}
+
+      for (const result of results) {
+        if (!result) {
+          continue
+        }
+
+        nextStats[
+          result.profileId
+        ] = result.stats
+      }
+
+      setProfileStats(nextStats)
+    } finally {
+      if (!cancelled) {
+        setProfileStatsLoading(false)
+      }
+    }
+  }
+
+  void loadProfileStats()
+
+  return () => {
+    cancelled = true
+  }
+}, [
+  received,
+  sent,
+  currentUserId,
+])
+
+  useEffect(() => {
   async function markTradeRequestsSeen() {
     try {
       const {
@@ -492,6 +709,60 @@ export default function MarketTradesPage() {
 
   void markTradeRequestsSeen()
 }, [])
+
+  async function openProfileReviews(
+  profileId: string,
+  role: 'seller' | 'buyer',
+) {
+  if (reviewsLoading) {
+    return
+  }
+
+  setReviewsLabel(
+    role === 'buyer'
+      ? '买家信誉'
+      : '卖家信誉',
+  )
+
+  setReviewsOpen(true)
+  setReviewsLoading(true)
+  setReviewsError('')
+  setReviewsData(null)
+
+  try {
+    const response =
+      await fetch(
+        `/api/market/profiles/${profileId}/reviews?role=${role}`,
+        {
+          cache: 'no-store',
+        },
+      )
+
+    const data =
+      await readJsonSafely(
+        response,
+      )
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ??
+          '读取历史评价失败',
+      )
+    }
+
+    setReviewsData(
+      data as MarketReviewsData,
+    )
+  } catch (err) {
+    setReviewsError(
+      err instanceof Error
+        ? err.message
+        : '读取历史评价失败',
+    )
+  } finally {
+    setReviewsLoading(false)
+  }
+}
 
   async function updateTradeRequest(
     id: string,
@@ -1456,6 +1727,32 @@ export default function MarketTradesPage() {
                     getProfileName(
                       counterpart,
                     )
+                  
+                    const counterpartStats =
+                      counterpart?.id
+                        ? profileStats[
+                            counterpart.id
+                          ] ?? null
+                        : null
+
+                    const counterpartRatingLabel =
+                      isSeller
+                        ? '买家信誉'
+                        : '卖家信誉'
+
+                    const counterpartRatingAverage =
+                      isSeller
+                        ? counterpartStats?.buyerRatingAverage ??
+                          null
+                        : counterpartStats?.sellerRatingAverage ??
+                          null
+
+                    const counterpartRatingCount =
+                      isSeller
+                        ? counterpartStats?.buyerRatingCount ??
+                          0
+                        : counterpartStats?.sellerRatingCount ??
+                          0
 
                   const image =
                     listing
@@ -1633,13 +1930,65 @@ export default function MarketTradesPage() {
 
                               <div className="mt-1 flex items-center gap-1.5 font-medium sm:justify-end">
                                 @
-                                {
-                                  counterpartName
-                                }
+                                {counterpartName}
 
                                 {counterpart
                                   ?.rsi_verified && (
                                   <BadgeCheck className="size-4 text-blue-500" />
+                                )}
+                              </div>
+
+                              <div className="mt-1.5 flex items-center gap-1.5 text-xs sm:justify-end">
+                                <span className="text-muted-foreground">
+                                  {counterpartRatingLabel}
+                                </span>
+
+                                {profileStatsLoading &&
+                                !counterpartStats ? (
+                                  <Loader2 className="size-3 animate-spin text-muted-foreground" />
+                                ) : counterpartRatingCount >
+                                    0 &&
+                                  counterpartRatingAverage !==
+                                    null ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (!counterpart?.id) {
+                                            return
+                                          }
+
+                                          void openProfileReviews(
+                                            counterpart.id,
+                                            isSeller
+                                              ? 'buyer'
+                                              : 'seller',
+                                          )
+                                        }}
+                                        className="inline-flex items-center gap-1 transition-opacity hover:opacity-70"
+                                        title={`查看${counterpartRatingLabel}`}
+                                      >
+                                        <span className="text-amber-500">
+                                          ★
+                                        </span>
+
+                                        <span className="font-medium tabular-nums text-foreground">
+                                          {counterpartRatingAverage.toFixed(
+                                            1,
+                                          )}
+                                        </span>
+
+                                        <span className="text-muted-foreground">
+                                          （{counterpartRatingCount}）
+                                        </span>
+
+                                        <span className="text-[10px] text-muted-foreground">
+                                          ›
+                                        </span>
+                                      </button>
+                                ) : (
+                                  <span className="text-muted-foreground">
+                                    暂无评价
+                                  </span>
                                 )}
                               </div>
                             </div>
@@ -1984,6 +2333,251 @@ export default function MarketTradesPage() {
           )}
         </div>
       </main>
+          
+          {reviewsOpen && (
+  <div
+    className="fixed inset-0 z-130 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+    role="dialog"
+    aria-modal="true"
+    aria-label={reviewsLabel}
+    onMouseDown={(event) => {
+      if (
+        event.target ===
+        event.currentTarget
+      ) {
+        setReviewsOpen(false)
+      }
+    }}
+  >
+    <div className="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl dark:shadow-none">
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-5">
+        <div>
+          <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            {reviewsData?.role ===
+            'buyer'
+              ? 'BUYER REVIEWS'
+              : 'SELLER REVIEWS'}
+          </div>
+
+          <h2 className="mt-1 text-xl font-semibold">
+            {reviewsLabel}
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            setReviewsOpen(false)
+          }
+          aria-label="关闭评价"
+          className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <X className="size-5" />
+        </button>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {reviewsLoading ? (
+          <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
+            <Loader2 className="size-5 animate-spin" />
+
+            <div className="text-sm">
+              正在读取历史评价...
+            </div>
+          </div>
+        ) : reviewsError ? (
+          <div className="p-6">
+            <div className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-500">
+              {reviewsError}
+            </div>
+          </div>
+        ) : reviewsData ? (
+          <>
+            <div className="border-b border-border/70 px-6 py-5">
+              <div className="flex items-center gap-4">
+                {reviewsData.profile
+                  .avatar_url ? (
+                  <img
+                    src={
+                      reviewsData.profile
+                        .avatar_url
+                    }
+                    alt={
+                      reviewsData.profile
+                        .rsi_handle ??
+                      'StarClub 玩家'
+                    }
+                    className="size-12 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <Store className="size-5 text-muted-foreground" />
+                  </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate font-semibold">
+                      @
+                      {reviewsData.profile
+                        .rsi_handle ??
+                        reviewsData.profile
+                          .display_name ??
+                        reviewsData.profile
+                          .username ??
+                        'StarClub 玩家'}
+                    </span>
+
+                    {reviewsData.profile
+                      .rsi_verified && (
+                      <BadgeCheck className="size-4 shrink-0 text-blue-500" />
+                    )}
+                  </div>
+
+                  {reviewsData.profile
+                    .member_number !==
+                    null && (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      StarClub #
+                      {
+                        reviewsData.profile
+                          .member_number
+                      }
+                    </div>
+                  )}
+                </div>
+
+                <div className="shrink-0 text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <span className="text-lg text-amber-500">
+                      ★
+                    </span>
+
+                    <span className="text-lg font-semibold tabular-nums">
+                      {reviewsData.ratingAverage !==
+                      null
+                        ? reviewsData.ratingAverage.toFixed(
+                            1,
+                          )
+                        : '—'}
+                    </span>
+                  </div>
+
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    {reviewsData.ratingCount}{' '}
+                    条评价
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {reviewsData.reviews.length >
+            0 ? (
+              <div className="divide-y divide-border/70">
+                {reviewsData.reviews.map(
+                  (review) => {
+                    const reviewerName =
+                      review.reviewer
+                        ?.rsi_handle ??
+                      review.reviewer
+                        ?.display_name ??
+                      review.reviewer
+                        ?.username ??
+                      'StarClub 玩家'
+
+                    const rating =
+                      Math.max(
+                        0,
+                        Math.min(
+                          5,
+                          review.rating,
+                        ),
+                      )
+
+                    return (
+                      <div
+                        key={review.id}
+                        className="px-6 py-5"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="truncate text-sm font-medium">
+                                @{reviewerName}
+                              </span>
+
+                              {review.reviewer
+                                ?.rsi_verified && (
+                                <BadgeCheck className="size-3.5 shrink-0 text-blue-500" />
+                              )}
+                            </div>
+
+                            {review.comment && (
+                              <p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-foreground/85">
+                                {review.comment}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="shrink-0 text-sm tracking-[0.08em]">
+                            <span className="text-amber-500">
+                              {'★'.repeat(
+                                rating,
+                              )}
+                            </span>
+
+                            <span className="text-muted-foreground/25">
+                              {'★'.repeat(
+                                5 - rating,
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 rounded-xl border border-border/70 bg-muted/20 px-3.5 py-3">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="min-w-0">
+                              <div className="text-[10px] text-muted-foreground">
+                                成交商品
+                              </div>
+
+                              <div className="mt-0.5 truncate text-xs font-medium">
+                                {review.listing
+                                  ?.title ??
+                                  '历史交易商品'}
+                              </div>
+                            </div>
+
+                            <div className="shrink-0 text-xs font-semibold tabular-nums">
+                              ×
+                              {review.quantity}
+                            </div>
+                          </div>
+
+                          <div className="mt-2 text-[11px] text-muted-foreground">
+                            成交于{' '}
+                            {formatDate(
+                              review.completedAt ??
+                                review.createdAt,
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  },
+                )}
+              </div>
+            ) : (
+              <div className="px-6 py-16 text-center text-sm text-muted-foreground">
+                暂无历史评价
+              </div>
+            )}
+          </>
+        ) : null}
+      </div>
+    </div>
+  </div>
+)}
 
       {cancelTarget && (
         <div className="fixed inset-0 z-120 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
