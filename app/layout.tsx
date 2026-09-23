@@ -198,6 +198,63 @@ const themeScript = `
   })()
 `
 
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id':
+    'https://www.starclubsc.com/#organization',
+
+  name: '星际酒馆 StarClub',
+
+  alternateName: [
+    '星际酒馆',
+    'StarClub',
+    'STARCLUBCN',
+  ],
+
+  url:
+    'https://www.starclubsc.com',
+
+  logo: {
+    '@type': 'ImageObject',
+    url:
+      'https://www.starclubsc.com/apple-icon.png',
+  },
+
+  description:
+    '星际酒馆 StarClub 是面向全球华人的 Star Citizen（星际公民）玩家社区，提供社区活动、赛事、中文攻略、玩家市场、社区影廊、实用工具与新人帮助。',
+
+  sameAs: [
+    'https://robertsspaceindustries.com/en/orgs/STARCLUBCN',
+  ],
+}
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id':
+    'https://www.starclubsc.com/#website',
+
+  url:
+    'https://www.starclubsc.com',
+
+  name:
+    '星际酒馆 StarClub',
+
+  alternateName: [
+    '星际酒馆',
+    'StarClub',
+  ],
+
+  publisher: {
+    '@id':
+      'https://www.starclubsc.com/#organization',
+  },
+
+  inLanguage:
+    'zh-CN',
+}
+
 export default function RootLayout({
     children,
   }: Readonly<{
@@ -211,14 +268,32 @@ export default function RootLayout({
           data-scroll-behavior="smooth"
           className={`bg-background ${orbitron.variable} ${notoSansSC.variable}`}
         >
-      <head>
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{
-            __html: themeScript,
-          }}
-        />
-      </head>
+        <head>
+          <script
+            suppressHydrationWarning
+            dangerouslySetInnerHTML={{
+              __html: themeScript,
+            }}
+          />
+
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(
+                organizationJsonLd,
+              ),
+            }}
+          />
+
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(
+                websiteJsonLd,
+              ),
+            }}
+          />
+        </head>
 
       <body className="font-sans antialiased">
         <SiteHeader />
