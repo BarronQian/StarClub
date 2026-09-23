@@ -195,6 +195,10 @@ export async function generateMetadata(): Promise<Metadata> {
     title,
     description,
 
+    alternates: {
+      canonical: '/guides/armor-codex',
+    },
+
     openGraph: {
       title,
       description,

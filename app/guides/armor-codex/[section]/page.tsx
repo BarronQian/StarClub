@@ -218,6 +218,10 @@ export async function generateMetadata({
     title,
     description,
 
+    alternates: {
+      canonical: `/guides/armor-codex/${encodeURIComponent(section)}`,
+    },
+
     openGraph: {
       title,
       description,

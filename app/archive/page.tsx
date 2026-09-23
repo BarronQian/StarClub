@@ -8,9 +8,12 @@ import { ARCHIVE, countPhotos } from '@/lib/archive'
 import { ArchiveCompanion } from '@/components/archive-companion'
 
 export const metadata: Metadata = {
-  title: '往期合影 | 星际酒馆 StarClub',
+  title: '往期合影',
   description:
     '星际酒馆 StarClub 往期活动合影归档：沙盒副本、限时活动、飞船首飞、酒馆自定义活动与社区大型集体合影，记录全球华人 Star Citizen 玩家社区的每一次集结。',
+  alternates: {
+    canonical: '/archive',
+  },
 }
 
 export default function ArchivePage() {

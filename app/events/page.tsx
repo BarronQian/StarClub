@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   title: '社区活动',
   description:
     '星际酒馆 StarClub 的 Star Citizen（星际公民）社区活动中心，记录大型集体活动、竞技赛事、挑战赛、社区合影、教学活动与玩家活动。',
+  alternates: {
+    canonical: '/events',
+  },
 }
 
 export default async function EventsPage() {

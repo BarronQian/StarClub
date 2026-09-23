@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowUpRight } from 'lucide-react'
@@ -17,6 +18,35 @@ function getBilibiliEmbedUrl(url?: string) {
   if (!match) return null
 
   return `https://player.bilibili.com/player.html?bvid=${match[0]}&page=1&high_quality=1&danmaku=0`
+}
+
+export async function generateMetadata({
+  params,
+}: VideoGuidePageProps): Promise<Metadata> {
+  const { id } = await params
+
+  const guide = GUIDES.find(
+    (item) =>
+      item.id === id &&
+      item.type === 'video',
+  )
+
+  if (!guide) {
+    return {
+      title: '视频攻略不存在',
+    }
+  }
+
+  return {
+    title: guide.title,
+    description:
+      guide.description ||
+      `星际酒馆 StarClub 的 Star Citizen（星际公民）中文视频攻略：${guide.title}。`,
+
+    alternates: {
+      canonical: `/guides/videos/${encodeURIComponent(id)}`,
+    },
+  }
 }
 
 export default async function VideoGuidePage({

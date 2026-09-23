@@ -17,13 +17,31 @@ export function generateStaticParams() {
   )
 }
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const { category, album } = await params
-  const found = getAlbum(category, album)
-  if (!found) return { title: '未找到 · 星际酒馆 StarClub' }
+export async function generateMetadata({
+  params,
+}: Params): Promise<Metadata> {
+  const {
+    category,
+    album,
+  } = await params
+
+  const found =
+    getAlbum(category, album)
+
+  if (!found) {
+    return {
+      title: '未找到',
+    }
+  }
+
   return {
-    title: `${found.album.title} · ${found.category.title} · 星际酒馆 StarClub`,
-    description: found.album.summary,
+    title: `${found.album.title} · ${found.category.title}`,
+    description:
+      found.album.summary,
+
+    alternates: {
+      canonical: `/archive/${encodeURIComponent(category)}/${encodeURIComponent(album)}`,
+    },
   }
 }
 

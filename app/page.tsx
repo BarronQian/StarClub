@@ -7,6 +7,13 @@ import { Hero } from '@/components/hero'
 import { HomeWelcomeDialog } from '@/components/home-welcome-dialog'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+}
 
 export default function Page() {
   return (
