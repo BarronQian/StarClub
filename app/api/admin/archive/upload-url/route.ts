@@ -81,7 +81,12 @@ export async function POST(
   request: NextRequest,
 ) {
   try {
-    await requireAdminApi()
+    const auth =
+      await requireAdminApi()
+
+    if (auth.response) {
+      return auth.response
+    }
 
     const body =
       await request.json()
