@@ -52,6 +52,10 @@ import {
 } from '@/components/admin/archive-album-create-dialog'
 
 import {
+  ArchiveAlbumEditDialog,
+} from '@/components/admin/archive-album-edit-dialog'
+
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -175,6 +179,36 @@ export function ArchiveAdmin({
     >(null)
 
   const [
+  editingAlbum,
+  setEditingAlbum,
+] =
+  useState<
+    ArchiveDbCategory['albums'][number] | null
+  >(null)
+
+const [
+  deletingAlbum,
+  setDeletingAlbum,
+] =
+  useState<
+    ArchiveDbCategory['albums'][number] | null
+  >(null)
+
+const [
+  isDeletingAlbum,
+  setIsDeletingAlbum,
+] =
+  useState(false)
+
+const [
+  reorderingCategoryId,
+  setReorderingCategoryId,
+] =
+  useState<string | null>(
+    null,
+  )
+
+  const [
     form,
     setForm,
   ] =
@@ -293,11 +327,15 @@ export function ArchiveAdmin({
       return
     }
 
-    if (coverPreview) {
-      URL.revokeObjectURL(
-        coverPreview,
-      )
-    }
+  if (
+    coverPreview?.startsWith(
+      'blob:',
+    )
+  ) {
+    URL.revokeObjectURL(
+      coverPreview,
+    )
+  }
 
     const preview =
       URL.createObjectURL(file)
@@ -307,7 +345,11 @@ export function ArchiveAdmin({
   }
 
   function clearCover() {
-    if (coverPreview) {
+    if (
+      coverPreview?.startsWith(
+        'blob:',
+      )
+    ) {
       URL.revokeObjectURL(
         coverPreview,
       )
@@ -418,6 +460,339 @@ export function ArchiveAdmin({
   setCreatingAlbumCategory(
     null,
   )
+}
+  
+  function handleAlbumSaved(
+  updatedAlbum:
+    ArchiveDbCategory['albums'][number],
+  previousCategoryId:
+    string,
+) {
+  setCategories(
+    (previous) =>
+      previous.map(
+        (category) => {
+          /*
+           * 如果发生跨 Category 移动，
+           * 先从旧 Category 删除。
+           */
+          if (
+            previousCategoryId !==
+              updatedAlbum.categoryId &&
+            category.id ===
+              previousCategoryId
+          ) {
+            return {
+              ...category,
+
+              albums:
+                category.albums.filter(
+                  (album) =>
+                    album.id !==
+                    updatedAlbum.id,
+                ),
+            }
+          }
+
+          /*
+           * 目标 Category：
+           *
+           * 同 Category 编辑 → 替换
+           * 跨 Category 移动 → 加入
+           */
+          if (
+            category.id ===
+            updatedAlbum.categoryId
+          ) {
+            const alreadyExists =
+              category.albums.some(
+                (album) =>
+                  album.id ===
+                  updatedAlbum.id,
+              )
+
+            const albums =
+              alreadyExists
+                ? category.albums.map(
+                    (album) =>
+                      album.id ===
+                      updatedAlbum.id
+                        ? updatedAlbum
+                        : album,
+                  )
+                : [
+                    ...category.albums,
+                    updatedAlbum,
+                  ]
+
+            return {
+              ...category,
+
+              albums:
+                albums.sort(
+                  (
+                    first,
+                    second,
+                  ) =>
+                    first.sortOrder -
+                    second.sortOrder,
+                ),
+            }
+          }
+
+          return category
+        },
+      ),
+  )
+
+  setEditingAlbum(null)
+}
+
+async function handleDeleteAlbum() {
+  if (
+    !deletingAlbum ||
+    isDeletingAlbum
+  ) {
+    return
+  }
+
+  setIsDeletingAlbum(true)
+
+  try {
+    const response =
+      await fetch(
+        `/api/admin/archive/albums/${encodeURIComponent(
+          deletingAlbum.id,
+        )}`,
+        {
+          method:
+            'DELETE',
+        },
+      )
+
+    const result =
+      await response
+        .json()
+        .catch(() => null)
+
+    if (!response.ok) {
+      throw new Error(
+        getErrorMessage(
+          result,
+          '删除 Album 失败',
+        ),
+      )
+    }
+
+    setCategories(
+      (previous) =>
+        previous.map(
+          (category) => ({
+            ...category,
+
+            albums:
+              category.albums.filter(
+                (album) =>
+                  album.id !==
+                  deletingAlbum.id,
+              ),
+          }),
+        ),
+    )
+
+    toast.success(
+      'Album 已删除',
+    )
+
+    setDeletingAlbum(null)
+  } catch (error) {
+    console.error(
+      '[Archive album delete]',
+      error,
+    )
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : '删除 Album 失败，请重试',
+    )
+  } finally {
+    setIsDeletingAlbum(
+      false,
+    )
+  }
+}
+
+async function moveAlbum(
+  categoryId: string,
+  albumId: string,
+  direction:
+    | 'up'
+    | 'down',
+) {
+  if (
+    reorderingCategoryId
+  ) {
+    return
+  }
+
+  const category =
+    categories.find(
+      (item) =>
+        item.id ===
+        categoryId,
+    )
+
+  if (!category) {
+    return
+  }
+
+  const currentIndex =
+    category.albums.findIndex(
+      (album) =>
+        album.id ===
+        albumId,
+    )
+
+  if (
+    currentIndex === -1
+  ) {
+    return
+  }
+
+  const targetIndex =
+    direction === 'up'
+      ? currentIndex - 1
+      : currentIndex + 1
+
+  if (
+    targetIndex < 0 ||
+    targetIndex >=
+      category.albums.length
+  ) {
+    return
+  }
+
+  const previousCategories =
+    categories
+
+  const reordered =
+    [...category.albums]
+
+  const [
+    movedAlbum,
+  ] =
+    reordered.splice(
+      currentIndex,
+      1,
+    )
+
+  reordered.splice(
+    targetIndex,
+    0,
+    movedAlbum,
+  )
+
+  const normalized =
+    reordered.map(
+      (
+        album,
+        index,
+      ) => ({
+        ...album,
+        sortOrder:
+          index,
+      }),
+    )
+
+  setCategories(
+    (previous) =>
+      previous.map(
+        (item) =>
+          item.id ===
+          categoryId
+            ? {
+                ...item,
+                albums:
+                  normalized,
+              }
+            : item,
+      ),
+  )
+
+  setReorderingCategoryId(
+    categoryId,
+  )
+
+  try {
+    const response =
+      await fetch(
+        '/api/admin/archive/albums/reorder',
+        {
+          method:
+            'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          body:
+            JSON.stringify({
+              category_id:
+                categoryId,
+
+              items:
+                normalized.map(
+                  (album) => ({
+                    id:
+                      album.id,
+                  }),
+                ),
+            }),
+        },
+      )
+
+    const result =
+      await response
+        .json()
+        .catch(() => null)
+
+    if (!response.ok) {
+      throw new Error(
+        getErrorMessage(
+          result,
+          '保存 Album 排序失败',
+        ),
+      )
+    }
+
+    toast.success(
+      'Album 顺序已保存',
+    )
+  } catch (error) {
+    /*
+     * API 失败恢复修改前状态。
+     */
+    setCategories(
+      previousCategories,
+    )
+
+    console.error(
+      '[Archive album reorder]',
+      error,
+    )
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : '保存 Album 排序失败',
+    )
+  } finally {
+    setReorderingCategoryId(
+      null,
+    )
+  }
 }
 
 async function handleDeleteCategory() {
@@ -1550,11 +1925,81 @@ async function moveCategory(
                                 </Badge>
                               </TableCell>
 
-                              <TableCell className="text-right">
-                                <span className="text-xs text-muted-foreground">
-                                  下一步接入管理
-                                </span>
-                              </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      disabled={
+                                        Boolean(
+                                          reorderingCategoryId,
+                                        ) ||
+                                        category.albums[0]
+                                          ?.id === album.id
+                                      }
+                                      onClick={() =>
+                                        void moveAlbum(
+                                          category.id,
+                                          album.id,
+                                          'up',
+                                        )
+                                      }
+                                    >
+                                      ↑
+                                    </Button>
+
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      disabled={
+                                        Boolean(
+                                          reorderingCategoryId,
+                                        ) ||
+                                        category.albums[
+                                          category.albums
+                                            .length - 1
+                                        ]?.id === album.id
+                                      }
+                                      onClick={() =>
+                                        void moveAlbum(
+                                          category.id,
+                                          album.id,
+                                          'down',
+                                        )
+                                      }
+                                    >
+                                      ↓
+                                    </Button>
+
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        setEditingAlbum(
+                                          album,
+                                        )
+                                      }
+                                    >
+                                      编辑
+                                    </Button>
+
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() =>
+                                        setDeletingAlbum(
+                                          album,
+                                        )
+                                      }
+                                    >
+                                      删除
+                                    </Button>
+                                  </div>
+                                </TableCell>
                             </TableRow>
                           ),
                         )}
@@ -1614,6 +2059,122 @@ async function moveCategory(
           handleAlbumCreated
         }
       />
+
+        <ArchiveAlbumEditDialog
+        album={
+          editingAlbum
+        }
+        categories={
+          categories
+        }
+        open={
+          Boolean(
+            editingAlbum,
+          )
+        }
+        onOpenChange={(
+          open,
+        ) => {
+          if (!open) {
+            setEditingAlbum(
+              null,
+            )
+          }
+        }}
+        onSaved={
+          handleAlbumSaved
+        }
+      />
+      
+      <AlertDialog
+  open={
+    Boolean(
+      deletingAlbum,
+    )
+  }
+  onOpenChange={(
+    open,
+  ) => {
+    if (
+      !open &&
+      !isDeletingAlbum
+    ) {
+      setDeletingAlbum(
+        null,
+      )
+    }
+  }}
+>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>
+        删除这个 Album？
+      </AlertDialogTitle>
+
+      <AlertDialogDescription>
+        {deletingAlbum ? (
+          <>
+            即将删除「
+            {
+              deletingAlbum.title
+            }
+            」。
+
+            {deletingAlbum
+              .sessions
+              .length > 0 ? (
+              <>
+                {' '}
+                其中包含
+                {' '}
+                {
+                  deletingAlbum
+                    .sessions
+                    .length
+                }
+                {' '}
+                个 Session。Album、Session、照片和视频数据库记录都会一起删除，相关 Archive Storage 图片也会清理。
+              </>
+            ) : (
+              <>
+                {' '}
+                Album 封面也会从 Archive Storage 中清理。
+              </>
+            )}
+          </>
+        ) : null}
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+
+    <AlertDialogFooter>
+      <AlertDialogCancel
+        disabled={
+          isDeletingAlbum
+        }
+      >
+        取消
+      </AlertDialogCancel>
+
+      <AlertDialogAction
+        disabled={
+          isDeletingAlbum
+        }
+        onClick={(
+          event,
+        ) => {
+          event.preventDefault()
+
+          void handleDeleteAlbum()
+        }}
+        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      >
+        {isDeletingAlbum
+          ? '删除中...'
+          : '确认删除'}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
 
       <AlertDialog
         open={
