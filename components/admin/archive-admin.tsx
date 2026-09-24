@@ -12,7 +12,6 @@ import {
 
 import {
   createClient,
-  type SupabaseClient,
 } from '@supabase/supabase-js'
 
 import {
@@ -37,12 +36,27 @@ import {
 } from '@/components/ui/table'
 
 import {
-  prepareArchiveImage,
-} from '@/lib/archive-image'
+  uploadArchiveImage,
+} from '@/lib/archive-upload'
 
 import type {
   ArchiveDbCategory,
 } from '@/lib/archive-db'
+
+import {
+  ArchiveCategoryEditDialog,
+} from '@/components/admin/archive-category-edit-dialog'
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 type CategoryFormState = {
   indexLabel: string
@@ -60,18 +74,6 @@ const EMPTY_FORM: CategoryFormState = {
   slug: '',
   summary: '',
   isPublished: true,
-}
-
-type UploadVariant =
-  | 'original'
-  | 'display'
-  | 'thumbnail'
-
-type UploadResult = {
-  bucket: string
-  path: string
-  token: string
-  url: string
 }
 
 function createSlug(
@@ -132,6 +134,34 @@ export function ArchiveAdmin({
     ArchiveDbCategory[]
   >(initialCategories)
 
+  const [
+    editingCategory,
+    setEditingCategory,
+  ] =
+    useState<
+      ArchiveDbCategory | null
+    >(null)
+
+  const [
+    deletingCategory,
+    setDeletingCategory,
+  ] =
+    useState<
+      ArchiveDbCategory | null
+    >(null)
+
+  const [
+    isDeleting,
+    setIsDeleting,
+  ] =
+    useState(false)
+
+  const [
+    isReordering,
+    setIsReordering,
+  ] =
+    useState(false)
+    
   const [
     form,
     setForm,
@@ -321,37 +351,209 @@ export function ArchiveAdmin({
     }
   }
 
-  async function createUploadUrl({
-    accessToken,
-    fileName,
-    fileType,
-    variant,
-  }: {
-    accessToken: string
-    fileName: string
-    fileType: string
-    variant: UploadVariant
-  }) {
+  function handleCategorySaved(
+  updated:
+    ArchiveDbCategory,
+) {
+  setCategories(
+    (previous) =>
+      previous.map(
+        (category) =>
+          category.id ===
+          updated.id
+            ? updated
+            : category,
+      ),
+  )
+
+  setEditingCategory(null)
+}
+
+async function handleDeleteCategory() {
+  if (
+    !deletingCategory ||
+    isDeleting
+  ) {
+    return
+  }
+
+  /*
+   * Category 下面已经存在 Album 时，
+   * 不允许从后台直接删除。
+   *
+   * 数据库本身也有 RESTRICT，
+   * 这里提前给管理员更友好的提示。
+   */
+  if (
+    deletingCategory.albums
+      .length > 0
+  ) {
+    toast.error(
+      '该分类下还有 Album，请先移动或删除其中的 Album',
+    )
+
+    setDeletingCategory(null)
+
+    return
+  }
+
+  setIsDeleting(true)
+
+  try {
     const response =
       await fetch(
-        '/api/admin/archive/upload-url',
+        `/api/admin/archive/categories/${encodeURIComponent(
+          deletingCategory.id,
+        )}`,
+        {
+          method:
+            'DELETE',
+        },
+      )
+
+    const result =
+      await response
+        .json()
+        .catch(() => null)
+
+    if (!response.ok) {
+      throw new Error(
+        getErrorMessage(
+          result,
+          '删除分类失败',
+        ),
+      )
+    }
+
+    setCategories(
+      (previous) =>
+        previous.filter(
+          (category) =>
+            category.id !==
+            deletingCategory.id,
+        ),
+    )
+
+    toast.success(
+      '合影分类已删除',
+    )
+
+    setDeletingCategory(null)
+  } catch (error) {
+    console.error(
+      '[Archive category delete]',
+      error,
+    )
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : '删除分类失败，请重试',
+    )
+  } finally {
+    setIsDeleting(false)
+  }
+}
+
+async function moveCategory(
+  categoryId: string,
+  direction:
+    | 'up'
+    | 'down',
+) {
+  if (isReordering) {
+    return
+  }
+
+  const currentIndex =
+    categories.findIndex(
+      (category) =>
+        category.id ===
+        categoryId,
+    )
+
+  if (currentIndex === -1) {
+    return
+  }
+
+  const targetIndex =
+    direction === 'up'
+      ? currentIndex - 1
+      : currentIndex + 1
+
+  if (
+    targetIndex < 0 ||
+    targetIndex >=
+      categories.length
+  ) {
+    return
+  }
+
+  const previousCategories =
+    [...categories]
+
+  const reordered =
+    [...categories]
+
+  const [
+    movedCategory,
+  ] =
+    reordered.splice(
+      currentIndex,
+      1,
+    )
+
+  reordered.splice(
+    targetIndex,
+    0,
+    movedCategory,
+  )
+
+  const normalized =
+    reordered.map(
+      (
+        category,
+        index,
+      ) => ({
+        ...category,
+        sortOrder: index,
+      }),
+    )
+
+  /*
+   * 先立即更新画面，
+   * 后台操作感觉会更快。
+   * API 失败再恢复。
+   */
+  setCategories(
+    normalized,
+  )
+
+  setIsReordering(true)
+
+  try {
+    const response =
+      await fetch(
+        '/api/admin/archive/categories/reorder',
         {
           method: 'POST',
 
           headers: {
             'Content-Type':
               'application/json',
-
-            Authorization:
-              `Bearer ${accessToken}`,
           },
 
           body:
             JSON.stringify({
-              kind: 'cover',
-              variant,
-              name: fileName,
-              type: fileType,
+              items:
+                normalized.map(
+                  (
+                    category,
+                  ) => ({
+                    id:
+                      category.id,
+                  }),
+                ),
             }),
         },
       )
@@ -365,168 +567,33 @@ export function ArchiveAdmin({
       throw new Error(
         getErrorMessage(
           result,
-          `${variant} 上传地址创建失败`,
+          '保存分类排序失败',
         ),
       )
     }
 
-    return result as UploadResult
-  }
+    toast.success(
+      '分类顺序已保存',
+    )
+  } catch (error) {
+    setCategories(
+      previousCategories,
+    )
 
-  async function uploadBlob({
-    supabase,
-    accessToken,
-    blob,
-    fileName,
-    fileType,
-    variant,
-  }: {
-    supabase: SupabaseClient
-
-    accessToken: string
-
-    blob: Blob
-
-    fileName: string
-
-    fileType: string
-
-    variant: UploadVariant
-  }) {
-    const uploadData =
-      await createUploadUrl({
-        accessToken,
-        fileName,
-        fileType,
-        variant,
-      })
-
-    const {
+    console.error(
+      '[Archive category reorder]',
       error,
-    } =
-      await supabase.storage
-        .from(
-          uploadData.bucket,
-        )
-        .uploadToSignedUrl(
-          uploadData.path,
-          uploadData.token,
-          blob,
-          {
-            contentType:
-              fileType,
-          },
-        )
+    )
 
-    if (error) {
-      throw error
-    }
-
-    return uploadData.url
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : '保存分类排序失败',
+    )
+  } finally {
+    setIsReordering(false)
   }
-
-  async function uploadCover(
-    file: File,
-  ) {
-    setUploadStage(
-      '正在处理封面...',
-    )
-
-    const prepared =
-      await prepareArchiveImage(
-        file,
-      )
-
-    const {
-      supabase,
-      accessToken,
-    } =
-      await getAccessToken()
-
-    setUploadStage(
-      '正在上传原图...',
-    )
-
-    const originalUrl =
-      await uploadBlob({
-        supabase,
-        accessToken,
-
-        blob: file,
-
-        fileName:
-          file.name,
-
-        fileType:
-          file.type,
-
-        variant:
-          'original',
-      })
-
-    let displayUrl =
-      originalUrl
-
-    if (
-      !prepared
-        .useOriginalAsDisplay &&
-      prepared.display
-    ) {
-      setUploadStage(
-        '正在上传展示图...',
-      )
-
-      displayUrl =
-        await uploadBlob({
-          supabase,
-          accessToken,
-
-          blob:
-            prepared
-              .display
-              .blob,
-
-          fileName:
-            'display.webp',
-
-          fileType:
-            'image/webp',
-
-          variant:
-            'display',
-        })
-    }
-
-    setUploadStage(
-      '正在上传缩略图...',
-    )
-
-    const thumbnailUrl =
-      await uploadBlob({
-        supabase,
-        accessToken,
-
-        blob:
-          prepared
-            .thumbnail
-            .blob,
-
-        fileName:
-          'thumbnail.webp',
-
-        fileType:
-          'image/webp',
-
-        variant:
-          'thumbnail',
-      })
-
-    return {
-      originalUrl,
-      displayUrl,
-      thumbnailUrl,
-    }
-  }
+}
 
   async function handleSubmit(
     event: FormEvent,
@@ -566,21 +633,32 @@ export function ArchiveAdmin({
       let coverThumbnailUrl:
         string | null = null
 
-      if (coverFile) {
-        const uploaded =
-          await uploadCover(
-            coverFile,
-          )
+    if (coverFile) {
+      const {
+        supabase,
+        accessToken,
+      } =
+        await getAccessToken()
 
-        coverOriginalUrl =
-          uploaded.originalUrl
+      const uploaded =
+        await uploadArchiveImage({
+          supabase,
+          accessToken,
+          file: coverFile,
+          kind: 'cover',
+          onStage:
+            setUploadStage,
+        })
 
-        coverDisplayUrl =
-          uploaded.displayUrl
+      coverOriginalUrl =
+        uploaded.originalUrl
 
-        coverThumbnailUrl =
-          uploaded.thumbnailUrl
-      }
+      coverDisplayUrl =
+        uploaded.displayUrl
+
+      coverThumbnailUrl =
+        uploaded.thumbnailUrl
+    }
 
       setUploadStage(
         '正在保存分类...',
@@ -651,12 +729,56 @@ export function ArchiveAdmin({
         )
       }
 
-      setCategories(
-        (previous) => [
-          ...previous,
-          result.category,
-        ],
-      )
+    const created:
+      ArchiveDbCategory = {
+      id:
+        result.category.id,
+
+      slug:
+        result.category.slug,
+
+      index:
+        result.category
+          .index_label,
+
+      title:
+        result.category.title,
+
+      en:
+        result.category.en,
+
+      summary:
+        result.category.summary,
+
+      coverOriginalUrl:
+        result.category
+          .cover_original_url,
+
+      coverDisplayUrl:
+        result.category
+          .cover_display_url,
+
+      coverThumbnailUrl:
+        result.category
+          .cover_thumbnail_url,
+
+      sortOrder:
+        result.category
+          .sort_order,
+
+      isPublished:
+        result.category
+          .is_published,
+
+      albums: [],
+    }
+
+    setCategories(
+      (previous) => [
+        ...previous,
+        created,
+      ],
+    )
 
       setForm(
         EMPTY_FORM,
@@ -1101,11 +1223,75 @@ export function ArchiveAdmin({
                           </Badge>
                         </TableCell>
 
-                        <TableCell className="text-right">
-                          <span className="text-xs text-muted-foreground">
-                            下一步接入编辑
-                          </span>
-                        </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={
+                                  isReordering ||
+                                  categories[0]?.id ===
+                                    category.id
+                                }
+                                onClick={() =>
+                                  void moveCategory(
+                                    category.id,
+                                    'up',
+                                  )
+                                }
+                              >
+                                ↑
+                              </Button>
+
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={
+                                  isReordering ||
+                                  categories[
+                                    categories.length - 1
+                                  ]?.id ===
+                                    category.id
+                                }
+                                onClick={() =>
+                                  void moveCategory(
+                                    category.id,
+                                    'down',
+                                  )
+                                }
+                              >
+                                ↓
+                              </Button>
+
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  setEditingCategory(
+                                    category,
+                                  )
+                                }
+                              >
+                                编辑
+                              </Button>
+
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() =>
+                                  setDeletingCategory(
+                                    category,
+                                  )
+                                }
+                              >
+                                删除
+                              </Button>
+                            </div>
+                          </TableCell>
                       </TableRow>
                     ),
                   )
@@ -1115,6 +1301,124 @@ export function ArchiveAdmin({
           </div>
         </section>
       </main>
+
+      <ArchiveCategoryEditDialog
+        category={
+          editingCategory
+        }
+        open={
+          Boolean(
+            editingCategory,
+          )
+        }
+        onOpenChange={(
+          open,
+        ) => {
+          if (!open) {
+            setEditingCategory(
+              null,
+            )
+          }
+        }}
+        onSaved={
+          handleCategorySaved
+        }
+      />
+
+      <AlertDialog
+        open={
+          Boolean(
+            deletingCategory,
+          )
+        }
+        onOpenChange={(
+          open,
+        ) => {
+          if (
+            !open &&
+            !isDeleting
+          ) {
+            setDeletingCategory(
+              null,
+            )
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              删除这个合影分类？
+            </AlertDialogTitle>
+
+            <AlertDialogDescription>
+              {deletingCategory ? (
+                <>
+                  即将删除「
+                  {
+                    deletingCategory.title
+                  }
+                  」。
+
+                  {deletingCategory
+                    .albums
+                    .length > 0 ? (
+                    <>
+                      {' '}
+                      当前分类中还有
+                      {' '}
+                      {
+                        deletingCategory
+                          .albums
+                          .length
+                      }
+                      {' '}
+                      个 Album，因此无法删除。请先移动或删除这些 Album。
+                    </>
+                  ) : (
+                    <>
+                      {' '}
+                      删除后分类记录及其 Archive Storage 封面将被清理，此操作无法撤销。
+                    </>
+                  )}
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={
+                isDeleting
+              }
+            >
+              取消
+            </AlertDialogCancel>
+
+            <AlertDialogAction
+              disabled={
+                isDeleting ||
+                Boolean(
+                  deletingCategory
+                    ?.albums
+                    .length,
+                )
+              }
+              onClick={(
+                event,
+              ) => {
+                event.preventDefault()
+
+                void handleDeleteCategory()
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting
+                ? '删除中...'
+                : '确认删除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
