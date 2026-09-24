@@ -81,32 +81,35 @@ export async function POST(
     )
   }
 
-  const items:
-    ReorderItem[] =
-    rawItems
-      .map(
-        (
-          item: unknown,
-        ) => ({
-          id:
-            typeof item ===
-              'object' &&
-            item !== null &&
-            'id' in item
-              ? cleanText(
-                  (
-                    item as {
-                      id?: unknown
-                    }
-                  ).id,
-                )
-              : '',
-        }),
-      )
-      .filter(
-        (item) =>
-          Boolean(item.id),
-      )
+const items:
+  ReorderItem[] =
+  rawItems
+    .map(
+      (
+        item: unknown,
+      ): ReorderItem => ({
+        id:
+          typeof item ===
+            'object' &&
+          item !== null &&
+          'id' in item
+            ? cleanText(
+                (
+                  item as {
+                    id?: unknown
+                  }
+                ).id,
+              )
+            : '',
+      }),
+    )
+    .filter(
+      (
+        item:
+          ReorderItem,
+      ) =>
+        Boolean(item.id),
+    )
 
   if (
     items.length !==

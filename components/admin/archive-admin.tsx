@@ -161,7 +161,15 @@ export function ArchiveAdmin({
     setIsReordering,
   ] =
     useState(false)
-    
+  
+  const [
+    creatingAlbumCategory,
+    setCreatingAlbumCategory,
+  ] =
+    useState<
+      ArchiveDbCategory | null
+    >(null)
+
   const [
     form,
     setForm,
@@ -1299,6 +1307,222 @@ async function moveCategory(
               </TableBody>
             </Table>
           </div>
+
+          <div className="mt-8 space-y-6">
+            {categories.map(
+              (category) => (
+                <div
+                  key={
+                    `albums-${category.id}`
+                  }
+                  className="corner-cut border border-border bg-card"
+                >
+                  <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-medium text-foreground">
+                          {category.index
+                            ? `${category.index} · `
+                            : ''}
+                          {category.title}
+                        </h3>
+
+                        <Badge
+                          variant="outline"
+                        >
+                          {
+                            category.albums
+                              .length
+                          }{' '}
+                          Albums
+                        </Badge>
+                      </div>
+
+                      {category.en ? (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {category.en}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() =>
+                        setCreatingAlbumCategory(
+                          category,
+                        )
+                      }
+                    >
+                      新建 Album
+                    </Button>
+                  </div>
+
+                  {category.albums
+                    .length === 0 ? (
+                    <div className="px-5 py-10 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        这个 Category
+                        目前还没有 Album
+                      </p>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-4"
+                        onClick={() =>
+                          setCreatingAlbumCategory(
+                            category,
+                          )
+                        }
+                      >
+                        创建第一个 Album
+                      </Button>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-28">
+                            封面
+                          </TableHead>
+
+                          <TableHead>
+                            Album
+                          </TableHead>
+
+                          <TableHead>
+                            Slug
+                          </TableHead>
+
+                          <TableHead>
+                            地点
+                          </TableHead>
+
+                          <TableHead>
+                            Session
+                          </TableHead>
+
+                          <TableHead>
+                            状态
+                          </TableHead>
+
+                          <TableHead className="text-right">
+                            操作
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+
+                      <TableBody>
+                        {category.albums.map(
+                          (album) => (
+                            <TableRow
+                              key={
+                                album.id
+                              }
+                            >
+                              <TableCell>
+                                <div className="relative h-12 w-20 overflow-hidden rounded-sm border border-border bg-muted">
+                                  {album
+                                    .coverThumbnailUrl ||
+                                  album
+                                    .coverDisplayUrl ||
+                                  album
+                                    .coverOriginalUrl ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      src={
+                                        album
+                                          .coverThumbnailUrl ||
+                                        album
+                                          .coverDisplayUrl ||
+                                        album
+                                          .coverOriginalUrl ||
+                                        ''
+                                      }
+                                      alt={
+                                        album.title
+                                      }
+                                      className="absolute inset-0 h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full items-center justify-center text-[0.6rem] text-muted-foreground">
+                                      无封面
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium text-foreground">
+                                    {
+                                      album.title
+                                    }
+                                  </p>
+
+                                  {album.en ? (
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                      {
+                                        album.en
+                                      }
+                                    </p>
+                                  ) : null}
+                                </div>
+                              </TableCell>
+
+                              <TableCell>
+                                <code className="text-xs text-muted-foreground">
+                                  {
+                                    album.slug
+                                  }
+                                </code>
+                              </TableCell>
+
+                              <TableCell className="text-xs text-muted-foreground">
+                                {album.place ||
+                                  '—'}
+                              </TableCell>
+
+                              <TableCell className="text-muted-foreground">
+                                {
+                                  album.sessions
+                                    .length
+                                }
+                              </TableCell>
+
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    album.isPublished
+                                      ? 'border-primary/30 text-primary'
+                                      : ''
+                                  }
+                                >
+                                  {album.isPublished
+                                    ? '已发布'
+                                    : '未发布'}
+                                </Badge>
+                              </TableCell>
+
+                              <TableCell className="text-right">
+                                <span className="text-xs text-muted-foreground">
+                                  下一步接入管理
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ),
+                        )}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              ),
+            )}
+          </div>
+
         </section>
       </main>
 
