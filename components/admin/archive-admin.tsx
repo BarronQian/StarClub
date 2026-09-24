@@ -48,6 +48,10 @@ import {
 } from '@/components/admin/archive-category-edit-dialog'
 
 import {
+  ArchiveAlbumCreateDialog,
+} from '@/components/admin/archive-album-create-dialog'
+
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -375,6 +379,45 @@ export function ArchiveAdmin({
   )
 
   setEditingCategory(null)
+}
+
+  function handleAlbumCreated(
+  createdAlbum:
+    ArchiveDbCategory['albums'][number],
+) {
+  setCategories(
+    (previous) =>
+      previous.map(
+        (category) => {
+          if (
+            category.id !==
+            createdAlbum.categoryId
+          ) {
+            return category
+          }
+
+          return {
+            ...category,
+
+            albums: [
+              ...category.albums,
+              createdAlbum,
+            ].sort(
+              (
+                first,
+                second,
+              ) =>
+                first.sortOrder -
+                second.sortOrder,
+            ),
+          }
+        },
+      ),
+  )
+
+  setCreatingAlbumCategory(
+    null,
+  )
 }
 
 async function handleDeleteCategory() {
@@ -1546,6 +1589,29 @@ async function moveCategory(
         }}
         onSaved={
           handleCategorySaved
+        }
+      />
+
+        <ArchiveAlbumCreateDialog
+        category={
+          creatingAlbumCategory
+        }
+        open={
+          Boolean(
+            creatingAlbumCategory,
+          )
+        }
+        onOpenChange={(
+          open,
+        ) => {
+          if (!open) {
+            setCreatingAlbumCategory(
+              null,
+            )
+          }
+        }}
+        onCreated={
+          handleAlbumCreated
         }
       />
 
