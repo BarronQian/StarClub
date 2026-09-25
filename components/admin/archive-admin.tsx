@@ -69,6 +69,10 @@ import {
 } from '@/components/admin/archive-video-create-dialog'
 
 import {
+  ArchiveVideoEditDialog,
+} from '@/components/admin/archive-video-edit-dialog'
+
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -236,6 +240,28 @@ export function ArchiveAdmin({
     useState<
       ArchiveDbCategory['albums'][number]['sessions'][number] | null
     >(null)
+
+  const [
+    editingVideo,
+    setEditingVideo,
+  ] =
+    useState<
+      ArchiveDbCategory['albums'][number]['sessions'][number]['videos'][number] | null
+    >(null)
+
+  const [
+    deletingVideo,
+    setDeletingVideo,
+  ] =
+    useState<
+      ArchiveDbCategory['albums'][number]['sessions'][number]['videos'][number] | null
+    >(null)
+
+  const [
+    isDeletingVideo,
+    setIsDeletingVideo,
+  ] =
+    useState(false)
 
   const [
     deletingAlbum,
@@ -920,6 +946,142 @@ function handleSessionCreated(
   setCreatingVideoSession(
     null,
   )
+}
+
+function handleVideoSaved(
+  updatedVideo:
+    ArchiveDbCategory['albums'][number]['sessions'][number]['videos'][number],
+) {
+  setCategories(
+    (previous) =>
+      previous.map(
+        (category) => ({
+          ...category,
+
+          albums:
+            category.albums.map(
+              (album) => ({
+                ...album,
+
+                sessions:
+                  album.sessions.map(
+                    (session) => ({
+                      ...session,
+
+                      videos:
+                        session.videos.map(
+                          (video) =>
+                            video.id ===
+                            updatedVideo.id
+                              ? updatedVideo
+                              : video,
+                        ),
+                    }),
+                  ),
+              }),
+            ),
+        }),
+      ),
+  )
+
+  setEditingVideo(
+    null,
+  )
+}
+
+async function handleDeleteVideo() {
+  if (
+    !deletingVideo ||
+    isDeletingVideo
+  ) {
+    return
+  }
+
+  const targetVideoId =
+    deletingVideo.id
+
+  setIsDeletingVideo(
+    true,
+  )
+
+  try {
+    const response =
+      await fetch(
+        `/api/admin/archive/videos/${encodeURIComponent(
+          targetVideoId,
+        )}`,
+        {
+          method: 'DELETE',
+        },
+      )
+
+    const result =
+      await response
+        .json()
+        .catch(() => null)
+
+    if (!response.ok) {
+      throw new Error(
+        getErrorMessage(
+          result,
+          '删除视频失败',
+        ),
+      )
+    }
+
+    setCategories(
+      (previous) =>
+        previous.map(
+          (category) => ({
+            ...category,
+
+            albums:
+              category.albums.map(
+                (album) => ({
+                  ...album,
+
+                  sessions:
+                    album.sessions.map(
+                      (session) => ({
+                        ...session,
+
+                        videos:
+                          session.videos.filter(
+                            (video) =>
+                              video.id !==
+                              targetVideoId,
+                          ),
+                      }),
+                    ),
+                }),
+              ),
+          }),
+        ),
+    )
+
+    toast.success(
+      '视频已删除',
+    )
+
+    setDeletingVideo(
+      null,
+    )
+  } catch (error) {
+    console.error(
+      '[Archive video delete]',
+      error,
+    )
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : '删除视频失败，请重试',
+    )
+  } finally {
+    setIsDeletingVideo(
+      false,
+    )
+  }
 }
 
   function handleAlbumSaved(
@@ -2724,6 +2886,35 @@ async function moveCategory(
                                                             ) : null}
                                                           </div>
                                                         </div>
+
+                                                          <div className="flex shrink-0 items-center gap-2">
+                                                            <Button
+                                                              type="button"
+                                                              variant="outline"
+                                                              size="sm"
+                                                              onClick={() =>
+                                                                setEditingVideo(
+                                                                  video,
+                                                                )
+                                                              }
+                                                            >
+                                                              编辑
+                                                            </Button>
+
+                                                            <Button
+                                                              type="button"
+                                                              variant="destructive"
+                                                              size="sm"
+                                                              onClick={() =>
+                                                                setDeletingVideo(
+                                                                  video,
+                                                                )
+                                                              }
+                                                            >
+                                                              删除
+                                                            </Button>
+                                                          </div>
+
                                                       </div>
                                                     ),
                                                   )}
@@ -2894,6 +3085,97 @@ async function moveCategory(
           handleVideoCreated
         }
       />
+
+      <ArchiveVideoEditDialog
+        video={
+          editingVideo
+        }
+        open={
+          Boolean(
+            editingVideo,
+          )
+        }
+        onOpenChange={(
+          open,
+        ) => {
+          if (!open) {
+            setEditingVideo(
+              null,
+            )
+          }
+        }}
+        onSaved={
+          handleVideoSaved
+        }
+      />
+      
+      <AlertDialog
+  open={
+    Boolean(
+      deletingVideo,
+    )
+  }
+  onOpenChange={(
+    open,
+  ) => {
+    if (
+      !open &&
+      !isDeletingVideo
+    ) {
+      setDeletingVideo(
+        null,
+      )
+    }
+  }}
+>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>
+        删除这个视频？
+      </AlertDialogTitle>
+
+      <AlertDialogDescription>
+        {deletingVideo ? (
+          <>
+            即将删除视频「
+            {
+              deletingVideo.title
+            }
+            」。此操作无法撤销。
+          </>
+        ) : null}
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+
+    <AlertDialogFooter>
+      <AlertDialogCancel
+        disabled={
+          isDeletingVideo
+        }
+      >
+        取消
+      </AlertDialogCancel>
+
+      <AlertDialogAction
+        disabled={
+          isDeletingVideo
+        }
+        onClick={(
+          event,
+        ) => {
+          event.preventDefault()
+
+          void handleDeleteVideo()
+        }}
+        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      >
+        {isDeletingVideo
+          ? '删除中...'
+          : '确认删除'}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
 
       <AlertDialog
   open={
