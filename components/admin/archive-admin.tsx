@@ -77,6 +77,10 @@ import {
 } from '@/components/admin/archive-photo-upload-dialog'
 
 import {
+  ArchivePhotoEditDialog,
+} from '@/components/admin/archive-photo-edit-dialog'
+
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -274,6 +278,28 @@ export function ArchiveAdmin({
     useState<
       ArchiveDbCategory['albums'][number]['sessions'][number] | null
     >(null)
+
+ const [
+  editingPhoto,
+  setEditingPhoto,
+] =
+  useState<
+    ArchiveDbCategory['albums'][number]['sessions'][number]['photos'][number] | null
+  >(null)
+
+  const [
+  deletingPhoto,
+  setDeletingPhoto,
+] =
+  useState<
+    ArchiveDbCategory['albums'][number]['sessions'][number]['photos'][number] | null
+  >(null)
+
+const [
+  isDeletingPhoto,
+  setIsDeletingPhoto,
+] =
+  useState(false)
 
   const [
     deletingAlbum,
@@ -1149,6 +1175,142 @@ function handlePhotosUploaded(
   setUploadingPhotoSession(
     null,
   )
+}
+
+function handlePhotoSaved(
+  updatedPhoto:
+    ArchiveDbCategory['albums'][number]['sessions'][number]['photos'][number],
+) {
+  setCategories(
+    (previous) =>
+      previous.map(
+        (category) => ({
+          ...category,
+
+          albums:
+            category.albums.map(
+              (album) => ({
+                ...album,
+
+                sessions:
+                  album.sessions.map(
+                    (session) => ({
+                      ...session,
+
+                      photos:
+                        session.photos.map(
+                          (photo) =>
+                            photo.id ===
+                            updatedPhoto.id
+                              ? updatedPhoto
+                              : photo,
+                        ),
+                    }),
+                  ),
+              }),
+            ),
+        }),
+      ),
+  )
+
+  setEditingPhoto(
+    null,
+  )
+}
+
+async function handleDeletePhoto() {
+  if (
+    !deletingPhoto ||
+    isDeletingPhoto
+  ) {
+    return
+  }
+
+  const targetPhotoId =
+    deletingPhoto.id
+
+  setIsDeletingPhoto(
+    true,
+  )
+
+  try {
+    const response =
+      await fetch(
+        `/api/admin/archive/photos/${encodeURIComponent(
+          targetPhotoId,
+        )}`,
+        {
+          method: 'DELETE',
+        },
+      )
+
+    const result =
+      await response
+        .json()
+        .catch(() => null)
+
+    if (!response.ok) {
+      throw new Error(
+        getErrorMessage(
+          result,
+          '删除照片失败',
+        ),
+      )
+    }
+
+    setCategories(
+      (previous) =>
+        previous.map(
+          (category) => ({
+            ...category,
+
+            albums:
+              category.albums.map(
+                (album) => ({
+                  ...album,
+
+                  sessions:
+                    album.sessions.map(
+                      (session) => ({
+                        ...session,
+
+                        photos:
+                          session.photos.filter(
+                            (photo) =>
+                              photo.id !==
+                              targetPhotoId,
+                          ),
+                      }),
+                    ),
+                }),
+              ),
+          }),
+        ),
+    )
+
+    toast.success(
+      '照片已删除',
+    )
+
+    setDeletingPhoto(
+      null,
+    )
+  } catch (error) {
+    console.error(
+      '[Archive photo delete]',
+      error,
+    )
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : '删除照片失败，请重试',
+    )
+  } finally {
+    setIsDeletingPhoto(
+      false,
+    )
+  }
 }
 
   function handleAlbumSaved(
@@ -3036,26 +3198,67 @@ async function moveCategory(
                                                           />
                                                         </div>
 
-                                                        <div className="space-y-1 p-2">
-                                                          <p className="truncate text-xs font-medium">
-                                                            {photo.alt ||
-                                                              '未命名照片'}
-                                                          </p>
-
-                                                          <p className="text-[11px] text-muted-foreground">
-                                                            {photo.width &&
-                                                            photo.height
-                                                              ? `${photo.width} × ${photo.height}`
-                                                              : '尺寸未知'}
-                                                          </p>
-
-                                                          {photo.caption ? (
-                                                            <p className="line-clamp-2 text-[11px] text-muted-foreground">
-                                                              {
-                                                                photo.caption
-                                                              }
+                                                        <div className="space-y-2 p-2">
+                                                          <div className="space-y-1">
+                                                            <p className="truncate text-xs font-medium">
+                                                              {photo.alt ||
+                                                                '未命名照片'}
                                                             </p>
-                                                          ) : null}
+
+                                                            <p className="text-[11px] text-muted-foreground">
+                                                              {photo.width &&
+                                                              photo.height
+                                                                ? `${photo.width} × ${photo.height}`
+                                                                : '尺寸未知'}
+                                                            </p>
+
+                                                            {photo.caption ? (
+                                                              <p className="line-clamp-2 text-[11px] text-muted-foreground">
+                                                                {
+                                                                  photo.caption
+                                                                }
+                                                              </p>
+                                                            ) : null}
+
+                                                            {photo.wide ? (
+                                                              <Badge
+                                                                variant="outline"
+                                                                className="text-[10px]"
+                                                              >
+                                                                Wide
+                                                              </Badge>
+                                                            ) : null}
+                                                          </div>
+
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                              <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="h-7 text-xs"
+                                                                onClick={() =>
+                                                                  setEditingPhoto(
+                                                                    photo,
+                                                                  )
+                                                                }
+                                                              >
+                                                                编辑
+                                                              </Button>
+
+                                                              <Button
+                                                                type="button"
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                className="h-7 text-xs"
+                                                                onClick={() =>
+                                                                  setDeletingPhoto(
+                                                                    photo,
+                                                                  )
+                                                                }
+                                                              >
+                                                                删除
+                                                              </Button>
+                                                            </div>
                                                         </div>
                                                       </div>
                                                     ),
@@ -3273,6 +3476,99 @@ async function moveCategory(
           handlePhotosUploaded
         }
       />
+
+      <ArchivePhotoEditDialog
+        photo={
+          editingPhoto
+        }
+        open={
+          Boolean(
+            editingPhoto,
+          )
+        }
+        onOpenChange={(
+          open,
+        ) => {
+          if (!open) {
+            setEditingPhoto(
+              null,
+            )
+          }
+        }}
+        onSaved={
+          handlePhotoSaved
+        }
+      />
+
+      <AlertDialog
+  open={
+    Boolean(
+      deletingPhoto,
+    )
+  }
+  onOpenChange={(
+    open,
+  ) => {
+    if (
+      !open &&
+      !isDeletingPhoto
+    ) {
+      setDeletingPhoto(
+        null,
+      )
+    }
+  }}
+>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>
+        删除这张照片？
+      </AlertDialogTitle>
+
+      <AlertDialogDescription>
+        {deletingPhoto ? (
+          <>
+            即将删除「
+            {
+              deletingPhoto.alt ||
+              '未命名照片'
+            }
+            」。原图、展示图和缩略图也会从
+            Archive Storage 中清理。此操作无法撤销。
+          </>
+        ) : null}
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+
+    <AlertDialogFooter>
+      <AlertDialogCancel
+        disabled={
+          isDeletingPhoto
+        }
+      >
+        取消
+      </AlertDialogCancel>
+
+      <AlertDialogAction
+        disabled={
+          isDeletingPhoto
+        }
+        onClick={(
+          event,
+        ) => {
+          event.preventDefault()
+
+          void handleDeletePhoto()
+        }}
+        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      >
+        {isDeletingPhoto
+          ? '删除中...'
+          : '确认删除'}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
 
       <AlertDialog
   open={
