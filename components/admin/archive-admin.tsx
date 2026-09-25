@@ -73,6 +73,10 @@ import {
 } from '@/components/admin/archive-video-edit-dialog'
 
 import {
+  ArchivePhotoUploadDialog,
+} from '@/components/admin/archive-photo-upload-dialog'
+
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -262,6 +266,14 @@ export function ArchiveAdmin({
     setIsDeletingVideo,
   ] =
     useState(false)
+
+  const [
+    uploadingPhotoSession,
+    setUploadingPhotoSession,
+  ] =
+    useState<
+      ArchiveDbCategory['albums'][number]['sessions'][number] | null
+    >(null)
 
   const [
     deletingAlbum,
@@ -1082,6 +1094,61 @@ async function handleDeleteVideo() {
       false,
     )
   }
+}
+
+function handlePhotosUploaded(
+  uploadedPhotos:
+    ArchiveDbCategory['albums'][number]['sessions'][number]['photos'],
+) {
+  if (!uploadingPhotoSession) {
+    return
+  }
+
+  const targetSessionId =
+    uploadingPhotoSession.id
+
+  setCategories(
+    (previous) =>
+      previous.map(
+        (category) => ({
+          ...category,
+
+          albums:
+            category.albums.map(
+              (album) => ({
+                ...album,
+
+                sessions:
+                  album.sessions.map(
+                    (session) =>
+                      session.id ===
+                      targetSessionId
+                        ? {
+                            ...session,
+
+                            photos: [
+                              ...session.photos,
+                              ...uploadedPhotos,
+                            ].sort(
+                              (
+                                a,
+                                b,
+                              ) =>
+                                a.sortOrder -
+                                b.sortOrder,
+                            ),
+                          }
+                        : session,
+                  ),
+              }),
+            ),
+        }),
+      ),
+  )
+
+  setUploadingPhotoSession(
+    null,
+  )
 }
 
   function handleAlbumSaved(
@@ -2790,6 +2857,19 @@ async function moveCategory(
                                               </Button>
                                               
                                               <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                  setUploadingPhotoSession(
+                                                    session,
+                                                  )
+                                                }
+                                              >
+                                                上传照片
+                                              </Button>
+
+                                              <Button
                                               type="button"
                                               variant="outline"
                                               size="sm"
@@ -2915,6 +2995,68 @@ async function moveCategory(
                                                             </Button>
                                                           </div>
 
+                                                      </div>
+                                                    ),
+                                                  )}
+                                                </div>
+                                              </div>
+                                            ) : null}
+
+                                            {session.photos.length > 0 ? (
+                                              <div className="mt-3 border-t border-border pt-3">
+                                                <div className="mb-3 flex items-center justify-between gap-3">
+                                                  <p className="text-xs font-medium text-muted-foreground">
+                                                    Photos
+                                                  </p>
+
+                                                  <span className="text-xs text-muted-foreground">
+                                                    {session.photos.length} 张
+                                                  </span>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                                                  {session.photos.map(
+                                                    (photo) => (
+                                                      <div
+                                                        key={photo.id}
+                                                        className="overflow-hidden rounded-md border bg-muted/20"
+                                                      >
+                                                        <div className="relative aspect-4/3 overflow-hidden bg-muted">
+                                                          <img
+                                                            src={
+                                                              photo.thumbnailUrl ||
+                                                              photo.displayUrl
+                                                            }
+                                                            alt={
+                                                              photo.alt ||
+                                                              'Archive photo'
+                                                            }
+                                                            className="h-full w-full object-cover"
+                                                            loading="lazy"
+                                                          />
+                                                        </div>
+
+                                                        <div className="space-y-1 p-2">
+                                                          <p className="truncate text-xs font-medium">
+                                                            {photo.alt ||
+                                                              '未命名照片'}
+                                                          </p>
+
+                                                          <p className="text-[11px] text-muted-foreground">
+                                                            {photo.width &&
+                                                            photo.height
+                                                              ? `${photo.width} × ${photo.height}`
+                                                              : '尺寸未知'}
+                                                          </p>
+
+                                                          {photo.caption ? (
+                                                            <p className="line-clamp-2 text-[11px] text-muted-foreground">
+                                                              {
+                                                                photo.caption
+                                                              }
+                                                            </p>
+                                                          ) : null}
+                                                        </div>
                                                       </div>
                                                     ),
                                                   )}
@@ -3109,6 +3251,29 @@ async function moveCategory(
         }
       />
       
+      <ArchivePhotoUploadDialog
+        session={
+          uploadingPhotoSession
+        }
+        open={
+          Boolean(
+            uploadingPhotoSession,
+          )
+        }
+        onOpenChange={(
+          open,
+        ) => {
+          if (!open) {
+            setUploadingPhotoSession(
+              null,
+            )
+          }
+        }}
+        onUploaded={
+          handlePhotosUploaded
+        }
+      />
+
       <AlertDialog
   open={
     Boolean(

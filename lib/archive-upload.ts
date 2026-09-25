@@ -127,13 +127,13 @@ async function createSignedUpload({
             `Bearer ${accessToken}`,
         },
 
-        body:
-          JSON.stringify({
-            kind,
-            variant,
-            name,
-            type,
-          }),
+          body:
+            JSON.stringify({
+              kind,
+              variant,
+              filename: name,
+              type,
+            }),
       },
     )
 
