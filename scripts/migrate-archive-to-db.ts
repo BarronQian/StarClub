@@ -489,6 +489,15 @@ if (
 
 console.log('')
 
+    if (
+    validation.errors.length >
+    0
+  ) {
+    throw new Error(
+      'Archive 数据完整性检查失败，迁移已停止。',
+    )
+  }
+  
   console.log(
     'DRY RUN 完成。',
   )
