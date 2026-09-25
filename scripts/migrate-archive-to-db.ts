@@ -320,6 +320,69 @@ function main() {
 
   console.log('')
 
+  const validation =
+  validateArchive()
+
+console.log(
+  '======================================',
+)
+
+console.log(
+  '数据完整性检查',
+)
+
+console.log(
+  '======================================',
+)
+
+console.log(
+  `Errors:   ${validation.errors.length}`,
+)
+
+console.log(
+  `Warnings: ${validation.warnings.length}`,
+)
+
+if (
+  validation.errors.length >
+  0
+) {
+  console.log('')
+  console.log(
+    '--- Errors ---',
+  )
+
+  for (
+    const error of
+    validation.errors
+  ) {
+    console.log(
+      `❌ ${error}`,
+    )
+  }
+}
+
+if (
+  validation.warnings.length >
+  0
+) {
+  console.log('')
+  console.log(
+    '--- Warnings ---',
+  )
+
+  for (
+    const warning of
+    validation.warnings
+  ) {
+    console.log(
+      `⚠️ ${warning}`,
+    )
+  }
+}
+
+console.log('')
+
   console.log(
     'DRY RUN 完成。',
   )
