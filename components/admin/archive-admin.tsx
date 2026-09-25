@@ -168,6 +168,20 @@ export function ArchiveAdmin({
   >(initialCategories)
 
   const [
+    collapsedCategories,
+    setCollapsedCategories,
+  ] = useState<Set<string>>(
+    new Set(),
+  )
+
+  const [
+    collapsedAlbums,
+    setCollapsedAlbums,
+  ] = useState<Set<string>>(
+    new Set(),
+  )
+
+  const [
     editingCategory,
     setEditingCategory,
   ] =
@@ -374,6 +388,44 @@ const [
       setUploadStage,
     ] =
       useState('')
+
+    function toggleCategory(
+  categoryId: string,
+) {
+  setCollapsedCategories(
+    (previous) => {
+      const next =
+        new Set(previous)
+
+      if (next.has(categoryId)) {
+        next.delete(categoryId)
+      } else {
+        next.add(categoryId)
+      }
+
+      return next
+    },
+  )
+}
+
+function toggleAlbum(
+  albumId: string,
+) {
+  setCollapsedAlbums(
+    (previous) => {
+      const next =
+        new Set(previous)
+
+      if (next.has(albumId)) {
+        next.delete(albumId)
+      } else {
+        next.add(albumId)
+      }
+
+      return next
+    },
+  )
+}
 
   function updateForm<
     K extends keyof CategoryFormState,
@@ -2825,20 +2877,41 @@ async function moveCategory(
                       ) : null}
                     </div>
 
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() =>
-                        setCreatingAlbumCategory(
-                          category,
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          toggleCategory(
+                            category.id,
+                          )
+                        }
+                      >
+                        {collapsedCategories.has(
+                          category.id,
                         )
-                      }
-                    >
-                      新建 Album
-                    </Button>
+                          ? '全部展开'
+                          : '全部收起'}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() =>
+                          setCreatingAlbumCategory(
+                            category,
+                          )
+                        }
+                      >
+                        新建 Album
+                      </Button>
+                    </div>
                   </div>
 
-                  {category.albums
+                  {collapsedCategories.has(
+                    category.id,
+                  ) ? null : category.albums
                     .length === 0 ? (
                     <div className="px-5 py-10 text-center">
                       <p className="text-sm text-muted-foreground">
@@ -2995,6 +3068,23 @@ async function moveCategory(
                                         variant="outline"
                                         size="sm"
                                         onClick={() =>
+                                          toggleAlbum(
+                                            album.id,
+                                          )
+                                        }
+                                      >
+                                        {collapsedAlbums.has(
+                                          album.id,
+                                        )
+                                          ? '展开场次'
+                                          : '收起场次'}
+                                      </Button>
+
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
                                           setCreatingSessionAlbum(
                                             album,
                                           )
@@ -3078,7 +3168,10 @@ async function moveCategory(
                                 </TableCell>
                             </TableRow>
 
-                            <TableRow>
+                            {!collapsedAlbums.has(
+                                album.id,
+                              ) ? (
+                                <TableRow>
                               <TableCell
                                 colSpan={7}
                                 className="bg-muted/20 p-0"
@@ -3536,7 +3629,7 @@ async function moveCategory(
                                 </div>
                               </TableCell>
                             </TableRow>
-
+                             ) : null}
                            </Fragment>
                           ),
                         )}
