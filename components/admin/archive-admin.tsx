@@ -61,6 +61,10 @@ import {
 } from '@/components/admin/archive-session-create-dialog'
 
 import {
+  ArchiveSessionEditDialog,
+} from '@/components/admin/archive-session-edit-dialog'
+
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -191,71 +195,101 @@ export function ArchiveAdmin({
     ArchiveDbCategory['albums'][number] | null
   >(null)
 
-const [
-  deletingAlbum,
-  setDeletingAlbum,
-] =
-  useState<
-    ArchiveDbCategory['albums'][number] | null
-  >(null)
-
-const [
-  isDeletingAlbum,
-  setIsDeletingAlbum,
-] =
-  useState(false)
-
-const [
-  reorderingCategoryId,
-  setReorderingCategoryId,
-] =
-  useState<string | null>(
-    null,
-  )
-
   const [
-  creatingSessionAlbum,
-  setCreatingSessionAlbum,
+  editingSession,
+  setEditingSession,
 ] =
   useState<
-    ArchiveDbCategory['albums'][number] | null
+    ArchiveDbCategory['albums'][number]['sessions'][number] | null
   >(null)
 
   const [
-    form,
-    setForm,
+    deletingSession,
+    setDeletingSession,
   ] =
-    useState<CategoryFormState>(
-      EMPTY_FORM,
-    )
+    useState<
+      ArchiveDbCategory['albums'][number]['sessions'][number] | null
+    >(null)
 
   const [
-    coverFile,
-    setCoverFile,
+    isDeletingSession,
+    setIsDeletingSession,
   ] =
-    useState<File | null>(
-      null,
-    )
+    useState(false)
 
   const [
-    coverPreview,
-    setCoverPreview,
+    reorderingSessionAlbumId,
+    setReorderingSessionAlbumId,
   ] =
     useState<string | null>(
       null,
     )
 
   const [
-    isSubmitting,
-    setIsSubmitting,
+    deletingAlbum,
+    setDeletingAlbum,
+  ] =
+    useState<
+      ArchiveDbCategory['albums'][number] | null
+    >(null)
+
+  const [
+    isDeletingAlbum,
+    setIsDeletingAlbum,
   ] =
     useState(false)
 
   const [
-    uploadStage,
-    setUploadStage,
+    reorderingCategoryId,
+    setReorderingCategoryId,
   ] =
-    useState('')
+    useState<string | null>(
+      null,
+    )
+
+    const [
+    creatingSessionAlbum,
+    setCreatingSessionAlbum,
+  ] =
+    useState<
+      ArchiveDbCategory['albums'][number] | null
+    >(null)
+
+    const [
+      form,
+      setForm,
+    ] =
+      useState<CategoryFormState>(
+        EMPTY_FORM,
+      )
+
+    const [
+      coverFile,
+      setCoverFile,
+    ] =
+      useState<File | null>(
+        null,
+      )
+
+    const [
+      coverPreview,
+      setCoverPreview,
+    ] =
+      useState<string | null>(
+        null,
+      )
+
+    const [
+      isSubmitting,
+      setIsSubmitting,
+    ] =
+      useState(false)
+
+    const [
+      uploadStage,
+      setUploadStage,
+    ] =
+      useState('')
 
   function updateForm<
     K extends keyof CategoryFormState,
@@ -526,6 +560,299 @@ function handleSessionCreated(
   setCreatingSessionAlbum(
     null,
   )
+}
+
+  function handleSessionSaved(
+    updatedSession:
+      ArchiveDbCategory['albums'][number]['sessions'][number],
+  ) {
+    setCategories(
+      (previous) =>
+        previous.map(
+          (category) => ({
+            ...category,
+
+            albums:
+              category.albums.map(
+                (album) => ({
+                  ...album,
+
+                  sessions:
+                    album.sessions.map(
+                      (session) =>
+                        session.id ===
+                        updatedSession.id
+                          ? updatedSession
+                          : session,
+                    ),
+                }),
+              ),
+          }),
+        ),
+    )
+
+    setEditingSession(
+      null,
+    )
+  }
+
+  async function handleDeleteSession() {
+  if (
+    !deletingSession ||
+    isDeletingSession
+  ) {
+    return
+  }
+
+  setIsDeletingSession(true)
+
+  try {
+    const response =
+      await fetch(
+        `/api/admin/archive/sessions/${encodeURIComponent(
+          deletingSession.id,
+        )}`,
+        {
+          method: 'DELETE',
+        },
+      )
+
+    const result =
+      await response
+        .json()
+        .catch(() => null)
+
+    if (!response.ok) {
+      throw new Error(
+        getErrorMessage(
+          result,
+          '删除 Session 失败',
+        ),
+      )
+    }
+
+    setCategories(
+      (previous) =>
+        previous.map(
+          (category) => ({
+            ...category,
+
+            albums:
+              category.albums.map(
+                (album) => ({
+                  ...album,
+
+                  sessions:
+                    album.sessions.filter(
+                      (session) =>
+                        session.id !==
+                        deletingSession.id,
+                    ),
+                }),
+              ),
+          }),
+        ),
+    )
+
+    toast.success(
+      'Session 已删除',
+    )
+
+    setDeletingSession(
+      null,
+    )
+  } catch (error) {
+    console.error(
+      '[Archive session delete]',
+      error,
+    )
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : '删除 Session 失败，请重试',
+    )
+  } finally {
+    setIsDeletingSession(
+      false,
+    )
+  }
+}
+
+  async function moveSession(
+  albumId: string,
+  sessionId: string,
+  direction: -1 | 1,
+) {
+  if (
+    reorderingSessionAlbumId
+  ) {
+    return
+  }
+
+  let currentSessions:
+    ArchiveDbCategory['albums'][number]['sessions'] =
+      []
+
+  for (const category of categories) {
+    const album =
+      category.albums.find(
+        (item) =>
+          item.id === albumId,
+      )
+
+    if (album) {
+      currentSessions =
+        album.sessions
+
+      break
+    }
+  }
+
+  const currentIndex =
+    currentSessions.findIndex(
+      (session) =>
+        session.id ===
+        sessionId,
+    )
+
+  if (currentIndex < 0) {
+    return
+  }
+
+  const nextIndex =
+    currentIndex +
+    direction
+
+  if (
+    nextIndex < 0 ||
+    nextIndex >=
+      currentSessions.length
+  ) {
+    return
+  }
+
+  const reordered =
+    [...currentSessions]
+
+  const [
+    movedSession,
+  ] =
+    reordered.splice(
+      currentIndex,
+      1,
+    )
+
+  reordered.splice(
+    nextIndex,
+    0,
+    movedSession,
+  )
+
+  const normalized =
+    reordered.map(
+      (
+        session,
+        index,
+      ) => ({
+        ...session,
+        sortOrder: index,
+      }),
+    )
+
+  setReorderingSessionAlbumId(
+    albumId,
+  )
+
+  try {
+    const response =
+      await fetch(
+        '/api/admin/archive/sessions/reorder',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          body:
+            JSON.stringify({
+              album_id:
+                albumId,
+
+              items:
+                normalized.map(
+                  (
+                    session,
+                    index,
+                  ) => ({
+                    id:
+                      session.id,
+
+                    sort_order:
+                      index,
+                  }),
+                ),
+            }),
+        },
+      )
+
+    const result =
+      await response
+        .json()
+        .catch(() => null)
+
+    if (!response.ok) {
+      throw new Error(
+        getErrorMessage(
+          result,
+          'Session 排序失败',
+        ),
+      )
+    }
+
+    setCategories(
+      (previous) =>
+        previous.map(
+          (category) => ({
+            ...category,
+
+            albums:
+              category.albums.map(
+                (album) =>
+                  album.id ===
+                  albumId
+                    ? {
+                        ...album,
+                        sessions:
+                          normalized,
+                      }
+                    : album,
+              ),
+          }),
+        ),
+    )
+
+    toast.success(
+      'Session 顺序已更新',
+    )
+  } catch (error) {
+    console.error(
+      '[Archive session reorder]',
+      error,
+    )
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : 'Session 排序失败，请重试',
+    )
+  } finally {
+    setReorderingSessionAlbumId(
+      null,
+    )
+  }
 }
 
   function handleAlbumSaved(
@@ -2126,7 +2453,10 @@ async function moveCategory(
                                   ) : (
                                     <div className="mt-4 space-y-2">
                                       {album.sessions.map(
-                                        (session) => (
+                                        (
+                                          session,
+                                          sessionIndex,
+                                        ) => (
                                           <div
                                             key={
                                               session.id
@@ -2173,18 +2503,89 @@ async function moveCategory(
                                               </div>
                                             </div>
 
-                                            <Badge
-                                              variant="outline"
-                                              className={
-                                                session.isPublished
-                                                  ? 'border-primary/30 text-primary'
-                                                  : ''
-                                              }
-                                            >
-                                              {session.isPublished
-                                                ? '已发布'
-                                                : '未发布'}
-                                            </Badge>
+                                            <div className="flex shrink-0 items-center gap-2">
+                                              <Badge
+                                                variant="outline"
+                                                className={
+                                                  session.isPublished
+                                                    ? 'border-primary/30 text-primary'
+                                                    : ''
+                                                }
+                                              >
+                                                {session.isPublished
+                                                  ? '已发布'
+                                                  : '未发布'}
+                                              </Badge>
+                                              
+                                              <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={
+                                                  sessionIndex === 0 ||
+                                                  reorderingSessionAlbumId ===
+                                                    album.id
+                                                }
+                                                onClick={() =>
+                                                  void moveSession(
+                                                    album.id,
+                                                    session.id,
+                                                    -1,
+                                                  )
+                                                }
+                                              >
+                                                ↑
+                                              </Button>
+
+                                              <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={
+                                                  sessionIndex ===
+                                                    album.sessions.length -
+                                                      1 ||
+                                                  reorderingSessionAlbumId ===
+                                                    album.id
+                                                }
+                                                onClick={() =>
+                                                  void moveSession(
+                                                    album.id,
+                                                    session.id,
+                                                    1,
+                                                  )
+                                                }
+                                              >
+                                                ↓
+                                              </Button>
+
+                                              <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                  setEditingSession(
+                                                    session,
+                                                  )
+                                                }
+                                              >
+                                                编辑
+                                              </Button>
+
+                                              <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() =>
+                                                  setDeletingSession(
+                                                    session,
+                                                  )
+                                                }
+                                              >
+                                                删除
+                                              </Button>
+
+                                            </div>
                                           </div>
                                         ),
                                       )}
@@ -2302,6 +2703,128 @@ async function moveCategory(
           handleSessionCreated
         }
       />
+
+      <ArchiveSessionEditDialog
+        session={
+          editingSession
+        }
+        open={
+          Boolean(
+            editingSession,
+          )
+        }
+        onOpenChange={(
+          open,
+        ) => {
+          if (!open) {
+            setEditingSession(
+              null,
+            )
+          }
+        }}
+        onSaved={
+          handleSessionSaved
+        }
+      />
+      
+      <AlertDialog
+  open={
+    Boolean(
+      deletingSession,
+    )
+  }
+  onOpenChange={(
+    open,
+  ) => {
+    if (
+      !open &&
+      !isDeletingSession
+    ) {
+      setDeletingSession(
+        null,
+      )
+    }
+  }}
+>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>
+        删除这个 Session？
+      </AlertDialogTitle>
+
+      <AlertDialogDescription>
+        {deletingSession ? (
+          <>
+            即将删除「
+            {
+              deletingSession.label
+            }
+            」。
+
+            {deletingSession.photos
+              .length > 0 ||
+            deletingSession.videos
+              .length > 0 ? (
+              <>
+                {' '}
+                其中包含
+                {' '}
+                {
+                  deletingSession.photos
+                    .length
+                }
+                {' '}
+                张照片和
+                {' '}
+                {
+                  deletingSession.videos
+                    .length
+                }
+                {' '}
+                个视频。相关数据库记录会一起删除，Archive
+                Storage 中属于这个 Session
+                的照片也会清理。
+              </>
+            ) : (
+              <>
+                {' '}
+                此操作无法撤销。
+              </>
+            )}
+          </>
+        ) : null}
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+
+    <AlertDialogFooter>
+      <AlertDialogCancel
+        disabled={
+          isDeletingSession
+        }
+      >
+        取消
+      </AlertDialogCancel>
+
+      <AlertDialogAction
+        disabled={
+          isDeletingSession
+        }
+        onClick={(
+          event,
+        ) => {
+          event.preventDefault()
+
+          void handleDeleteSession()
+        }}
+        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      >
+        {isDeletingSession
+          ? '删除中...'
+          : '确认删除'}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
 
       <AlertDialog
         open={
