@@ -7,6 +7,7 @@ import { AdminLogoutButton } from '@/components/admin/admin-logout-button'
 
 type AdminSection =
   | 'gallery'
+  | 'archive'
   | 'news'
   | 'community'
   | 'community-stickers'
@@ -69,6 +70,20 @@ export function AdminHeader({
         >
           影廊管理
         </Button>
+        
+        <Button
+          variant={
+            active === 'archive'
+              ? 'default'
+              : 'outline'
+          }
+          size="sm"
+          onClick={() =>
+            go('/admin/archive')
+          }
+        >
+          合影管理
+      </Button>
 
         <Button
           variant={
