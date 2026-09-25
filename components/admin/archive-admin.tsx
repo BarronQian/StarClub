@@ -3079,6 +3079,21 @@ async function moveCategory(
                                           ? '展开场次'
                                           : '收起场次'}
                                       </Button>
+                                      
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          window.open(
+                                            `/archive/${category.slug}/${album.slug}`,
+                                            '_blank',
+                                            'noopener,noreferrer',
+                                          )
+                                        }}
+                                      >
+                                        预览
+                                      </Button>
 
                                       <Button
                                         type="button"
