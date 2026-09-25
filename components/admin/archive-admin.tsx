@@ -2625,6 +2625,19 @@ async function moveCategory(
                                               >
                                                 ↓
                                               </Button>
+                                              
+                                              <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() =>
+                                                setCreatingVideoSession(
+                                                  session,
+                                                )
+                                              }
+                                            >
+                                              添加视频
+                                            </Button>
 
                                               <Button
                                                 type="button"
@@ -2794,6 +2807,29 @@ async function moveCategory(
         }
       />
       
+      <ArchiveVideoCreateDialog
+        session={
+          creatingVideoSession
+        }
+        open={
+          Boolean(
+            creatingVideoSession,
+          )
+        }
+        onOpenChange={(
+          open,
+        ) => {
+          if (!open) {
+            setCreatingVideoSession(
+              null,
+            )
+          }
+        }}
+        onCreated={
+          handleVideoCreated
+        }
+      />
+
       <AlertDialog
   open={
     Boolean(
