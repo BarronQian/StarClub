@@ -8,7 +8,8 @@ import {
 
 function getSupabaseAdmin() {
   const supabaseUrl =
-    process.env.SUPABASE_URL
+    process.env.SUPABASE_URL ??
+    process.env.NEXT_PUBLIC_SUPABASE_URL
 
   const serviceRoleKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -497,7 +498,7 @@ console.log('')
       'Archive 数据完整性检查失败，迁移已停止。',
     )
   }
-  
+
   console.log(
     'DRY RUN 完成。',
   )
