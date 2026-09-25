@@ -1502,6 +1502,9 @@ async function movePhoto(
           }),
         ),
     )
+    toast.success(
+  '照片顺序已更新',
+)
   } catch (error) {
     console.error(
       '[Archive photo reorder]',
