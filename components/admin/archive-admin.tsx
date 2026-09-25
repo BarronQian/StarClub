@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  Fragment,
   useState,
   type ChangeEvent,
   type FormEvent,
@@ -54,6 +55,10 @@ import {
 import {
   ArchiveAlbumEditDialog,
 } from '@/components/admin/archive-album-edit-dialog'
+
+import {
+  ArchiveSessionCreateDialog,
+} from '@/components/admin/archive-session-create-dialog'
 
 import {
   AlertDialog,
@@ -207,6 +212,14 @@ const [
   useState<string | null>(
     null,
   )
+
+  const [
+  creatingSessionAlbum,
+  setCreatingSessionAlbum,
+] =
+  useState<
+    ArchiveDbCategory['albums'][number] | null
+  >(null)
 
   const [
     form,
@@ -462,6 +475,59 @@ const [
   )
 }
   
+function handleSessionCreated(
+  createdSession:
+    ArchiveDbCategory['albums'][number]['sessions'][number],
+) {
+  if (!creatingSessionAlbum) {
+    return
+  }
+
+  const albumId =
+    creatingSessionAlbum.id
+
+  setCategories(
+    (previous) =>
+      previous.map(
+        (category) => ({
+          ...category,
+
+          albums:
+            category.albums.map(
+              (album) => {
+                if (
+                  album.id !==
+                  albumId
+                ) {
+                  return album
+                }
+
+                return {
+                  ...album,
+
+                  sessions: [
+                    ...album.sessions,
+                    createdSession,
+                  ].sort(
+                    (
+                      first,
+                      second,
+                    ) =>
+                      first.sortOrder -
+                      second.sortOrder,
+                  ),
+                }
+              },
+            ),
+        }),
+      ),
+  )
+
+  setCreatingSessionAlbum(
+    null,
+  )
+}
+
   function handleAlbumSaved(
   updatedAlbum:
     ArchiveDbCategory['albums'][number],
@@ -1651,6 +1717,7 @@ async function moveCategory(
 
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
+                              
                               <Button
                                 type="button"
                                 variant="outline"
@@ -1835,11 +1902,12 @@ async function moveCategory(
                       <TableBody>
                         {category.albums.map(
                           (album) => (
-                            <TableRow
+                            <Fragment
                               key={
                                 album.id
                               }
                             >
+                              <TableRow>
                               <TableCell>
                                 <div className="relative h-12 w-20 overflow-hidden rounded-sm border border-border bg-muted">
                                   {album
@@ -1925,29 +1993,42 @@ async function moveCategory(
                                 </Badge>
                               </TableCell>
 
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      disabled={
-                                        Boolean(
-                                          reorderingCategoryId,
-                                        ) ||
-                                        category.albums[0]
-                                          ?.id === album.id
-                                      }
-                                      onClick={() =>
-                                        void moveAlbum(
-                                          category.id,
-                                          album.id,
-                                          'up',
-                                        )
-                                      }
-                                    >
-                                      ↑
-                                    </Button>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                          setCreatingSessionAlbum(
+                                            album,
+                                          )
+                                        }
+                                      >
+                                        新建 Session
+                                      </Button>
+
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={
+                                          Boolean(
+                                            reorderingCategoryId,
+                                          ) ||
+                                          category.albums[0]
+                                            ?.id === album.id
+                                        }
+                                        onClick={() =>
+                                          void moveAlbum(
+                                            category.id,
+                                            album.id,
+                                            'up',
+                                          )
+                                        }
+                                      >
+                                        ↑
+                                      </Button>
 
                                     <Button
                                       type="button"
@@ -2001,6 +2082,119 @@ async function moveCategory(
                                   </div>
                                 </TableCell>
                             </TableRow>
+
+                            <TableRow>
+                              <TableCell
+                                colSpan={7}
+                                className="bg-muted/20 p-0"
+                              >
+                                <div className="border-t border-border px-5 py-4">
+                                  <div className="flex items-center justify-between gap-4">
+                                    <div>
+                                      <p className="text-xs font-medium text-foreground">
+                                        Sessions
+                                      </p>
+
+                                      <p className="mt-1 text-[0.68rem] text-muted-foreground">
+                                        {album.sessions.length}{' '}
+                                        个 Session
+                                      </p>
+                                    </div>
+
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        setCreatingSessionAlbum(
+                                          album,
+                                        )
+                                      }
+                                    >
+                                      新建 Session
+                                    </Button>
+                                  </div>
+
+                                  {album.sessions.length ===
+                                  0 ? (
+                                    <div className="mt-4 rounded-md border border-dashed border-border px-4 py-5 text-center">
+                                      <p className="text-xs text-muted-foreground">
+                                        这个 Album
+                                        目前还没有 Session
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <div className="mt-4 space-y-2">
+                                      {album.sessions.map(
+                                        (session) => (
+                                          <div
+                                            key={
+                                              session.id
+                                            }
+                                            className="flex items-center justify-between gap-4 rounded-md border border-border bg-background px-4 py-3"
+                                          >
+                                            <div className="min-w-0">
+                                              <p className="text-sm font-medium text-foreground">
+                                                {
+                                                  session.label
+                                                }
+                                              </p>
+
+                                              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.68rem] text-muted-foreground">
+                                                <code>
+                                                  {
+                                                    session.slug
+                                                  }
+                                                </code>
+
+                                                {session.date ? (
+                                                  <span>
+                                                    {
+                                                      session.date
+                                                    }
+                                                  </span>
+                                                ) : null}
+
+                                                <span>
+                                                  {
+                                                    session.photos
+                                                      .length
+                                                  }{' '}
+                                                  张照片
+                                                </span>
+
+                                                <span>
+                                                  {
+                                                    session.videos
+                                                      .length
+                                                  }{' '}
+                                                  个视频
+                                                </span>
+                                              </div>
+                                            </div>
+
+                                            <Badge
+                                              variant="outline"
+                                              className={
+                                                session.isPublished
+                                                  ? 'border-primary/30 text-primary'
+                                                  : ''
+                                              }
+                                            >
+                                              {session.isPublished
+                                                ? '已发布'
+                                                : '未发布'}
+                                            </Badge>
+                                          </div>
+                                        ),
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+
+                           </Fragment>
                           ),
                         )}
                       </TableBody>
@@ -2085,26 +2279,49 @@ async function moveCategory(
           handleAlbumSaved
         }
       />
-      
+        
+      <ArchiveSessionCreateDialog
+        album={
+          creatingSessionAlbum
+        }
+        open={
+          Boolean(
+            creatingSessionAlbum,
+          )
+        }
+        onOpenChange={(
+          open,
+        ) => {
+          if (!open) {
+            setCreatingSessionAlbum(
+              null,
+            )
+          }
+        }}
+        onCreated={
+          handleSessionCreated
+        }
+      />
+
       <AlertDialog
-  open={
-    Boolean(
-      deletingAlbum,
-    )
-  }
-  onOpenChange={(
-    open,
-  ) => {
-    if (
-      !open &&
-      !isDeletingAlbum
-    ) {
-      setDeletingAlbum(
-        null,
-      )
-    }
-  }}
->
+        open={
+          Boolean(
+            deletingAlbum,
+          )
+        }
+        onOpenChange={(
+          open,
+        ) => {
+          if (
+            !open &&
+            !isDeletingAlbum
+          ) {
+            setDeletingAlbum(
+              null,
+            )
+          }
+        }}
+      >
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>
