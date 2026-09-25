@@ -2,6 +2,38 @@ import {
   ARCHIVE,
 } from '../lib/archive'
 
+import {
+  createClient,
+} from '@supabase/supabase-js'
+
+function getSupabaseAdmin() {
+  const supabaseUrl =
+    process.env.SUPABASE_URL
+
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (
+    !supabaseUrl ||
+    !serviceRoleKey
+  ) {
+    throw new Error(
+      'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY',
+    )
+  }
+
+  return createClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    },
+  )
+}
+
 function countArchive() {
   let categoryCount = 0
   let albumCount = 0
@@ -280,7 +312,81 @@ function validateArchive() {
   }
 }
 
-function main() {
+async function runDatabasePreflight() {
+  const supabase =
+    getSupabaseAdmin()
+
+  const tables = [
+    'archive_categories',
+    'archive_albums',
+    'archive_sessions',
+    'archive_session_videos',
+    'archive_photos',
+  ] as const
+
+  console.log('')
+  console.log(
+    '======================================',
+  )
+  console.log(
+    'Supabase Preflight',
+  )
+  console.log(
+    '======================================',
+  )
+
+  let totalRows = 0
+
+  for (const table of tables) {
+    const {
+      count,
+      error,
+    } = await supabase
+      .from(table)
+      .select('*', {
+        count: 'exact',
+        head: true,
+      })
+
+    if (error) {
+      throw new Error(
+        `${table} 检查失败：${error.message}`,
+      )
+    }
+
+    const rowCount =
+      count ?? 0
+
+    totalRows +=
+      rowCount
+
+    console.log(
+      `${table}: ${rowCount}`,
+    )
+  }
+
+  console.log('')
+
+  if (totalRows !== 0) {
+    throw new Error(
+      `Archive 数据库不是空的，目前共有 ${totalRows} 行数据。迁移已停止，不会写入任何数据。`,
+    )
+  }
+
+  console.log(
+    '✓ Archive 五张表全部为空',
+  )
+
+  console.log(
+    '✓ Preflight 通过',
+  )
+
+  console.log(
+    '✓ 本次仍未写入任何数据',
+  )
+}
+
+async function main() {
   const counts =
     countArchive()
 
@@ -390,6 +496,15 @@ console.log('')
   console.log(
     '本次没有修改 Supabase 数据库。',
   )
+  await runDatabasePreflight()
 }
 
-main()
+main().catch((error) => {
+  console.error('')
+  console.error(
+    'Migration Preflight 失败：',
+  )
+  console.error(error)
+
+  process.exit(1)
+})
