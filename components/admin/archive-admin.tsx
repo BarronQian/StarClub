@@ -65,6 +65,10 @@ import {
 } from '@/components/admin/archive-session-edit-dialog'
 
 import {
+  ArchiveVideoCreateDialog,
+} from '@/components/admin/archive-video-create-dialog'
+
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -224,6 +228,14 @@ export function ArchiveAdmin({
     useState<string | null>(
       null,
     )
+  
+  const [
+    creatingVideoSession,
+    setCreatingVideoSession,
+  ] =
+    useState<
+      ArchiveDbCategory['albums'][number]['sessions'][number] | null
+    >(null)
 
   const [
     deletingAlbum,
@@ -853,6 +865,61 @@ function handleSessionCreated(
       null,
     )
   }
+}
+
+  function handleVideoCreated(
+  createdVideo:
+    ArchiveDbCategory['albums'][number]['sessions'][number]['videos'][number],
+) {
+  if (!creatingVideoSession) {
+    return
+  }
+
+  const targetSessionId =
+    creatingVideoSession.id
+
+  setCategories(
+    (previous) =>
+      previous.map(
+        (category) => ({
+          ...category,
+
+          albums:
+            category.albums.map(
+              (album) => ({
+                ...album,
+
+                sessions:
+                  album.sessions.map(
+                    (session) =>
+                      session.id ===
+                      targetSessionId
+                        ? {
+                            ...session,
+
+                            videos: [
+                              ...session.videos,
+                              createdVideo,
+                            ].sort(
+                              (
+                                a,
+                                b,
+                              ) =>
+                                a.sortOrder -
+                                b.sortOrder,
+                            ),
+                          }
+                        : session,
+                  ),
+              }),
+            ),
+        }),
+      ),
+  )
+
+  setCreatingVideoSession(
+    null,
+  )
 }
 
   function handleAlbumSaved(
