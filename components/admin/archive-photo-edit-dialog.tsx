@@ -43,6 +43,7 @@ import {
 } from '@supabase/supabase-js'
 
 import {
+  cleanupArchiveUploadedImage,
   uploadArchiveImage,
 } from '@/lib/archive-upload'
 
@@ -189,20 +190,29 @@ async function handleSave() {
     return
   }
 
-  setIsSaving(true)
-  setUploadStage('')
+setIsSaving(true)
+setUploadStage('')
 
-  try {
-    let replacement:
-      Awaited<
-        ReturnType<
-          typeof uploadArchiveImage
-        >
-      > | null = null
+let replacement:
+  Awaited<
+    ReturnType<
+      typeof uploadArchiveImage
+    >
+  > | null = null
 
-    if (replacementFile) {
-      const supabase =
-        getBrowserSupabase()
+let uploadSupabase:
+  ReturnType<
+    typeof getBrowserSupabase
+  > | null = null
+
+try {
+
+  if (replacementFile) {
+    const supabase =
+      getBrowserSupabase()
+
+    uploadSupabase =
+      supabase
 
       const {
         data: {
@@ -272,29 +282,29 @@ async function handleSave() {
 
               wide,
 
-              ...(replacement
-                ? {
-                    originalUrl:
-                      replacement
-                        .originalUrl,
+            ...(replacement
+              ? {
+                  original_url:
+                    replacement
+                      .originalUrl,
 
-                    displayUrl:
-                      replacement
-                        .displayUrl,
+                  display_url:
+                    replacement
+                      .displayUrl,
 
-                    thumbnailUrl:
-                      replacement
-                        .thumbnailUrl,
+                  thumbnail_url:
+                    replacement
+                      .thumbnailUrl,
 
-                    width:
-                      replacement
-                        .width,
+                  width:
+                    replacement
+                      .width,
 
-                    height:
-                      replacement
-                        .height,
-                  }
-                : {}),
+                  height:
+                    replacement
+                      .height,
+                }
+              : {}),
             }),
         },
       )
@@ -400,6 +410,28 @@ async function handleSave() {
       false,
     )
   } catch (error) {
+    if (
+      replacement &&
+      uploadSupabase
+    ) {
+      try {
+        await cleanupArchiveUploadedImage({
+          supabase:
+            uploadSupabase,
+
+          uploaded:
+            replacement,
+        })
+      } catch (
+        cleanupError
+      ) {
+        console.error(
+          '[Archive replacement cleanup]',
+          cleanupError,
+        )
+      }
+    }
+
     console.error(
       '[Archive photo edit]',
       error,
