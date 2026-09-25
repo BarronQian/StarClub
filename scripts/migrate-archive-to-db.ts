@@ -102,6 +102,184 @@ function printArchiveStructure() {
   }
 }
 
+function validateArchive() {
+  const errors:
+    string[] = []
+
+  const warnings:
+    string[] = []
+
+  const categorySlugs =
+    new Set<string>()
+
+  for (const category of ARCHIVE) {
+    if (!category.slug) {
+      errors.push(
+        `Category 缺少 slug：${category.title}`,
+      )
+    }
+
+    if (
+      categorySlugs.has(
+        category.slug,
+      )
+    ) {
+      errors.push(
+        `Category slug 重复：${category.slug}`,
+      )
+    }
+
+    categorySlugs.add(
+      category.slug,
+    )
+
+    const albumSlugs =
+      new Set<string>()
+
+    for (const album of category.albums) {
+      if (!album.slug) {
+        errors.push(
+          `Album 缺少 slug：${category.slug} / ${album.title}`,
+        )
+      }
+
+      if (
+        albumSlugs.has(
+          album.slug,
+        )
+      ) {
+        errors.push(
+          `Album slug 重复：${category.slug} / ${album.slug}`,
+        )
+      }
+
+      albumSlugs.add(
+        album.slug,
+      )
+
+      const sessionSlugs =
+        new Set<string>()
+
+      for (const session of album.sessions) {
+        const location =
+          `${category.slug} / ${album.slug} / ${session.slug}`
+
+        if (!session.slug) {
+          errors.push(
+            `Session 缺少 slug：${category.slug} / ${album.slug}`,
+          )
+        }
+
+        if (
+          sessionSlugs.has(
+            session.slug,
+          )
+        ) {
+          errors.push(
+            `Session slug 重复：${location}`,
+          )
+        }
+
+        sessionSlugs.add(
+          session.slug,
+        )
+
+        if (!session.label) {
+          errors.push(
+            `Session 缺少 label：${location}`,
+          )
+        }
+
+        if (
+          session.photos.length ===
+          0
+        ) {
+          warnings.push(
+            `空 Session：${location}`,
+          )
+        }
+
+        if (
+          session.videos &&
+          session.videos.length >
+            0 &&
+          (
+            session.videoUrl ||
+            session.videoEmbedUrl
+          )
+        ) {
+          warnings.push(
+            `Session 同时存在新版和旧版视频字段：${location}`,
+          )
+        }
+
+        const photoSources =
+          new Set<string>()
+
+        for (
+          const [
+            photoIndex,
+            photo,
+          ] of session.photos.entries()
+        ) {
+          if (!photo.src) {
+            errors.push(
+              `Photo 缺少 src：${location} / #${photoIndex + 1}`,
+            )
+
+            continue
+          }
+
+          if (
+            photoSources.has(
+              photo.src,
+            )
+          ) {
+            warnings.push(
+              `Session 内图片路径重复：${location} / ${photo.src}`,
+            )
+          }
+
+          photoSources.add(
+            photo.src,
+          )
+
+          if (!photo.alt) {
+            warnings.push(
+              `Photo 缺少 alt：${location} / ${photo.src}`,
+            )
+          }
+
+          if (
+            photo.width !==
+              undefined &&
+            photo.width <= 0
+          ) {
+            errors.push(
+              `Photo width 无效：${location} / ${photo.src}`,
+            )
+          }
+
+          if (
+            photo.height !==
+              undefined &&
+            photo.height <= 0
+          ) {
+            errors.push(
+              `Photo height 无效：${location} / ${photo.src}`,
+            )
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    errors,
+    warnings,
+  }
+}
+
 function main() {
   const counts =
     countArchive()
