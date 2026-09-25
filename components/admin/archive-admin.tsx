@@ -301,6 +301,14 @@ const [
 ] =
   useState(false)
 
+const [
+  reorderingPhotoSessionId,
+  setReorderingPhotoSessionId,
+] =
+  useState<string | null>(
+    null,
+  )
+
   const [
     deletingAlbum,
     setDeletingAlbum,
@@ -1309,6 +1317,205 @@ async function handleDeletePhoto() {
   } finally {
     setIsDeletingPhoto(
       false,
+    )
+  }
+}
+
+async function movePhoto(
+  sessionId: string,
+  photoId: string,
+  direction:
+    | 'previous'
+    | 'next',
+) {
+  if (
+    reorderingPhotoSessionId
+  ) {
+    return
+  }
+
+  let targetPhotos:
+    ArchiveDbCategory['albums'][number]['sessions'][number]['photos'] | null =
+      null
+
+  for (
+    const category of
+      categories
+  ) {
+    for (
+      const album of
+        category.albums
+    ) {
+      const session =
+        album.sessions.find(
+          (item) =>
+            item.id ===
+            sessionId,
+        )
+
+      if (session) {
+        targetPhotos =
+          session.photos
+        break
+      }
+    }
+
+    if (targetPhotos) {
+      break
+    }
+  }
+
+  if (!targetPhotos) {
+    return
+  }
+
+  const currentIndex =
+    targetPhotos.findIndex(
+      (photo) =>
+        photo.id ===
+        photoId,
+    )
+
+  if (currentIndex < 0) {
+    return
+  }
+
+  const targetIndex =
+    direction ===
+    'previous'
+      ? currentIndex - 1
+      : currentIndex + 1
+
+  if (
+    targetIndex < 0 ||
+    targetIndex >=
+      targetPhotos.length
+  ) {
+    return
+  }
+
+  const reordered =
+    [...targetPhotos]
+
+  const [
+    movedPhoto,
+  ] =
+    reordered.splice(
+      currentIndex,
+      1,
+    )
+
+  reordered.splice(
+    targetIndex,
+    0,
+    movedPhoto,
+  )
+
+  const normalized =
+    reordered.map(
+      (
+        photo,
+        index,
+      ) => ({
+        ...photo,
+        sortOrder:
+          index,
+      }),
+    )
+
+  setReorderingPhotoSessionId(
+    sessionId,
+  )
+
+  try {
+    const response =
+      await fetch(
+        '/api/admin/archive/photos/reorder',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          body:
+            JSON.stringify({
+              session_id:
+                sessionId,
+
+              items:
+                normalized.map(
+                  (
+                    photo,
+                  ) => ({
+                    id:
+                      photo.id,
+
+                    sort_order:
+                      photo.sortOrder,
+                  }),
+                ),
+            }),
+        },
+      )
+
+    const result =
+      await response
+        .json()
+        .catch(() => null)
+
+    if (!response.ok) {
+      throw new Error(
+        getErrorMessage(
+          result,
+          '保存照片排序失败',
+        ),
+      )
+    }
+
+    setCategories(
+      (previous) =>
+        previous.map(
+          (category) => ({
+            ...category,
+
+            albums:
+              category.albums.map(
+                (album) => ({
+                  ...album,
+
+                  sessions:
+                    album.sessions.map(
+                      (session) =>
+                        session.id ===
+                        sessionId
+                          ? {
+                              ...session,
+                              photos:
+                                normalized,
+                            }
+                          : session,
+                    ),
+                }),
+              ),
+          }),
+        ),
+    )
+  } catch (error) {
+    console.error(
+      '[Archive photo reorder]',
+      error,
+    )
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : '保存照片排序失败，请重试',
+    )
+  } finally {
+    setReorderingPhotoSessionId(
+      null,
     )
   }
 }
@@ -3177,8 +3384,11 @@ async function moveCategory(
                                                 </div>
 
                                                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                                                  {session.photos.map(
-                                                    (photo) => (
+                                                    {session.photos.map(
+                                                      (
+                                                        photo,
+                                                        photoIndex,
+                                                      ) => (
                                                       <div
                                                         key={photo.id}
                                                         className="overflow-hidden rounded-md border bg-muted/20"
@@ -3230,34 +3440,82 @@ async function moveCategory(
                                                             ) : null}
                                                           </div>
 
-                                                            <div className="grid grid-cols-2 gap-2">
-                                                              <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="h-7 text-xs"
-                                                                onClick={() =>
-                                                                  setEditingPhoto(
-                                                                    photo,
-                                                                  )
-                                                                }
-                                                              >
-                                                                编辑
-                                                              </Button>
+                                                            <div className="space-y-2">
+                                                              <div className="grid grid-cols-2 gap-2">
+                                                                <Button
+                                                                  type="button"
+                                                                  variant="outline"
+                                                                  size="sm"
+                                                                  className="h-7 text-xs"
+                                                                  disabled={
+                                                                    photoIndex === 0 ||
+                                                                    reorderingPhotoSessionId ===
+                                                                      session.id
+                                                                  }
+                                                                  onClick={() => {
+                                                                    void movePhoto(
+                                                                      session.id,
+                                                                      photo.id,
+                                                                      'previous',
+                                                                    )
+                                                                  }}
+                                                                >
+                                                                  ←
+                                                                </Button>
 
-                                                              <Button
-                                                                type="button"
-                                                                variant="destructive"
-                                                                size="sm"
-                                                                className="h-7 text-xs"
-                                                                onClick={() =>
-                                                                  setDeletingPhoto(
-                                                                    photo,
-                                                                  )
-                                                                }
-                                                              >
-                                                                删除
-                                                              </Button>
+                                                                <Button
+                                                                  type="button"
+                                                                  variant="outline"
+                                                                  size="sm"
+                                                                  className="h-7 text-xs"
+                                                                  disabled={
+                                                                    photoIndex ===
+                                                                      session.photos.length -
+                                                                        1 ||
+                                                                    reorderingPhotoSessionId ===
+                                                                      session.id
+                                                                  }
+                                                                  onClick={() => {
+                                                                    void movePhoto(
+                                                                      session.id,
+                                                                      photo.id,
+                                                                      'next',
+                                                                    )
+                                                                  }}
+                                                                >
+                                                                  →
+                                                                </Button>
+                                                              </div>
+
+                                                              <div className="grid grid-cols-2 gap-2">
+                                                                <Button
+                                                                  type="button"
+                                                                  variant="outline"
+                                                                  size="sm"
+                                                                  className="h-7 text-xs"
+                                                                  onClick={() =>
+                                                                    setEditingPhoto(
+                                                                      photo,
+                                                                    )
+                                                                  }
+                                                                >
+                                                                  编辑
+                                                                </Button>
+
+                                                                <Button
+                                                                  type="button"
+                                                                  variant="destructive"
+                                                                  size="sm"
+                                                                  className="h-7 text-xs"
+                                                                  onClick={() =>
+                                                                    setDeletingPhoto(
+                                                                      photo,
+                                                                    )
+                                                                  }
+                                                                >
+                                                                  删除
+                                                                </Button>
+                                                              </div>
                                                             </div>
                                                         </div>
                                                       </div>
