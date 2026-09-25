@@ -2528,8 +2528,9 @@ async function moveCategory(
                                             key={
                                               session.id
                                             }
-                                            className="flex items-center justify-between gap-4 rounded-md border border-border bg-background px-4 py-3"
+                                            className="rounded-md border border-border bg-background px-4 py-3"
                                           >
+                                            <div className="flex items-center justify-between gap-4">
                                             <div className="min-w-0">
                                               <p className="text-sm font-medium text-foreground">
                                                 {
@@ -2666,6 +2667,70 @@ async function moveCategory(
                                               </Button>
 
                                             </div>
+                                            </div>
+
+                                            {session.videos.length > 0 ? (
+                                              <div className="mt-3 border-t border-border pt-3">
+                                                <p className="mb-2 text-[0.68rem] font-medium uppercase tracking-wider text-muted-foreground">
+                                                  Videos
+                                                </p>
+
+                                                <div className="space-y-2">
+                                                  {session.videos.map(
+                                                    (video) => (
+                                                      <div
+                                                        key={
+                                                          video.id
+                                                        }
+                                                        className="flex items-center justify-between gap-4 rounded-md bg-muted/30 px-3 py-2"
+                                                      >
+                                                        <div className="min-w-0">
+                                                          <p className="truncate text-xs font-medium text-foreground">
+                                                            {
+                                                              video.title
+                                                            }
+                                                          </p>
+
+                                                          <div className="mt-1 flex flex-wrap items-center gap-2 text-[0.68rem] text-muted-foreground">
+                                                            <Badge
+                                                              variant="outline"
+                                                              className="h-5 px-1.5 text-[0.62rem]"
+                                                            >
+                                                              {video.platform ===
+                                                              'youtube'
+                                                                ? 'YouTube'
+                                                                : 'Bilibili'}
+                                                            </Badge>
+
+                                                            {video.videoUrl ? (
+                                                              <a
+                                                                href={
+                                                                  video.videoUrl
+                                                                }
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="max-w-105 truncate underline underline-offset-2 hover:text-foreground"
+                                                              >
+                                                                {
+                                                                  video.videoUrl
+                                                                }
+                                                              </a>
+                                                            ) : video.embedUrl ? (
+                                                              <span className="max-w-105 truncate">
+                                                                {
+                                                                  video.embedUrl
+                                                                }
+                                                              </span>
+                                                            ) : null}
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    ),
+                                                  )}
+                                                </div>
+                                              </div>
+                                            ) : null}
+
                                           </div>
                                         ),
                                       )}
