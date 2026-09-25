@@ -1110,7 +1110,6 @@ videos: [
         en: 'Laser Alightment Station',
         summary: '激光校准站集体活动合影。',
         place: '斯坦顿激光校准站',
-        cover: '/images/archive/sandbox-instances/laser-alignment/laser-alignment-cover.jpg',
         sessions: blankSessions(2),
       },
       {
