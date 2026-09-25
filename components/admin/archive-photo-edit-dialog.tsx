@@ -38,6 +38,15 @@ import type {
   ArchiveDbPhoto,
 } from '@/lib/archive-db'
 
+import {
+  createClient,
+} from '@supabase/supabase-js'
+
+import {
+  cleanupArchiveUploadedImage,
+  uploadArchiveImage,
+} from '@/lib/archive-upload'
+
 type Props = {
   photo:
     ArchiveDbPhoto | null
@@ -51,6 +60,30 @@ type Props = {
   onSaved: (
     photo: ArchiveDbPhoto,
   ) => void
+}
+
+function getBrowserSupabase() {
+  const supabaseUrl =
+    process.env
+      .NEXT_PUBLIC_SUPABASE_URL
+
+  const supabaseAnonKey =
+    process.env
+      .NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (
+    !supabaseUrl ||
+    !supabaseAnonKey
+  ) {
+    throw new Error(
+      '缺少 Supabase 浏览器环境变量',
+    )
+  }
+
+  return createClient(
+    supabaseUrl,
+    supabaseAnonKey,
+  )
 }
 
 function getErrorMessage(
@@ -107,6 +140,20 @@ export function ArchivePhotoEditDialog({
   ] =
     useState(false)
 
+  const [
+    replacementFile,
+    setReplacementFile,
+  ] =
+    useState<File | null>(
+      null,
+    )
+  
+  const [
+    uploadStage,
+    setUploadStage,
+  ] =
+    useState('')
+
   useEffect(
     () => {
       if (!photo) {
@@ -124,146 +171,287 @@ export function ArchivePhotoEditDialog({
       setWide(
         photo.wide,
       )
+
+      setReplacementFile(
+        null,
+      )
+      setUploadStage(
+        '',
+      )
     },
     [photo],
   )
 
-  async function handleSave() {
-    if (
-      !photo ||
-      isSaving
-    ) {
-      return
-    }
-
-    setIsSaving(true)
-
-    try {
-      const response =
-        await fetch(
-          `/api/admin/archive/photos/${encodeURIComponent(
-            photo.id,
-          )}`,
-          {
-            method:
-              'PATCH',
-
-            headers: {
-              'Content-Type':
-                'application/json',
-            },
-
-            body:
-              JSON.stringify({
-                alt:
-                  alt.trim(),
-
-                caption:
-                  caption.trim() ||
-                  null,
-
-                wide,
-              }),
-          },
-        )
-
-      const result =
-        await response
-          .json()
-          .catch(
-            () => null,
-          )
-
-      if (!response.ok) {
-        throw new Error(
-          getErrorMessage(
-            result,
-            '保存照片失败',
-          ),
-        )
-      }
-
-      const row =
-        result?.photo
-
-      if (!row?.id) {
-        throw new Error(
-          '照片返回数据不完整',
-        )
-      }
-
-      const updatedPhoto:
-        ArchiveDbPhoto = {
-          id:
-            row.id,
-
-          originalUrl:
-            row.original_url ??
-            photo.originalUrl,
-
-          displayUrl:
-            row.display_url ??
-            photo.displayUrl,
-
-          thumbnailUrl:
-            row.thumbnail_url ??
-            photo.thumbnailUrl,
-
-          alt:
-            row.alt ?? '',
-
-          caption:
-            row.caption ??
-            null,
-
-          wide:
-            Boolean(
-              row.wide,
-            ),
-
-          width:
-            row.width ??
-            photo.width,
-
-          height:
-            row.height ??
-            photo.height,
-
-          sortOrder:
-            typeof row.sort_order ===
-            'number'
-              ? row.sort_order
-              : photo.sortOrder,
-        }
-
-      onSaved(
-        updatedPhoto,
-      )
-
-      toast.success(
-        '照片信息已保存',
-      )
-
-      onOpenChange(
-        false,
-      )
-    } catch (error) {
-      console.error(
-        '[Archive photo edit]',
-        error,
-      )
-
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : '保存照片失败，请重试',
-      )
-    } finally {
-      setIsSaving(
-        false,
-      )
-    }
+async function handleSave() {
+  if (
+    !photo ||
+    isSaving
+  ) {
+    return
   }
+
+setIsSaving(true)
+setUploadStage('')
+
+let replacement:
+  Awaited<
+    ReturnType<
+      typeof uploadArchiveImage
+    >
+  > | null = null
+
+let uploadSupabase:
+  ReturnType<
+    typeof getBrowserSupabase
+  > | null = null
+
+try {
+
+  if (replacementFile) {
+    const supabase =
+      getBrowserSupabase()
+
+    uploadSupabase =
+      supabase
+
+      const {
+        data: {
+          session,
+        },
+        error:
+          sessionError,
+      } =
+        await supabase.auth
+          .getSession()
+
+      if (
+        sessionError ||
+        !session
+          ?.access_token
+      ) {
+        throw new Error(
+          '管理员登录状态已失效，请重新登录',
+        )
+      }
+
+      replacement =
+        await uploadArchiveImage({
+          supabase,
+
+          accessToken:
+            session
+              .access_token,
+
+          file:
+            replacementFile,
+
+          kind:
+            'photo',
+
+          onStage:
+            setUploadStage,
+        })
+    }
+
+    setUploadStage(
+      '正在保存照片信息...',
+    )
+
+    const response =
+      await fetch(
+        `/api/admin/archive/photos/${encodeURIComponent(
+          photo.id,
+        )}`,
+        {
+          method:
+            'PATCH',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          body:
+            JSON.stringify({
+              alt:
+                alt.trim(),
+
+              caption:
+                caption.trim() ||
+                null,
+
+              wide,
+
+            ...(replacement
+              ? {
+                  original_url:
+                    replacement
+                      .originalUrl,
+
+                  display_url:
+                    replacement
+                      .displayUrl,
+
+                  thumbnail_url:
+                    replacement
+                      .thumbnailUrl,
+
+                  width:
+                    replacement
+                      .width,
+
+                  height:
+                    replacement
+                      .height,
+                }
+              : {}),
+            }),
+        },
+      )
+
+    const result =
+      await response
+        .json()
+        .catch(
+          () => null,
+        )
+
+    if (!response.ok) {
+      throw new Error(
+        getErrorMessage(
+          result,
+          '保存照片失败',
+        ),
+      )
+    }
+
+    const row =
+      result?.photo
+
+    if (!row?.id) {
+      throw new Error(
+        '照片返回数据不完整',
+      )
+    }
+
+    const updatedPhoto:
+      ArchiveDbPhoto = {
+        id:
+          row.id,
+
+        originalUrl:
+          row.original_url ??
+          replacement
+            ?.originalUrl ??
+          photo.originalUrl,
+
+        displayUrl:
+          row.display_url ??
+          replacement
+            ?.displayUrl ??
+          photo.displayUrl,
+
+        thumbnailUrl:
+          row.thumbnail_url ??
+          replacement
+            ?.thumbnailUrl ??
+          photo.thumbnailUrl,
+
+        alt:
+          row.alt ?? '',
+
+        caption:
+          row.caption ??
+          null,
+
+        wide:
+          Boolean(
+            row.wide,
+          ),
+
+        width:
+          row.width ??
+          replacement
+            ?.width ??
+          photo.width,
+
+        height:
+          row.height ??
+          replacement
+            ?.height ??
+          photo.height,
+
+        sortOrder:
+          typeof row.sort_order ===
+          'number'
+            ? row.sort_order
+            : photo.sortOrder,
+      }
+
+    onSaved(
+      updatedPhoto,
+    )
+
+    toast.success(
+      replacement
+        ? '照片已替换并保存'
+        : '照片信息已保存',
+    )
+
+    setReplacementFile(
+      null,
+    )
+
+    setUploadStage(
+      '',
+    )
+
+    onOpenChange(
+      false,
+    )
+  } catch (error) {
+    if (
+      replacement &&
+      uploadSupabase
+    ) {
+      try {
+        await cleanupArchiveUploadedImage({
+          supabase:
+            uploadSupabase,
+
+          uploaded:
+            replacement,
+        })
+      } catch (
+        cleanupError
+      ) {
+        console.error(
+          '[Archive replacement cleanup]',
+          cleanupError,
+        )
+      }
+    }
+
+    console.error(
+      '[Archive photo edit]',
+      error,
+    )
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : '保存照片失败，请重试',
+    )
+  } finally {
+    setIsSaving(
+      false,
+    )
+
+    setUploadStage(
+      '',
+    )
+  }
+}
 
   return (
     <Dialog
@@ -289,7 +477,7 @@ export function ArchivePhotoEditDialog({
           </DialogTitle>
 
           <DialogDescription>
-            修改照片说明和 Archive 展示设置。
+            修改照片说明和合影展示设置。
           </DialogDescription>
         </DialogHeader>
 
@@ -303,15 +491,61 @@ export function ArchivePhotoEditDialog({
                 }
                 alt={
                   photo.alt ||
-                  'Archive photo'
+                  '合影照片'
                 }
                 className="max-h-56 w-full object-contain"
               />
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="archive-photo-replacement">
+                替换图片
+              </Label>
+
+              <Input
+                id="archive-photo-replacement"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={
+                  isSaving
+                }
+                onChange={(
+                  event,
+                ) => {
+                  const file =
+                    event.target
+                      .files?.[0] ??
+                    null
+
+                  setReplacementFile(
+                    file,
+                  )
+                }}
+              />
+
+              <p className="text-xs text-muted-foreground">
+                可选。选择新图片后，将替换当前照片；不选择则只修改照片信息。
+              </p>
+
+              {replacementFile ? (
+                <p className="text-xs font-medium">
+                  已选择：
+                  {' '}
+                  {replacementFile.name}
+                </p>
+              ) : null}
+
+              {uploadStage ? (
+                <p className="text-xs text-muted-foreground">
+                  {uploadStage}
+                </p>
+              ) : null}
+
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="archive-photo-alt">
-                Alt
+                替代文字（Alt）
               </Label>
 
               <Input
@@ -338,7 +572,7 @@ export function ArchivePhotoEditDialog({
 
             <div className="space-y-2">
               <Label htmlFor="archive-photo-caption">
-                Caption
+                照片说明
               </Label>
 
               <Textarea
@@ -365,7 +599,7 @@ export function ArchivePhotoEditDialog({
               <div className="flex items-center justify-between gap-4 rounded-md border p-3">
                 <div className="space-y-1">
                   <p className="text-sm font-medium">
-                    Wide
+                    宽幅显示
                   </p>
 
                   <p className="text-xs text-muted-foreground">

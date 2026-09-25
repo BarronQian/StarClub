@@ -221,135 +221,332 @@ export async function uploadArchiveImage({
   kind,
   onStage,
 }: UploadArchiveImageOptions): Promise<ArchiveUploadedImage> {
-  onStage?.(
-    '正在处理图片...',
-  )
+  const uploadedUrls:
+    string[] = []
 
-  const prepared =
-    await prepareArchiveImage(
-      file,
-    )
-
-  /*
-   * Original
-   *
-   * 永远保存用户上传的原始文件，
-   * 不重新编码、不缩放。
-   */
-  onStage?.(
-    '正在上传原图...',
-  )
-
-  const extension =
-    getExtension(file)
-
-  const originalUrl =
-    await uploadVariant({
-      supabase,
-      accessToken,
-      kind,
-      variant:
-        'original',
-
-      blob: file,
-
-      name:
-        `original.${extension}`,
-
-      contentType:
-        file.type ||
-        'image/jpeg',
-    })
-
-  /*
-   * Display
-   *
-   * < 1200px：
-   * 不进行第二次有损压缩，
-   * 直接使用 Original。
-   *
-   * >= 1200px：
-   * 使用 prepareArchiveImage()
-   * 生成的 WebP Display。
-   */
-  let displayUrl =
-    originalUrl
-
-  if (
-    !prepared
-      .useOriginalAsDisplay &&
-    prepared.display
-  ) {
+  try {
     onStage?.(
-      '正在上传展示图...',
+      '正在处理图片...',
     )
 
-    displayUrl =
+    const prepared =
+      await prepareArchiveImage(
+        file,
+      )
+
+    /*
+     * Original
+     *
+     * 永远保存用户上传的原始文件，
+     * 不重新编码、不缩放。
+     */
+    onStage?.(
+      '正在上传原图...',
+    )
+
+    const extension =
+      getExtension(file)
+
+    const originalUrl =
       await uploadVariant({
         supabase,
         accessToken,
         kind,
+
         variant:
-          'display',
+          'original',
+
+        blob:
+          file,
+
+        name:
+          `original.${extension}`,
+
+        contentType:
+          file.type ||
+          'image/jpeg',
+      })
+
+    uploadedUrls.push(
+      originalUrl,
+    )
+
+    /*
+     * Display
+     *
+     * < 1200px：
+     * 不进行第二次有损压缩，
+     * 直接使用 Original。
+     *
+     * >= 1200px：
+     * 使用 prepareArchiveImage()
+     * 生成的 WebP Display。
+     */
+    let displayUrl =
+      originalUrl
+
+    if (
+      !prepared
+        .useOriginalAsDisplay &&
+      prepared.display
+    ) {
+      onStage?.(
+        '正在上传展示图...',
+      )
+
+      displayUrl =
+        await uploadVariant({
+          supabase,
+          accessToken,
+          kind,
+
+          variant:
+            'display',
+
+          blob:
+            prepared
+              .display
+              .blob,
+
+          name:
+            'display.webp',
+
+          contentType:
+            'image/webp',
+        })
+
+      uploadedUrls.push(
+        displayUrl,
+      )
+    }
+
+    /*
+     * Thumbnail
+     *
+     * 永远生成。
+     * 用于列表、卡片、Archive Grid。
+     */
+    onStage?.(
+      '正在上传缩略图...',
+    )
+
+    const thumbnailUrl =
+      await uploadVariant({
+        supabase,
+        accessToken,
+        kind,
+
+        variant:
+          'thumbnail',
 
         blob:
           prepared
-            .display
+            .thumbnail
             .blob,
 
         name:
-          'display.webp',
+          'thumbnail.webp',
 
         contentType:
           'image/webp',
       })
+
+    uploadedUrls.push(
+      thumbnailUrl,
+    )
+
+    return {
+      originalUrl,
+      displayUrl,
+      thumbnailUrl,
+
+      width:
+        prepared
+          .originalWidth,
+
+      height:
+        prepared
+          .originalHeight,
+
+      useOriginalAsDisplay:
+        prepared
+          .useOriginalAsDisplay,
+    }
+  } catch (error) {
+    /*
+     * 上传过程中如果失败，
+     * 自动清理已经成功上传的文件。
+     *
+     * 例如：
+     * Original 成功 → Display 失败
+     * Original 成功 → Thumbnail 失败
+     * Original + Display 成功 → Thumbnail 失败
+     */
+    if (
+      uploadedUrls.length >
+      0
+    ) {
+      const marker =
+        '/storage/v1/object/public/archive/'
+
+      const paths =
+        Array.from(
+          new Set(
+            uploadedUrls
+              .map(
+                (url) => {
+                  try {
+                    const parsed =
+                      new URL(
+                        url,
+                      )
+
+                    const index =
+                      parsed.pathname
+                        .indexOf(
+                          marker,
+                        )
+
+                    if (
+                      index < 0
+                    ) {
+                      return null
+                    }
+
+                    const path =
+                      parsed.pathname
+                        .slice(
+                          index +
+                            marker.length,
+                        )
+
+                    return path
+                      ? decodeURIComponent(
+                          path,
+                        )
+                      : null
+                  } catch {
+                    return null
+                  }
+                },
+              )
+              .filter(
+                (
+                  path,
+                ): path is string =>
+                  Boolean(
+                    path,
+                  ),
+              ),
+          ),
+        )
+
+      if (
+        paths.length > 0
+      ) {
+        const {
+          error:
+            cleanupError,
+        } =
+          await supabase.storage
+            .from(
+              'archive',
+            )
+            .remove(
+              paths,
+            )
+
+        if (
+          cleanupError
+        ) {
+          console.error(
+            '[Archive partial upload cleanup]',
+            cleanupError,
+          )
+        }
+      }
+    }
+
+    throw error
+  }
+}
+
+export async function cleanupArchiveUploadedImage({
+  supabase,
+  uploaded,
+}: {
+  supabase: SupabaseClient
+  uploaded: ArchiveUploadedImage
+}) {
+  const marker =
+    '/storage/v1/object/public/archive/'
+
+  const urls =
+    [
+      uploaded.originalUrl,
+      uploaded.displayUrl,
+      uploaded.thumbnailUrl,
+    ]
+
+  const paths =
+    Array.from(
+      new Set(
+        urls
+          .map((url) => {
+            try {
+              const parsed =
+                new URL(url)
+
+              const index =
+                parsed.pathname.indexOf(
+                  marker,
+                )
+
+              if (index < 0) {
+                return null
+              }
+
+              const path =
+                parsed.pathname.slice(
+                  index +
+                    marker.length,
+                )
+
+              return path
+                ? decodeURIComponent(
+                    path,
+                  )
+                : null
+            } catch {
+              return null
+            }
+          })
+          .filter(
+            (
+              path,
+            ): path is string =>
+              Boolean(path),
+          ),
+      ),
+    )
+
+  if (
+    paths.length === 0
+  ) {
+    return
   }
 
-  /*
-   * Thumbnail
-   *
-   * 永远生成。
-   * 用于列表、卡片、Archive Grid。
-   */
-  onStage?.(
-    '正在上传缩略图...',
-  )
+  const {
+    error,
+  } =
+    await supabase.storage
+      .from('archive')
+      .remove(paths)
 
-  const thumbnailUrl =
-    await uploadVariant({
-      supabase,
-      accessToken,
-      kind,
-      variant:
-        'thumbnail',
-
-      blob:
-        prepared
-          .thumbnail
-          .blob,
-
-      name:
-        'thumbnail.webp',
-
-      contentType:
-        'image/webp',
-    })
-
-  return {
-    originalUrl,
-    displayUrl,
-    thumbnailUrl,
-
-    width:
-      prepared
-        .originalWidth,
-
-    height:
-      prepared
-        .originalHeight,
-
-    useOriginalAsDisplay:
-      prepared
-        .useOriginalAsDisplay,
+  if (error) {
+    console.error(
+      '[Archive upload cleanup]',
+      error,
+    )
   }
 }
