@@ -65,10 +65,6 @@ function countArchive() {
         /*
          * 兼容旧版：
          * videoUrl / videoEmbedUrl
-         *
-         * 如果同一个 Session 已经存在
-         * videos[]，这里仍然单独统计，
-         * 方便迁移前发现重复数据。
          */
         if (session.videoUrl) {
           videoCount += 1
@@ -223,6 +219,10 @@ function validateArchive() {
           )
         }
 
+        /*
+         * 空 Session 本身不一定是错误。
+         * 部分旧数据就是预留场次。
+         */
         if (
           session.photos.length ===
           0
@@ -232,6 +232,10 @@ function validateArchive() {
           )
         }
 
+        /*
+         * 如果新版和旧版视频字段同时存在，
+         * 先提示，避免迁移时重复。
+         */
         if (
           session.videos &&
           session.videos.length >
@@ -428,69 +432,73 @@ async function main() {
   console.log('')
 
   const validation =
-  validateArchive()
+    validateArchive()
 
-console.log(
-  '======================================',
-)
-
-console.log(
-  '数据完整性检查',
-)
-
-console.log(
-  '======================================',
-)
-
-console.log(
-  `Errors:   ${validation.errors.length}`,
-)
-
-console.log(
-  `Warnings: ${validation.warnings.length}`,
-)
-
-if (
-  validation.errors.length >
-  0
-) {
-  console.log('')
   console.log(
-    '--- Errors ---',
+    '======================================',
   )
 
-  for (
-    const error of
-    validation.errors
-  ) {
-    console.log(
-      `❌ ${error}`,
-    )
-  }
-}
-
-if (
-  validation.warnings.length >
-  0
-) {
-  console.log('')
   console.log(
-    '--- Warnings ---',
+    '数据完整性检查',
   )
 
-  for (
-    const warning of
-    validation.warnings
+  console.log(
+    '======================================',
+  )
+
+  console.log(
+    `Errors:   ${validation.errors.length}`,
+  )
+
+  console.log(
+    `Warnings: ${validation.warnings.length}`,
+  )
+
+  if (
+    validation.errors.length >
+    0
   ) {
+    console.log('')
     console.log(
-      `⚠️ ${warning}`,
+      '--- Errors ---',
     )
+
+    for (
+      const error of
+      validation.errors
+    ) {
+      console.log(
+        `❌ ${error}`,
+      )
+    }
   }
-}
 
-console.log('')
+  if (
+    validation.warnings.length >
+    0
+  ) {
+    console.log('')
+    console.log(
+      '--- Warnings ---',
+    )
 
-    if (
+    for (
+      const warning of
+      validation.warnings
+    ) {
+      console.log(
+        `⚠️ ${warning}`,
+      )
+    }
+  }
+
+  console.log('')
+
+  /*
+   * 有真正的数据错误时，
+   * 不允许继续执行数据库 Preflight。
+   */
+  if (
     validation.errors.length >
     0
   ) {
@@ -506,6 +514,7 @@ console.log('')
   console.log(
     '本次没有修改 Supabase 数据库。',
   )
+
   await runDatabasePreflight()
 }
 
@@ -514,6 +523,7 @@ main().catch((error) => {
   console.error(
     'Migration Preflight 失败：',
   )
+
   console.error(error)
 
   process.exit(1)
